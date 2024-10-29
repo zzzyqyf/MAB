@@ -1,3 +1,20 @@
+// Add the Google services Gradle plugin at the top
+
+buildscript {
+    ext.kotlin_version = '1.7.10' // Update to the latest version if necessary
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.2.0' // Ensure this is the correct version
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.google.gms:google-services:4.4.2' // Google services plugin
+
+    }
+}
+
 plugins {
     // ...
 
@@ -5,18 +22,7 @@ plugins {
     id 'com.google.gms.google-services' version '4.4.2' apply false
 
 }
-buildscript {
-    ext.kotlin_version = '1.7.10'
-    repositories {
-        google()
-        mavenCentral()
-    }
 
-    dependencies {
-        classpath 'com.android.tools.build:gradle:7.2.0'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    }
-}
 
 allprojects {
     repositories {
@@ -36,4 +42,3 @@ subprojects {
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
-
