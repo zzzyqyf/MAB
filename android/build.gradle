@@ -29,4 +29,4 @@ subprojects {
 
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
-}// and uncheck Enable Instant Run.
+}
