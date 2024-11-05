@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"name": "flutter_application_final",
+			"path": "."
+		}
+	],
+	"settings": {
+		"java.configuration.updateBuildConfiguration": "disabled"
+	}
+}
