@@ -10,7 +10,6 @@ import 'notification.dart';
 //import 'addPage.dart';
 //import 'setting.dart';
 import 'tentPage.dart';
-
 void main() {
   runApp(
     DevicePreview(
