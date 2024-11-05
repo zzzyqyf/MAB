@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
+import 'package:flutter_application_final/ESP32DataPage.dart';
 import 'package:flutter_application_final/registerOne.dart';
 //import 'package:flutter_application_final/temp.dart';
 //import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -53,7 +54,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Define pages to navigate to
   final List<Widget> _pages = [
-    const ProfilePage(),
+    ESP32DataPage(),
     const notification(),
     const Register2Widget(),
   ];

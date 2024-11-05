@@ -36,7 +36,7 @@ class _Register4WidgetState extends State<Register4Widget> {
       // Send SSID and password to the ESP32
       String credentials = '$ssid\n$password';
       socket.send(Uint8List.fromList(credentials.codeUnits),
-       InternetAddress('192.168.4.1'), 1234); // Replace with your ESP32's AP IP and port
+       InternetAddress('192.168.4.1'), 8080); // Replace with your ESP32's AP IP and port
 
       // Close the socket after sending
       socket.close();
