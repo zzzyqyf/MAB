@@ -65,7 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
   // Define pages to navigate to
   final List<Widget> _pages = [
     Register4Widget(id: '',),
-    TentPage(name: 'deviceId'),
+    TentPage(id: '',),
     AddDevicePage(),
   ];
 
@@ -149,7 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => TentPage(name: device['name'] ?? ''),
+                              builder: (context) => TentPage(id: device['name'] ?? ''),
                             ),
                           );
                         },

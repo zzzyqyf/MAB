@@ -8,10 +8,10 @@ import 'notification.dart';
 import 'setting.dart';
 
 class TentPage extends StatefulWidget {
-  final String name;  // Device ID passed to this page
+  final String id;  // Device ID passed to this page
 
   // Constructor to accept deviceId
-  const TentPage({super.key, required this.name});
+  const TentPage({super.key,  required this.id});
 
   @override
   _TentPageState createState() => _TentPageState();
@@ -106,7 +106,7 @@ class _TentPageState extends State<TentPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-    builder: (context) => TentSettingsWidget(name: widget.name), // Pass deviceId
+    builder: (context) => TentSettingsWidget(name: widget.id), // Pass deviceId
                               ),
                             );
                           },
@@ -122,7 +122,7 @@ class _TentPageState extends State<TentPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-  'Overview (${widget.name})',
+  'Overview (${widget.id})',
                           style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                             fontSize: screenWidth * 0.08,
                             fontFamily: 'Outfit',

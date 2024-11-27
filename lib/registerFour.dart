@@ -183,12 +183,15 @@ class _Register4WidgetState extends State<Register4Widget> {
 
   // Access DeviceManager
   final deviceManager = Provider.of<DeviceManager>(context, listen: false);
+    deviceManager.addDevice(widget.id);
 
   // Check if the device already exists by name
   String? existingId = deviceManager.getDeviceIdByName(widget.id);
 
   if (existingId != null) {
     print("Device ID for device '$ssid' exists: $existingId");
+        deviceManager.addDevice(existingId);
+
   } else {
     print("Device ID for device '$ssid' does not exist. Adding a new device.");
     // Add device if not found
