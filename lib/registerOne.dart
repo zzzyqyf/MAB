@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/registerFour.dart';
 import 'package:flutter_application_final/registerThree.dart';
 //import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -59,7 +60,7 @@ class _Register2WidgetState extends State<Register2Widget> {
 
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const Register3Widget()),
+                  MaterialPageRoute(builder: (context) => const Register4Widget()),
                 );
                       },
       ),

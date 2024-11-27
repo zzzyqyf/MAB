@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/main.dart';
+import 'package:flutter_application_final/test.dart';
 import 'dart:typed_data'; // Import for Uint8List
 import 'dart:io'; // Import for RawDatagramSocket
 import 'basePage.dart';
 import 'buttom.dart';
 import 'loadingO.dart';
+import 'package:provider/provider.dart';
+//import 'test.dart'; // Import your DeviceManager
 
 class Register4Widget extends StatefulWidget {
   const Register4Widget({Key? key}) : super(key: key);
@@ -19,6 +23,8 @@ class _Register4WidgetState extends State<Register4Widget> {
   final FocusNode _passwordFocusNode = FocusNode();
   bool _passwordVisible = false;
   String? _errorMessage;
+  
+  get id => null;
 
   @override
   void dispose() {
@@ -30,23 +36,28 @@ class _Register4WidgetState extends State<Register4Widget> {
 
   Future<void> sendCredentials(String ssid, String password) async {
     try {
+      print("Attempting to send credentials: SSID = $ssid, Password = $password");  // Debug print
+
       // Create a UDP socket
       RawDatagramSocket socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
+      print("Socket created");  // Debug print to check socket creation
 
-      // Send SSID and password to the ESP32
+      // Prepare SSID and password to send
       String credentials = '$ssid\n$password';
-      socket.send(Uint8List.fromList(credentials.codeUnits),
-       InternetAddress('192.168.4.1'), 8080); // Replace with your ESP32's AP IP and port
+      socket.send(Uint8List.fromList(credentials.codeUnits), InternetAddress('192.168.4.1'), 8080); // Replace with ESP32's AP IP and port
+      print("Credentials sent to ESP32");  // Debug print to confirm sending
 
       // Close the socket after sending
       socket.close();
+      print("Socket closed after sending");  // Debug print to confirm socket closure
 
-      // Provide user feedback
+      // Show success message only if credentials are sent successfully
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Credentials sent successfully!')),
+        SnackBar(content: Text('Credentials sent successfully! ESP32 will now try to connect.')),
       );
     } catch (e) {
-      // Handle error
+      print("Error sending credentials: $e");  // Debug error
+      // Handle error and display error message
       setState(() {
         _errorMessage = 'Failed to send credentials: $e';
       });
@@ -152,65 +163,50 @@ class _Register4WidgetState extends State<Register4Widget> {
                   ],
                 ),
               ),
+              // The Save Button should be placed in the body of the widget tree
+              Positioned(
+                bottom: 20.0,
+                left: 16.0,
+                right: 16.0,
+                child: ReusableBottomButton(
+                  buttonText: 'Save',
+                  padding: 16.0,
+                  fontSize: 18.0,
+                 onPressed: () async {
+  // Retrieve SSID and password
+  String ssid = _ssidController.text.trim();
+  String password = _passwordController.text.trim();
+
+  // Send credentials to ESP32
+  await sendCredentials(ssid, password);
+
+  // Access DeviceManager
+  final deviceManager = Provider.of<DeviceManager>(context, listen: false);
+
+  // Check if the device already exists by name
+  String? existingId = deviceManager.getDeviceIdByName(ssid);
+
+  if (existingId != null) {
+    print("Device ID for device '$ssid' exists: $existingId");
+  } else {
+    print("Device ID for device '$ssid' does not exist. Adding a new device.");
+    // Add device if not found
+    deviceManager.addDevice(ssid);
+  }
+
+  // Navigate to the next screen
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (context) => const MyApp()), // Replace with your desired screen
+  );
+}
+
+                ),
+              ),
             ],
           ),
-        ),
-        bottomNavigationBar: ReusableBottomButton(
-          buttonText: 'Save',
-          padding: 16.0,
-          fontSize: 18.0,
-          onPressed: () {
-            String ssid = _ssidController.text.trim();
-            String password = _passwordController.text.trim();
-            sendCredentials(ssid, password); // Send credentials to ESP32
-
-            // Navigate to Loading screen (or other actions)
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const LoadingWidget()),
-            );
-          },
         ),
       ),
     );
   }
 }
-
-
-/*
-void loop() {
-  // Check if there are any incoming packets
-  int packetSize = udp.parsePacket();
-  if (packetSize) {
-    // Buffer to hold incoming data
-    char incomingPacket[255];
-    int len = udp.read(incomingPacket, 255);
-    if (len > 0) {
-      incomingPacket[len] = '\0'; // Null-terminate the string
-      String credentials = String(incomingPacket);
-
-      // Split credentials into SSID and password
-      int separatorIndex = credentials.indexOf('\n');
-      if (separatorIndex != -1) {
-        String receivedSSID = credentials.substring(0, separatorIndex);
-        String receivedPassword = credentials.substring(separatorIndex + 1);
-
-        // Attempt to connect to Wi-Fi
-        WiFi.begin(receivedSSID.c_str(), receivedPassword.c_str());
-        Serial.println("Connecting to WiFi...");
-
-        // Wait for connection
-        while (WiFi.status() != WL_CONNECTED) {
-          delay(1000);
-          Serial.print(".");
-        }
-        
-        // Print connected IP address
-        Serial.println("\nConnected to WiFi!");
-        Serial.print("IP Address: ");
-        Serial.println(WiFi.localIP()); // Print the IP address after connection
-      }
-    }
-  }
-}
-*/

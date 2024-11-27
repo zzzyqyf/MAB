@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/main.dart';
 import 'package:flutter_application_final/name.dart';
 import 'package:flutter_application_final/soundOption.dart';
 import 'package:flutter_application_final/time.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hive/hive.dart';
+import 'package:provider/provider.dart';
 import 'basePage.dart';
 
 class TentSettingsWidget extends StatefulWidget {
-  const TentSettingsWidget({super.key});
+  final String name; // Add deviceId as a parameter
+
+  const TentSettingsWidget({super.key, required this.name}); // Accept deviceId in the constructor
 
   @override
   State<TentSettingsWidget> createState() => _TentSettingsWidgetState();
 }
+
 
 class _TentSettingsWidgetState extends State<TentSettingsWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -99,7 +105,7 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const NameWidget()),
+                      MaterialPageRoute(builder: (context) => const NameWidget(deviceId: '',)),
                     );
                   },
                 ),
@@ -155,7 +161,7 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                   fontSizeSubtitle: fontSizeSubtitle,
                   onTap: () {
                     // Show the pop-up dialog when tapped
-                    _showDeleteDialog(context);
+      _showDeleteDialog(context, widget.name); // Pass deviceId to the dialog
                   },
                 ),
               ),
@@ -193,7 +199,7 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
 
 // warning pop-up dialog
 class _showDeleteDialog {
-  _showDeleteDialog(BuildContext context) {
+  _showDeleteDialog(BuildContext context, String name) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -218,8 +224,13 @@ class _showDeleteDialog {
             TextButton(
               onPressed: () {
                 // Perform delete action here
-                Navigator.of(context).pop(); // Close the dialog after delete
-                // Add your tent deletion logic here
+                deleteDevice(name); // Call the delete method with deviceId
+
+               Navigator.of(context).pop(); 
+                Provider.of<DeviceManager>(context, listen: false)
+                      .removeDevice(name);
+                  Navigator.pop(context);
+                  // Close the dialog after delete
               },
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
             ),
@@ -227,6 +238,12 @@ class _showDeleteDialog {
         );
       },
     );
+  }
+
+  // Method to delete the device from Hive (or your storage)
+  void deleteDevice(String name) {
+    final deviceBox = Hive.box('deviceBox');
+    deviceBox.delete(name);  // Delete the device from Hive using the deviceId
   }
 }
 

@@ -3,17 +3,53 @@ import 'package:flutter_application_final/main.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'Navbar.dart'; // Import CustomNavbar component
 import 'ProfilePage.dart';
+import 'mqttservice.dart';
 import 'notification.dart';
 import 'setting.dart';
 
 class TentPage extends StatefulWidget {
-  const TentPage({super.key});
+  final String name;  // Device ID passed to this page
+
+  // Constructor to accept deviceId
+  const TentPage({super.key, required this.name});
 
   @override
   _TentPageState createState() => _TentPageState();
 }
 
 class _TentPageState extends State<TentPage> {
+  double? temperature;
+  double? humidity;
+  int? lightState;
+
+  late MqttService mqttService;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize MqttService with the specific deviceId
+    mqttService = MqttService(onDataReceived: (temp, hum, light) {
+      setState(() {
+        temperature = temp;
+        humidity = hum;
+        lightState = light;
+      });
+    }, onDeviceConnectionStatusChange: (String , bool ) { 
+
+      
+     });
+
+    // Setup MQTT client based on the deviceId
+   // mqttService.setupMqttClient(deviceId: widget.deviceId);
+  }
+
+  @override
+  void dispose() {
+    mqttService.dispose();
+    super.dispose();
+  }
+
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
@@ -34,12 +70,10 @@ class _TentPageState extends State<TentPage> {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context); // Get screen dimensions
-
+    final mediaQuery = MediaQuery.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final boxSize =
-        screenWidth * 0.46; // Responsive box size based on screen width
+    final boxSize = screenWidth * 0.46;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -66,15 +100,13 @@ class _TentPageState extends State<TentPage> {
                           icon: Icon(
                             Icons.settings_sharp,
                             color: Theme.of(context).primaryColor,
-                            size: screenWidth * 0.1, // Responsive icon size
+                            size: screenWidth * 0.1,
                           ),
                           onPressed: () {
-                            // Navigate to another page
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    const TentSettingsWidget(), // Replace with your target page
+    builder: (context) => TentSettingsWidget(name: widget.name), // Pass deviceId
                               ),
                             );
                           },
@@ -84,30 +116,24 @@ class _TentPageState extends State<TentPage> {
                   ),
                   // Title Text
                   Padding(
-                    padding: EdgeInsetsDirectional.fromSTEB(
-                        0, 0.5, 0, screenHeight * 0.05),
+                    padding: EdgeInsetsDirectional.fromSTEB(0, 0.5, 0, screenHeight * 0.05),
                     child: Row(
                       mainAxisSize: MainAxisSize.max,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Overview',
-                          style: Theme.of(context)
-                              .textTheme
-                             .bodyLarge!
-                              .copyWith(
-                                fontSize:
-                                    screenWidth * 0.08, // Responsive font size
-                                fontFamily: 'Outfit',
-                              ),
+  'Overview (${widget.name})',
+                          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                            fontSize: screenWidth * 0.08,
+                            fontFamily: 'Outfit',
+                          ),
                         ),
-                        
                       ],
                     ),
                   ),
+                  // Humidity and Light Intensity Boxes
                   Padding(
                     padding: EdgeInsets.zero,
-                    // Two boxes for Humidity and Light Intensity
                     child: Row(
                       mainAxisSize: MainAxisSize.max,
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -116,31 +142,22 @@ class _TentPageState extends State<TentPage> {
                           context,
                           boxSize: boxSize,
                           icon: Icons.water_drop,
-                          iconColor:Colors.blue,
+                          iconColor: Colors.blue,
                           title: 'Humidity',
-                          value: '78.8%',
-                          
+                          value: '${humidity ?? 'Loading...'} %',
                         ),
-                        SizedBox(
-                            width: mediaQuery.size.width *
-                                0.02), // Horizontal spacing between boxes
-
+                        SizedBox(width: mediaQuery.size.width * 0.02),
                         _buildBox(
                           context,
                           boxSize: boxSize,
                           icon: Icons.lightbulb_outline,
-                          iconColor:Colors.yellow,
+                          iconColor: Colors.yellow,
                           title: 'Light Intensity',
-                          value: 'Low',
+                          value: '${lightState == 1 ? 'High' : 'Low'} ',
                         ),
-                        SizedBox(width: mediaQuery.size.width * 0.0),
                       ],
                     ),
                   ),
-                  SizedBox(
-                      height: mediaQuery.size.height *
-                          0.01), // Vertical space between rows
-
                   // Temperature and Water Level Boxes
                   Padding(
                     padding: EdgeInsets.zero,
@@ -149,27 +166,24 @@ class _TentPageState extends State<TentPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         InkWell(
-        onTap: () {
-          // Add your action for Humidity box tap here
- Navigator.push(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const MyApp(),
+                              ),
+                            );
+                          },
+                          child: _buildBox(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const MyApp(), // Replace with your target page
-                            ),
-                          );        },
-                      child:  _buildBox(
-                          context,
-                          boxSize: boxSize,
-                          icon: FontAwesomeIcons.temperatureFull,
-                          iconColor: const Color.fromARGB(255, 221, 161, 76),
-                          title: 'Temperture',
-                          value: '29.0 C',
-                        ),),
-                        SizedBox(
-                            width: mediaQuery.size.width *
-                                0.02), // Horizontal spacing between boxes
-
+                            boxSize: boxSize,
+                            icon: FontAwesomeIcons.temperatureFull,
+                            iconColor: const Color.fromARGB(255, 221, 161, 76),
+                            title: 'Temperature',
+                            value: '${temperature ?? 'Loading...'} °C',
+                          ),
+                        ),
+                        SizedBox(width: mediaQuery.size.width * 0.02),
                         _buildBox(
                           context,
                           boxSize: boxSize,
@@ -177,9 +191,7 @@ class _TentPageState extends State<TentPage> {
                           iconColor: Theme.of(context).colorScheme.error,
                           title: 'Water Level',
                           value: '50%',
-                          
                         ),
-                        SizedBox(width: mediaQuery.size.width * 0.0),
                       ],
                     ),
                   ),
@@ -206,11 +218,11 @@ class _TentPageState extends State<TentPage> {
     return Container(
       width: boxSize,
       height: boxSize,
-     decoration: BoxDecoration(
+      decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-            Color.fromARGB(255, 6, 94, 135), // Dark cyan-purple blend
-            Color.fromARGB(255, 84, 90, 95), // Complementary color
+            Color.fromARGB(255, 6, 94, 135),
+            Color.fromARGB(255, 84, 90, 95),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -218,26 +230,23 @@ class _TentPageState extends State<TentPage> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Stack(
-        
         children: [
           Align(
             alignment: const AlignmentDirectional(0, -0.5),
             child: Icon(
               icon,
               color: iconColor,
-              size: boxSize * 0.35, // Responsive icon size
+              size: boxSize * 0.35,
             ),
           ),
           Align(
             alignment: const AlignmentDirectional(0, 0.85),
             child: Text(
               title,
-          
               style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                    fontSize: boxSize * 0.12, // Responsive text size
+                    fontSize: boxSize * 0.12,
                     fontFamily: 'Outfit',
-                          color: Colors.white, // Set text color to white
-
+                    color: Colors.white,
                   ),
             ),
           ),
@@ -246,10 +255,9 @@ class _TentPageState extends State<TentPage> {
             child: Text(
               value,
               style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                    fontSize: boxSize * 0.14, // Responsive text size
+                    fontSize: boxSize * 0.14,
                     fontFamily: 'Outfit',
-                          color: Colors.white, // Set text color to white
-
+                    color: Colors.white,
                   ),
             ),
           ),
@@ -257,6 +265,4 @@ class _TentPageState extends State<TentPage> {
       ),
     );
   }
-
-  // Method to build an interactive box with a double-tap action
 }

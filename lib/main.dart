@@ -1,35 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
-import 'package:flutter_application_final/registerOne.dart';
-//import 'package:flutter_application_final/temp.dart';
-//import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'ProfilePage.dart';
-import 'Navbar.dart';
-//import 'editProfile.dart';
-import 'notification.dart';
-//import 'addPage.dart';
-//import 'setting.dart';
-import 'tentPage.dart';
-void main() {
+import 'package:flutter_application_final/Navbar.dart';
+import 'package:flutter_application_final/mqttTests/MQTT.dart';
+import 'package:flutter_application_final/one.dart';
+import 'package:flutter_application_final/overview.dart';
+import 'package:flutter_application_final/registerFour.dart';
+import 'package:flutter_application_final/three.dart';
+import 'package:flutter_application_final/two.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
+import 'aTent.dart';
+import 'test.dart';
+
+void main() async{
+
+  
+  // Initialize Hive
+  await Hive.initFlutter();
+
+  // Open the Hive box before using it
+  await Hive.openBox('deviceBox');  // Open your box here
   runApp(
     DevicePreview(
-      enabled: true, // Enable the device preview
-      builder: (context) => const MyApp(),
+      enabled: true, // Enable the device preview for testing
+      builder: (context) => ChangeNotifierProvider(
+        create: (_) => DeviceManager(),
+        child: const MyApp(),
+      ),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       useInheritedMediaQuery: true, // Enable media query for responsiveness
       builder: DevicePreview.appBuilder, // Wraps the app with DevicePreview
-      locale: DevicePreview.locale(
-          context), // Supports locale changes in DevicePreview
-      title: 'Flutter',
+      locale: DevicePreview.locale(context), // Supports locale changes in DevicePreview
+      title: 'PlantCare Hubs',
       theme: ThemeData(
         primarySwatch: Colors.blueGrey,
       ),
@@ -52,9 +64,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Define pages to navigate to
   final List<Widget> _pages = [
-    const ProfilePage(),
-    const notification(),
-    const Register2Widget(),
+    Register4Widget(),
+    TentPage(name: 'deviceId'),
+    AddDevicePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -90,11 +102,9 @@ class _MyHomePageState extends State<MyHomePage> {
                   Text(
                     'PlantCare Hubs',
                     style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                      fontSize:
-                          mediaQuery.size.width * 0.07, // Responsive font size
+                      fontWeight: FontWeight.w500,
+                      fontSize: mediaQuery.size.width * 0.07, // Responsive font size
                       letterSpacing: 0.0,
-                     // fontWeight: FontWeight.normal,
                     ),
                   ),
                 ],
@@ -103,79 +113,51 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           Padding(
             padding: EdgeInsetsDirectional.fromSTEB(
-                0, mediaQuery.size.height * 0.15, 0, 5),
-            child: ListView(
-              padding: EdgeInsets.zero,
-              shrinkWrap: true,
-              scrollDirection: Axis.vertical,
-              children: [
-                Padding(
-                  padding: EdgeInsetsDirectional.fromSTEB(
-                      0, mediaQuery.size.height * 0.02, 0, 0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      TentCard(
-                        tentName: 'TENTNAME',
-                        icon: Icons.wifi_off,
-                        iconColor: Colors.red,
-                        status: 'Critical',
-                        onTap: () {
-                          // Add your action here
-                          print('First Tent tapped!');
-                        },
-                      ),
-                      SizedBox(width: mediaQuery.size.width * 0.02),
-                      TentCard(
-                        tentName: 'TENTNAME',
-                        icon: Icons.wifi_outlined,
-                        iconColor: Colors.green,
-                        status: 'Critical',
-                        onTap: () {
-                          // Add your action here
-                          print('Second Tent tapped!');
-                        },
-                      ),
-                    ],
+              10, mediaQuery.size.height * 0.15, 0, 5),
+            child: Consumer<DeviceManager>(
+              builder: (context, deviceManager, child) {
+                // Ensure that the device box is loaded and available
+                if (deviceManager.deviceBox == null) {
+                  return Center(child: CircularProgressIndicator()); // Wait for initialization
+                }
+
+                if (deviceManager.devices.isEmpty) {
+                  return Center(child: Text('Please add a device.'));
+                }
+
+                return GridView.builder(
+                  padding: EdgeInsets.zero,
+                  shrinkWrap: true,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2, // Two columns
+                    crossAxisSpacing: mediaQuery.size.width * 0.01, // Horizontal spacing
+                    mainAxisSpacing: mediaQuery.size.height * 0.001, // Vertical spacing
                   ),
-                ),
-                Padding(
-                  padding: EdgeInsetsDirectional.fromSTEB(
-                      0, mediaQuery.size.height * 0.01, 0, 0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.max,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      TentCard(
-                        tentName: 'Room One',
-                        icon: Icons.wifi_off,
-                        iconColor: Colors.red,
-                        status: 'Critical',
+                  itemCount: deviceManager.devices.length,
+                  itemBuilder: (context, index) {
+                    var device = deviceManager.devices[index];
+                    return Padding(
+                      padding: EdgeInsetsDirectional.fromSTEB(0, mediaQuery.size.height * 0.02, 10, 0),
+                      child: TentCard(
+                        tentName: device['name'],
+                        icon: Icons.portable_wifi_off,
+                        iconColor: Colors.green,
+                        status: device['id'],
+                        name: device['name'],
+                
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  TentPage(), // Replace with your target page
+                              builder: (context) => TentPage(name: device['name'] ?? ''),
                             ),
                           );
                         },
                       ),
-                      SizedBox(width: mediaQuery.size.width * 0.02),
-                      TentCard(
-                        tentName: 'TENTNAME',
-                        icon: Icons.wifi_outlined,
-                        iconColor: Colors.green,
-                        status: 'Critical',
-                        onTap: () {
-                          print('Fourth Tent tapped!');
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                    );
+                  },
+                );
+              },
             ),
           ),
         ],
@@ -188,12 +170,78 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
+class DeviceManager extends ChangeNotifier {
+  Box? _deviceBox;  // Use nullable type for _deviceBox
+
+  Box? get deviceBox => _deviceBox;
+
+  List<Map<String, dynamic>> get devices {
+    if (_deviceBox != null && _deviceBox!.isOpen) {
+      return _deviceBox!.values.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    }
+    return [];
+  }
+
+  DeviceManager() {
+    _initHive();
+  }
+
+  Future<void> _initHive() async {
+    // Initialize Hive
+    await Hive.initFlutter();
+
+    // Open the box for dynamic type storage
+    _deviceBox = await Hive.openBox('devices');
+    notifyListeners();
+  }
+
+  void onDeviceConnectionStatusChange(String deviceId, bool isOnline) {
+    final device = _deviceBox?.get(deviceId);
+
+    if (device != null) {
+      // Update the status based on the connection state
+      device['status'] = isOnline ? 'online' : 'offline';
+
+      // Save the updated device status
+      _deviceBox?.put(device['id'], device);
+      notifyListeners();
+    }
+  }
+ // Retrieve the ID for a given device name
+  String? getDeviceIdByName(String name) {
+    final device = _deviceBox?.get(name); // Lookup by name
+    return device != null ? device['id'] as String? : null; // Return the ID if found
+  }
+  void addDevice(String name) {
+    // Create a device object
+    final device = {
+      'id': DateTime.now().toString(),
+      'name': name,
+      'status': 'offline',
+    };
+
+    // Save the device into the Hive box
+    _deviceBox?.put(device['name'], device);
+    notifyListeners();
+  }
+
+  void removeDevice(String id) {
+    // Remove the device by its ID
+    _deviceBox?.delete(id);
+    notifyListeners();
+  }
+}
+
+
+
 class TentCard extends StatelessWidget {
   final String tentName;
   final IconData icon;
   final Color iconColor;
   final String status;
-  final VoidCallback onTap; // Add an onTap callback
+  //final String id;
+  final String name;
+  final VoidCallback onTap;
 
   const TentCard({
     Key? key,
@@ -201,29 +249,30 @@ class TentCard extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.status,
-    required this.onTap, // Require an onTap callback
+    //required this.id,
+    required this.name,
+    required this.onTap,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     var mediaQuery = MediaQuery.of(context);
     return GestureDetector(
-      // Wrap in GestureDetector
-      onTap: onTap, // Handle the tap action
+      onTap: onTap,
       child: Container(
         width: mediaQuery.size.width * 0.46,
         height: mediaQuery.size.width * 0.46,
-       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color.fromARGB(255, 6, 94, 135), // Dark cyan-purple blend
-            Color.fromARGB(255, 84, 90, 95), // Complementary color
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color.fromARGB(255, 6, 94, 135),
+              Color.fromARGB(255, 84, 90, 95),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
         ),
-        borderRadius: BorderRadius.circular(16),
-      ),
         child: Stack(
           children: [
             Align(
@@ -233,8 +282,7 @@ class TentCard extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
                   color: Theme.of(context).scaffoldBackgroundColor,
-                  fontSize:
-                      mediaQuery.size.width * 0.06, // Responsive font size
+                  fontSize: mediaQuery.size.width * 0.06,
                 ),
               ),
             ),
@@ -243,18 +291,17 @@ class TentCard extends StatelessWidget {
               child: Icon(
                 icon,
                 color: iconColor,
-                size: mediaQuery.size.width * 0.09, // Responsive icon size
+                size: mediaQuery.size.width * 0.09,
               ),
             ),
             Align(
               alignment: const AlignmentDirectional(-0.09, 0.63),
               child: Text(
-                status,
+                name,
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
                   color: Theme.of(context).scaffoldBackgroundColor,
-                  fontSize:
-                      mediaQuery.size.width * 0.06, // Responsive font size
+                  fontSize: mediaQuery.size.width * 0.06,
                 ),
               ),
             ),
