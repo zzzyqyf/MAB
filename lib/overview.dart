@@ -106,7 +106,7 @@ class _TentPageState extends State<TentPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-    builder: (context) => TentSettingsWidget(name: widget.id), // Pass deviceId
+    builder: (context) => TentSettingsWidget(id: widget.id), // Pass deviceId
                               ),
                             );
                           },

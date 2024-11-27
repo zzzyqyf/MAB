@@ -121,7 +121,7 @@ class _NameWidgetState extends State<NameWidget> {
                   Navigator.pop(context);  // Close current page
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const TentSettingsWidget(name: '',)),
+                    MaterialPageRoute(builder: (context) => const TentSettingsWidget(id: '',)),
                   );
                 }
               }

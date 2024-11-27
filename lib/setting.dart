@@ -9,9 +9,9 @@ import 'package:provider/provider.dart';
 import 'basePage.dart';
 
 class TentSettingsWidget extends StatefulWidget {
-  final String name; // Add deviceId as a parameter
+  final String id; // Add deviceId as a parameter
 
-  const TentSettingsWidget({super.key, required this.name}); // Accept deviceId in the constructor
+  const TentSettingsWidget({super.key, required this.id}); // Accept deviceId in the constructor
 
   @override
   State<TentSettingsWidget> createState() => _TentSettingsWidgetState();
@@ -161,7 +161,7 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                   fontSizeSubtitle: fontSizeSubtitle,
                   onTap: () {
                     // Show the pop-up dialog when tapped
-      _showDeleteDialog(context, widget.name); // Pass deviceId to the dialog
+      _showDeleteDialog(context, widget.id); // Pass deviceId to the dialog
                   },
                 ),
               ),
@@ -199,7 +199,7 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
 
 // warning pop-up dialog
 class _showDeleteDialog {
-  _showDeleteDialog(BuildContext context, String name) {
+  _showDeleteDialog(BuildContext context, String id) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -224,11 +224,11 @@ class _showDeleteDialog {
             TextButton(
               onPressed: () {
                 // Perform delete action here
-               deleteDevice(name); // Call the delete method with deviceId
+               deleteDevice(id); // Call the delete method with deviceId
 
               Navigator.of(context).pop(); 
                 Provider.of<DeviceManager>(context, listen: false)
-                      .removeDevice(name);
+                      .removeDevice(id);
                   Navigator.pop(context);
                   // Close the dialog after delete
               },
