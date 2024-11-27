@@ -224,9 +224,9 @@ class _showDeleteDialog {
             TextButton(
               onPressed: () {
                 // Perform delete action here
-                deleteDevice(name); // Call the delete method with deviceId
+               deleteDevice(name); // Call the delete method with deviceId
 
-               Navigator.of(context).pop(); 
+              Navigator.of(context).pop(); 
                 Provider.of<DeviceManager>(context, listen: false)
                       .removeDevice(name);
                   Navigator.pop(context);

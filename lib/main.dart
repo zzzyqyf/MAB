@@ -64,7 +64,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Define pages to navigate to
   final List<Widget> _pages = [
-    Register4Widget(),
+    Register4Widget(id: '',),
     TentPage(name: 'deviceId'),
     AddDevicePage(),
   ];

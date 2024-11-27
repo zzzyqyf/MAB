@@ -10,7 +10,8 @@ import 'package:provider/provider.dart';
 //import 'test.dart'; // Import your DeviceManager
 
 class Register4Widget extends StatefulWidget {
-  const Register4Widget({Key? key}) : super(key: key);
+  final String id;
+  const Register4Widget({Key? key, required this.id}) : super(key: key);
 
   @override
   State<Register4Widget> createState() => _Register4WidgetState();
@@ -184,14 +185,14 @@ class _Register4WidgetState extends State<Register4Widget> {
   final deviceManager = Provider.of<DeviceManager>(context, listen: false);
 
   // Check if the device already exists by name
-  String? existingId = deviceManager.getDeviceIdByName(ssid);
+  String? existingId = deviceManager.getDeviceIdByName(widget.id);
 
   if (existingId != null) {
     print("Device ID for device '$ssid' exists: $existingId");
   } else {
     print("Device ID for device '$ssid' does not exist. Adding a new device.");
     // Add device if not found
-    deviceManager.addDevice(ssid);
+    deviceManager.addDevice(widget.id);
   }
 
   // Navigate to the next screen
