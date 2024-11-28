@@ -161,7 +161,7 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                   fontSizeSubtitle: fontSizeSubtitle,
                   onTap: () {
                     // Show the pop-up dialog when tapped
-      _showDeleteDialog(context, widget.id); // Pass deviceId to the dialog
+DeleteDialog.show(context, widget.id);
                   },
                 ),
               ),
@@ -198,8 +198,8 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
 }
 
 // warning pop-up dialog
-class _showDeleteDialog {
-  _showDeleteDialog(BuildContext context, String id) {
+class DeleteDialog {
+  static void show(BuildContext context, String id) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -207,43 +207,38 @@ class _showDeleteDialog {
           title: const Row(
             children: [
               Icon(Icons.warning_amber_rounded, color: Colors.red),
-              SizedBox(width: 30),
-              Text('Delete Tent'),
+              SizedBox(width: 8),
+              Text('Delete Device'),
             ],
           ),
           content: const Text(
-              'Are you sure you want to delete this tent? This action cannot be undone.'),
+              'Are you sure you want to delete this device? This action cannot be undone.'),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Close the dialog
               },
-              child: const Text('Cancel',
-                  style: TextStyle(color: Color.fromARGB(255, 80, 139, 194))),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Color.fromARGB(255, 80, 139, 194)),
+              ),
             ),
             TextButton(
               onPressed: () {
                 // Perform delete action here
-               deleteDevice(id); // Call the delete method with deviceId
-
-              Navigator.of(context).pop(); 
                 Provider.of<DeviceManager>(context, listen: false)
-                      .removeDevice(id);
-                  Navigator.pop(context);
-                  // Close the dialog after delete
+                    .removeDeviceById(id); // Remove the device using DeviceManager
+                Navigator.of(context).pop(); // Close the dialog
               },
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.red),
+              ),
             ),
           ],
         );
       },
     );
-  }
-
-  // Method to delete the device from Hive (or your storage)
-  void deleteDevice(String name) {
-    final deviceBox = Hive.box('deviceBox');
-    deviceBox.delete(name);  // Delete the device from Hive using the deviceId
   }
 }
 

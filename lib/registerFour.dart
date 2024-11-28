@@ -173,7 +173,7 @@ class _Register4WidgetState extends State<Register4Widget> {
                   buttonText: 'Save',
                   padding: 16.0,
                   fontSize: 18.0,
-                 onPressed: () async {
+                onPressed: () async {
   // Retrieve SSID and password
   String ssid = _ssidController.text.trim();
   String password = _passwordController.text.trim();
@@ -183,19 +183,16 @@ class _Register4WidgetState extends State<Register4Widget> {
 
   // Access DeviceManager
   final deviceManager = Provider.of<DeviceManager>(context, listen: false);
-    deviceManager.addDevice(widget.id);
 
-  // Check if the device already exists by name
-  String? existingId = deviceManager.getDeviceIdByName(widget.id);
+  // Check if the device already exists by its ID
+  final existingDevice = deviceManager.getDeviceById(widget.id);
 
-  if (existingId != null) {
-    print("Device ID for device '$ssid' exists: $existingId");
-        deviceManager.addDevice(existingId);
-
+  if (existingDevice != null) {
+    print("Device ID '${widget.id}' exists for device '$ssid': $existingDevice");
   } else {
-    print("Device ID for device '$ssid' does not exist. Adding a new device.");
-    // Add device if not found
-    deviceManager.addDevice(widget.id);
+    print("Device ID '${widget.id}' does not exist. Adding a new device.");
+    // Add the device if not found
+    deviceManager.addDevice(ssid); // Use SSID as the name for the new device
   }
 
   // Navigate to the next screen
@@ -204,6 +201,7 @@ class _Register4WidgetState extends State<Register4Widget> {
     MaterialPageRoute(builder: (context) => const MyApp()), // Replace with your desired screen
   );
 }
+
 
                 ),
               ),

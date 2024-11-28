@@ -149,7 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => TentPage(id: device['name'] ?? ''),
+                              builder: (context) => TentPage(id: device['id'] ?? ''),
                             ),
                           );
                         },
@@ -208,22 +208,30 @@ class DeviceManager extends ChangeNotifier {
     }
   }
  // Retrieve the ID for a given device name
-  String? getDeviceIdByName(String name) {
-    final device = _deviceBox?.get(name); // Lookup by name
-    return device != null ? device['id'] as String? : null; // Return the ID if found
-  }
   void addDevice(String name) {
-    // Create a device object
     final device = {
-      'id': DateTime.now().toString(),
+      'id': DateTime.now().toString(), // Unique identifier
       'name': name,
       'status': 'offline',
     };
-
-    // Save the device into the Hive box
-    _deviceBox?.put(device['name'], device);
+    _deviceBox?.put(device['id'], device); // Store by ID
     notifyListeners();
-  }
+}
+
+Map<String, dynamic>? getDeviceById(String id) {
+    return _deviceBox?.get(id); // Retrieve by ID
+}
+
+List<Map<String, dynamic>> getAllDevices() {
+    if (_deviceBox == null) return [];
+    return _deviceBox!.values.cast<Map<String, dynamic>>().toList();
+}
+
+void removeDeviceById(String id) {
+    _deviceBox?.delete(id); // Remove by ID
+    notifyListeners();
+}
+
 
   void removeDevice(String id) {
     // Remove the device by its ID
