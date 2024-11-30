@@ -228,7 +228,11 @@ class DeleteDialog {
                 // Perform delete action here
                 Provider.of<DeviceManager>(context, listen: false)
                     .removeDeviceById(id); // Remove the device using DeviceManager
-                Navigator.of(context).pop(); // Close the dialog
+                Navigator.of(context).pop();
+                Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (context) => const MyApp()), // Replace with your desired screen
+  ); // Close the dialog
               },
               child: const Text(
                 'Delete',

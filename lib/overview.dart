@@ -6,42 +6,47 @@ import 'ProfilePage.dart';
 import 'mqttservice.dart';
 import 'notification.dart';
 import 'setting.dart';
+import 'package:flutter/material.dart';
 
 class TentPage extends StatefulWidget {
-  final String id;  // Device ID passed to this page
+  final String id; // Unique device ID
 
-  // Constructor to accept deviceId
-  const TentPage({super.key,  required this.id});
+  TentPage({required this.id});
 
   @override
   _TentPageState createState() => _TentPageState();
 }
 
 class _TentPageState extends State<TentPage> {
+  late MqttService mqttService;
   double? temperature;
   double? humidity;
   int? lightState;
-
-  late MqttService mqttService;
+  bool isConnected = false;
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize MqttService with the specific deviceId
-    mqttService = MqttService(onDataReceived: (temp, hum, light) {
-      setState(() {
-        temperature = temp;
-        humidity = hum;
-        lightState = light;
-      });
-    }, onDeviceConnectionStatusChange: (String , bool ) { 
+    // Initialize the MQTT service
+    mqttService = MqttService(
+      id: widget.id,
+      onDataReceived: (double? temp, double? hum, int? light) {
+        setState(() {
+          temperature = temp;
+          humidity = hum;
+          lightState = light;
+        });
+      },
+      onConnectionStatusChange: (bool status) {
+        setState(() {
+          isConnected = status;
+        });
+      }, onDeviceConnectionStatusChange: (String, bool) {  },
+    );
 
-      
-     });
-
-    // Setup MQTT client based on the deviceId
-   // mqttService.setupMqttClient(deviceId: widget.deviceId);
+    // Set up the MQTT client
+    mqttService.setupMqttClient();
   }
 
   @override

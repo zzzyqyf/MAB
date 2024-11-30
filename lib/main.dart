@@ -142,7 +142,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         tentName: device['name'],
                         icon: Icons.portable_wifi_off,
                         iconColor: Colors.green,
-                        status: device['id'],
+                        status: device['status'],
                         name: device['name'],
                 
                         onTap: () {
@@ -286,7 +286,7 @@ class TentCard extends StatelessWidget {
             Align(
               alignment: const AlignmentDirectional(-0.40, -0.5),
               child: Text(
-                tentName,
+                status,
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
                   color: Theme.of(context).scaffoldBackgroundColor,

@@ -1,11 +1,12 @@
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
-import 'main.dart';
 
 class MqttService {
   final String mqttBroker = 'broker.mqtt.cool';
   final int mqttPort = 1883;
   late MqttServerClient client;
+
+  final String id; // Unique device ID
 
   double? temperature;
   double? humidity;
@@ -15,15 +16,16 @@ class MqttService {
   final Function(double?, double?, int?) onDataReceived;
 
   // Callback to notify about device connection status changes
-  final Function(String, bool) onDeviceConnectionStatusChange;
+  final Function(bool) onConnectionStatusChange;
 
   MqttService({
+    required this.id,
     required this.onDataReceived,
-    required this.onDeviceConnectionStatusChange, // Add this line
+    required this.onConnectionStatusChange, required Null Function(dynamic String, dynamic bool) onDeviceConnectionStatusChange,
   });
 
   // Step 1: Initialize and configure the MQTT client
-  Future<void> setupMqttClient(String deviceId) async {
+  Future<void> setupMqttClient() async {
     client = MqttServerClient(mqttBroker, '');
     client.port = mqttPort;
     client.logging(on: true);
@@ -32,9 +34,9 @@ class MqttService {
     client.onDisconnected = onDisconnected;
 
     final connMessage = MqttConnectMessage()
-        .withClientIdentifier('FlutterClient')
-        .withWillTopic('willtopic') // Used for last will message
-        .withWillMessage('Device disconnected unexpectedly')
+        .withClientIdentifier('FlutterClient_$id')
+        .withWillTopic('willtopic')
+        .withWillMessage('Device $id disconnected unexpectedly')
         .startClean()
         .withWillQos(MqttQos.atLeastOnce);
 
@@ -51,16 +53,14 @@ class MqttService {
     if (client.connectionStatus!.state == MqttConnectionState.connected) {
       print('Connected to MQTT broker');
       subscribeToTopics();
-      // Update device status to online
-      onDeviceConnectionStatusChange(deviceId, true);
+      onConnectionStatusChange(true); // Notify UI about connection status
     } else {
       print('Failed to connect to MQTT broker');
-      // Update device status to offline
-      onDeviceConnectionStatusChange(deviceId, false);
+      onConnectionStatusChange(false); // Notify UI about connection failure
     }
   }
 
-  // Step 2: Subscribe to necessary topics after confirming connection
+  // Step 2: Subscribe to necessary topics
   void subscribeToTopics() {
     client.subscribe('esp32/temperature', MqttQos.atLeastOnce);
     client.subscribe('esp32/humidity', MqttQos.atLeastOnce);
@@ -71,7 +71,6 @@ class MqttService {
       final message =
           MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
 
-      // Update state variables based on topic
       if (c[0].topic == 'esp32/temperature') {
         temperature = double.tryParse(message);
       } else if (c[0].topic == 'esp32/humidity') {
@@ -88,21 +87,11 @@ class MqttService {
   // Callbacks for connection state
   void onConnected() {
     print('Connected to MQTT broker.');
-    // Here you should pass the correct device ID and true for online status
-    //onDeviceConnectionStatusChange('deviceId', true);  // Example device ID
   }
 
   void onDisconnected() {
-    print('Disconnected from the MQTT broker.');
-    // Here you should pass the correct device ID and false for offline status
-   // onDeviceConnectionStatusChange('device_123', false);  // Example device ID
-  }
-
-  // Publish message to a control topic
-  void sendMessage(String message) {
-    final builder = MqttClientPayloadBuilder();
-    builder.addString(message);
-    client.publishMessage('esp32/control', MqttQos.exactlyOnce, builder.payload!);
+    print('Disconnected from MQTT broker.');
+    onConnectionStatusChange(false); // Notify about disconnection
   }
 
   void dispose() {

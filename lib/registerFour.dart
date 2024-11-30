@@ -192,7 +192,7 @@ class _Register4WidgetState extends State<Register4Widget> {
   } else {
     print("Device ID '${widget.id}' does not exist. Adding a new device.");
     // Add the device if not found
-    deviceManager.addDevice(ssid); // Use SSID as the name for the new device
+    deviceManager.addDevice(widget.id); // Use SSID as the name for the new device
   }
 
   // Navigate to the next screen
