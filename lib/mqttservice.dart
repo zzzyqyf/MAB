@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 
@@ -12,19 +14,23 @@ class MqttService {
   double? humidity;
   int? lightState;
 
+  // Tracking the last received time for each device
+  final Map<String, DateTime> _lastReceivedTimestamps = {};
+  final Map<String, bool> _dataReceivedMap = {};
+
   // Callback to notify the UI about new data
   final Function(double?, double?, int?) onDataReceived;
 
-  // Callback to notify about device connection status changes
-  final Function(bool) onConnectionStatusChange;
+  // Callback to notify about device's status (online/offline)
+  final Function(String, bool) onDeviceConnectionStatusChange;
 
   MqttService({
     required this.id,
     required this.onDataReceived,
-    required this.onConnectionStatusChange, required Null Function(dynamic String, dynamic bool) onDeviceConnectionStatusChange,
+    required this.onDeviceConnectionStatusChange, required Null Function(dynamic isConnected) onConnectionStatusChange,
   });
 
-  // Step 1: Initialize and configure the MQTT client
+  // Initialize and configure the MQTT client
   Future<void> setupMqttClient() async {
     client = MqttServerClient(mqttBroker, '');
     client.port = mqttPort;
@@ -47,20 +53,18 @@ class MqttService {
     } catch (e) {
       print('Connection exception: $e');
       client.disconnect();
+      return;
     }
 
-    // Check if connected, then subscribe to topics
     if (client.connectionStatus!.state == MqttConnectionState.connected) {
       print('Connected to MQTT broker');
       subscribeToTopics();
-      onConnectionStatusChange(true); // Notify UI about connection status
     } else {
       print('Failed to connect to MQTT broker');
-      onConnectionStatusChange(false); // Notify UI about connection failure
     }
   }
 
-  // Step 2: Subscribe to necessary topics
+  // Subscribe to necessary topics for receiving data
   void subscribeToTopics() {
     client.subscribe('esp32/temperature', MqttQos.atLeastOnce);
     client.subscribe('esp32/humidity', MqttQos.atLeastOnce);
@@ -68,8 +72,7 @@ class MqttService {
 
     client.updates!.listen((List<MqttReceivedMessage<MqttMessage>> c) {
       final recMess = c[0].payload as MqttPublishMessage;
-      final message =
-          MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+      final message = MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
 
       if (c[0].topic == 'esp32/temperature') {
         temperature = double.tryParse(message);
@@ -79,9 +82,27 @@ class MqttService {
         lightState = int.tryParse(message);
       }
 
+      // Update data received timestamp for the device
+      _lastReceivedTimestamps[id] = DateTime.now();
+
       // Notify the UI with the new data
       onDataReceived(temperature, humidity, lightState);
+      _dataReceivedMap[id] = true;
     });
+  }
+
+  // Check if data was received within the last X seconds
+  bool isDataReceived(String deviceId) {
+    final lastDataTime = _lastReceivedTimestamps[deviceId];
+    if (lastDataTime == null) return false;
+
+    final now = DateTime.now();
+    return now.difference(lastDataTime).inSeconds <= 10; // Adjust timeout as needed
+  }
+
+  // Reset the data received state for the specified device
+  void resetDataReceived(String deviceId) {
+    _dataReceivedMap[deviceId] = false; // Reset the flag when needed
   }
 
   // Callbacks for connection state
@@ -91,9 +112,9 @@ class MqttService {
 
   void onDisconnected() {
     print('Disconnected from MQTT broker.');
-    onConnectionStatusChange(false); // Notify about disconnection
   }
 
+  // Dispose and clean up resources
   void dispose() {
     client.disconnect();
   }

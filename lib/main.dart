@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter_application_final/Navbar.dart';
 import 'package:flutter_application_final/mqttTests/MQTT.dart';
+import 'package:flutter_application_final/mqttservice.dart';
 import 'package:flutter_application_final/one.dart';
 import 'package:flutter_application_final/overview.dart';
 import 'package:flutter_application_final/registerFour.dart';
@@ -169,9 +172,11 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
-
 class DeviceManager extends ChangeNotifier {
-  Box? _deviceBox;  // Use nullable type for _deviceBox
+  Box? _deviceBox;
+  MqttService? _mqttService;
+
+  final Map<String, Timer> _inactivityTimers = {}; // Track inactivity timers for each device
 
   Box? get deviceBox => _deviceBox;
 
@@ -187,59 +192,144 @@ class DeviceManager extends ChangeNotifier {
   }
 
   Future<void> _initHive() async {
-    // Initialize Hive
     await Hive.initFlutter();
-
-    // Open the box for dynamic type storage
     _deviceBox = await Hive.openBox('devices');
     notifyListeners();
   }
 
-  void onDeviceConnectionStatusChange(String deviceId, bool isOnline) {
+  void _initMqtt(String deviceId) {
+    _mqttService = MqttService(
+      id: deviceId,
+      onDataReceived: (temperature, humidity, lightState) {
+        print("Data received: Temp=$temperature, Humidity=$humidity, Light=$lightState");
+
+        // Check if the device was previously offline, and if so, mark it online
+        final device = _deviceBox?.get(deviceId);
+        if (device != null && device['status'] == 'offline') {
+          onDeviceConnectionStatusChange(deviceId, 'online');
+        }
+
+      },
+      onDeviceConnectionStatusChange: (deviceId, isOnline) {
+        onDeviceConnectionStatusChange(deviceId, isOnline ? 'online' : 'offline');
+      }, onConnectionStatusChange: (isConnected) {  },
+    );
+    _mqttService?.setupMqttClient();
+  }
+
+  void onDeviceConnectionStatusChange(String deviceId, String newStatus) {
     final device = _deviceBox?.get(deviceId);
 
-    if (device != null) {
-      // Update the status based on the connection state
-      device['status'] = isOnline ? 'online' : 'offline';
-
-      // Save the updated device status
-      _deviceBox?.put(device['id'], device);
+    if (device != null && device['status'] != newStatus) {
+      device['status'] = newStatus;
+      _deviceBox?.put(deviceId, device);
       notifyListeners();
     }
   }
- // Retrieve the ID for a given device name
+
   void addDevice(String name) {
+    final deviceId = DateTime.now().toString();
     final device = {
-      'id': DateTime.now().toString(), // Unique identifier
+      'id': deviceId,
       'name': name,
-      'status': 'offline',
+      'status': 'connecting', // Initial intermediate status
     };
-    _deviceBox?.put(device['id'], device); // Store by ID
+    _deviceBox?.put(deviceId, device);
     notifyListeners();
+
+    _initMqtt(deviceId);
+
+    // Start a timeout for connecting status
+    Timer(Duration(seconds: 10), () {
+    final device = _deviceBox?.get(deviceId);
+    if (device != null && device['status'] == 'connecting') {
+      // If the device is still connecting after 10 seconds, check if data was received
+      // If data is received after this timeout, mark it as online
+      if (_mqttService?.isDataReceived(deviceId) ?? false) { // Assuming a method `isDataReceived` to check if data was received
+        onDeviceConnectionStatusChange(deviceId, 'online');
+      } else {
+        onDeviceConnectionStatusChange(deviceId, 'offline');
+             _startPeriodicStatusCheck(deviceId);
+ // Mark as offline if not connected within 10 seconds
+      }
+    }
+  });
+  }
+
+
+void _startPeriodicStatusCheck(String deviceId) {
+  int retryCount = 0; // Track the number of retries
+
+  _inactivityTimers[deviceId] = Timer.periodic(Duration(seconds: 10), (timer) {
+    final device = _deviceBox?.get(deviceId);
+
+    if (device != null) {
+      final currentStatus = device['status'];
+      final isDataReceived = _mqttService?.isDataReceived(deviceId) ?? false;
+
+      if (currentStatus == 'offline') {
+        print("Device $deviceId is still offline. Checking again in 10 seconds.");
+                  print(isDataReceived);
+
+        retryCount++;
+
+        if (isDataReceived) {
+          // Data received, mark the device as online
+          onDeviceConnectionStatusChange(deviceId, 'online');
+          retryCount = 0; // Reset retry count
+        } else if (retryCount >= 5) {
+          print("Device $deviceId has been offline for too long. Taking action.");
+          retryCount = 0; // Reset after action
+        }
+      } else if (currentStatus == 'online') {
+        print("Device $deviceId is online. Continuing to monitor.");
+                  print(isDataReceived);
+
+
+        if (!isDataReceived) {
+          // No data received, mark the device as offline
+          onDeviceConnectionStatusChange(deviceId, 'offline');
+        }
+
+        retryCount = 0; 
+                _mqttService?.resetDataReceived(deviceId); // Reset flag after processing
+// Reset retry count since the device is online
+      }
+    } else {
+      print("Device not found: $deviceId");
+      timer.cancel(); // Stop monitoring if the device is not found
+    }
+  });
 }
 
-Map<String, dynamic>? getDeviceById(String id) {
-    return _deviceBox?.get(id); // Retrieve by ID
-}
 
-List<Map<String, dynamic>> getAllDevices() {
+
+  void stopPeriodicStatusCheck(String deviceId) {
+    // Cancel the periodic timer when the device is no longer needed for checking
+    _inactivityTimers[deviceId]?.cancel();
+  }
+
+  Map<String, dynamic>? getDeviceById(String id) {
+    return _deviceBox?.get(id);
+  }
+
+  List<Map<String, dynamic>> getAllDevices() {
     if (_deviceBox == null) return [];
     return _deviceBox!.values.cast<Map<String, dynamic>>().toList();
-}
+  }
 
-void removeDeviceById(String id) {
-    _deviceBox?.delete(id); // Remove by ID
-    notifyListeners();
-}
+  void removeDeviceById(String id) {
+    _inactivityTimers[id]?.cancel(); // Cancel the timer for the removed device
+    _inactivityTimers.remove(id);
 
-
-  void removeDevice(String id) {
-    // Remove the device by its ID
     _deviceBox?.delete(id);
     notifyListeners();
   }
-}
 
+  void removeDevice(String id) {
+    removeDeviceById(id); // Call the unified remove logic
+  }
+}
 
 
 class TentCard extends StatelessWidget {
@@ -247,7 +337,6 @@ class TentCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final String status;
-  //final String id;
   final String name;
   final VoidCallback onTap;
 
@@ -257,7 +346,6 @@ class TentCard extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     required this.status,
-    //required this.id,
     required this.name,
     required this.onTap,
   }) : super(key: key);
@@ -265,6 +353,27 @@ class TentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var mediaQuery = MediaQuery.of(context);
+
+    // Define icon and color based on the status
+    IconData statusIcon;
+    Color statusIconColor;
+
+    switch (status) {
+      case 'online':
+        statusIcon = Icons.check_circle;
+        statusIconColor = Colors.green;
+        break;
+      case 'offline':
+        statusIcon = Icons.error;
+        statusIconColor = Colors.red;
+        break;
+      case 'connecting':
+      default:
+        statusIcon = Icons.sync;
+        statusIconColor = Colors.orange;
+        break;
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -285,13 +394,24 @@ class TentCard extends StatelessWidget {
           children: [
             Align(
               alignment: const AlignmentDirectional(-0.40, -0.5),
-              child: Text(
-                status,
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  fontSize: mediaQuery.size.width * 0.06,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    statusIcon,
+                    color: statusIconColor,
+                    size: mediaQuery.size.width * 0.05,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    status.toUpperCase(),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      fontSize: mediaQuery.size.width * 0.05,
+                    ),
+                  ),
+                ],
               ),
             ),
             Align(

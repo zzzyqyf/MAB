@@ -22,7 +22,7 @@ class _TentPageState extends State<TentPage> {
   double? temperature;
   double? humidity;
   int? lightState;
-  bool isConnected = false;
+  //bool? isConnected;
 
   @override
   void initState() {
@@ -34,15 +34,18 @@ class _TentPageState extends State<TentPage> {
       onDataReceived: (double? temp, double? hum, int? light) {
         setState(() {
           temperature = temp;
-          humidity = hum;
+          humidity = hum; 
           lightState = light;
         });
       },
-      onConnectionStatusChange: (bool status) {
+   /*  onConnectionStatusChange: (bool ? status) {
         setState(() {
           isConnected = status;
         });
-      }, onDeviceConnectionStatusChange: (String, bool) {  },
+      }, */
+      onDeviceConnectionStatusChange: (String, bool) { 
+        
+       }, onConnectionStatusChange: (isConnected) {  },
     );
 
     // Set up the MQTT client
@@ -158,8 +161,11 @@ class _TentPageState extends State<TentPage> {
                           icon: Icons.lightbulb_outline,
                           iconColor: Colors.yellow,
                           title: 'Light Intensity',
-                          value: '${lightState == 1 ? 'High' : 'Low'} ',
-                        ),
+                          value:  'Connection:'
+                       //   ${isConnected == true ? 'Connected' : 'Disconnected'}'
+                       ),
+
+                        
                       ],
                     ),
                   ),
