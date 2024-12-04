@@ -192,10 +192,23 @@ class DeviceManager extends ChangeNotifier {
   }
 
   Future<void> _initHive() async {
-    await Hive.initFlutter();
-    _deviceBox = await Hive.openBox('devices');
-    notifyListeners();
+  await Hive.initFlutter();
+  _deviceBox = await Hive.openBox('devices');
+
+  // Ensure the devices' statuses are loaded correctly
+  if (_deviceBox != null) {
+    for (var device in _deviceBox!.values) {
+      final deviceId = device['id'];
+      final status = device['status'] ?? 'offline';
+      onDeviceConnectionStatusChange(deviceId, status); 
+            _startPeriodicStatusCheck(deviceId); // Start checking the status periodically
+// Update status
+    }
   }
+
+  notifyListeners();
+}
+
 
   void _initMqtt(String deviceId) {
     _mqttService = MqttService(
@@ -212,7 +225,7 @@ class DeviceManager extends ChangeNotifier {
       },
       onDeviceConnectionStatusChange: (deviceId, isOnline) {
         onDeviceConnectionStatusChange(deviceId, isOnline ? 'online' : 'offline');
-      }, onConnectionStatusChange: (isConnected) {  },
+      }, //onConnectionStatusChange: (isConnected) {  },
     );
     _mqttService?.setupMqttClient();
   }
@@ -229,9 +242,11 @@ class DeviceManager extends ChangeNotifier {
 
   void addDevice(String name) {
     final deviceId = DateTime.now().toString();
+      final initialName = name.isEmpty ? 'Unnamed Device' : name; // Set a default name if empty
+
     final device = {
       'id': deviceId,
-      'name': name,
+      'name': initialName,
       'status': 'connecting', // Initial intermediate status
     };
     _deviceBox?.put(deviceId, device);
@@ -255,6 +270,16 @@ class DeviceManager extends ChangeNotifier {
     }
   });
   }
+
+  void updateDeviceName(String deviceId, String newName) {
+  final device = _deviceBox?.get(deviceId); // Retrieve the device by its ID
+  if (device != null) {
+    device['name'] = newName; // Update the name
+    _deviceBox?.put(deviceId, device); // Save the updated device back in the storage
+    notifyListeners(); // Notify listeners about the update
+  }
+}
+
 
 
 void _startPeriodicStatusCheck(String deviceId) {
@@ -301,8 +326,6 @@ void _startPeriodicStatusCheck(String deviceId) {
     }
   });
 }
-
-
 
   void stopPeriodicStatusCheck(String deviceId) {
     // Cancel the periodic timer when the device is no longer needed for checking

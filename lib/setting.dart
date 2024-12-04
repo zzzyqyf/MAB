@@ -9,9 +9,9 @@ import 'package:provider/provider.dart';
 import 'basePage.dart';
 
 class TentSettingsWidget extends StatefulWidget {
-  final String id; // Add deviceId as a parameter
+  final String deviceId; // Device ID passed from the parent widget (main class)
 
-  const TentSettingsWidget({super.key, required this.id}); // Accept deviceId in the constructor
+   TentSettingsWidget({super.key, required this.deviceId}); // Accept deviceId in the constructor
 
   @override
   State<TentSettingsWidget> createState() => _TentSettingsWidgetState();
@@ -32,11 +32,14 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
     final fontSizeTitle = screenSize.width * 0.05;
     final fontSizeSubtitle = screenSize.width * 0.045;
     final verticalSpacing = screenSize.height * 0.02;
+                      final deviceId = widget.deviceId; // Get the deviceId passed in
+
         //final screenWidth = MediaQuery.of(context).size.width;
 
     //final screenWidth = MediaQuery.of(context).size.width;
 
     return GestureDetector(
+      
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         key: scaffoldKey,
@@ -105,7 +108,7 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const NameWidget(deviceId: '',)),
+                      MaterialPageRoute(builder: (context) => NameWidget(deviceId: deviceId)),
                     );
                   },
                 ),
@@ -161,7 +164,7 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                   fontSizeSubtitle: fontSizeSubtitle,
                   onTap: () {
                     // Show the pop-up dialog when tapped
-DeleteDialog.show(context, widget.id);
+DeleteDialog.show(context, widget.deviceId);
                   },
                 ),
               ),

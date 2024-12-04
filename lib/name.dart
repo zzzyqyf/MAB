@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/main.dart';
 import 'package:flutter_application_final/setting.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 
 class NameWidget extends StatefulWidget {
@@ -117,11 +119,13 @@ class _NameWidgetState extends State<NameWidget> {
                 if (name.isNotEmpty) {
                   final deviceId = widget.deviceId; // Get the deviceId passed in
                   // Call the existing addDevice method from the main class
-                  _addDeviceFromMainClass(deviceId, name);
+                 
+                  Provider.of<DeviceManager>(context, listen: false). updateDeviceName(deviceId!, name);
+
                   Navigator.pop(context);  // Close current page
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const TentSettingsWidget(id: '',)),
+                    MaterialPageRoute(builder: (context) =>  TentSettingsWidget(deviceId: '',)),
                   );
                 }
               }

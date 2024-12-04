@@ -24,10 +24,13 @@ class MqttService {
   // Callback to notify about device's status (online/offline)
   final Function(String, bool) onDeviceConnectionStatusChange;
 
+  Timer? _dataCheckTimer; 
+  // Timer for periodic checks
+
   MqttService({
     required this.id,
     required this.onDataReceived,
-    required this.onDeviceConnectionStatusChange, required Null Function(dynamic isConnected) onConnectionStatusChange,
+    required this.onDeviceConnectionStatusChange,
   });
 
   // Initialize and configure the MQTT client
@@ -89,6 +92,9 @@ class MqttService {
       onDataReceived(temperature, humidity, lightState);
       _dataReceivedMap[id] = true;
     });
+
+    // Start periodic data check every 5 seconds
+    _dataCheckTimer = Timer.periodic(Duration(seconds: 5), _checkDataReception);
   }
 
   // Check if data was received within the last X seconds
@@ -97,8 +103,24 @@ class MqttService {
     if (lastDataTime == null) return false;
 
     final now = DateTime.now();
-    return now.difference(lastDataTime).inSeconds <= 10; // Adjust timeout as needed
+    return now.difference(lastDataTime).inSeconds <= 10; 
+    // Adjust timeout as needed
   }
+
+  // Method to be called periodically
+  void _checkDataReception(Timer timer) {
+    final isDataReceivedFlag = isDataReceived(id);
+    print("Data received status for device $id: $isDataReceivedFlag");
+
+    if (!isDataReceivedFlag) {
+      // Handle logic when no data is received
+      print("No data received for device $id in the last 10 seconds");
+    } else {
+      // Handle logic when data is received
+      print("Data received for device $id");
+    }
+  }
+  
 
   // Reset the data received state for the specified device
   void resetDataReceived(String deviceId) {
@@ -116,6 +138,8 @@ class MqttService {
 
   // Dispose and clean up resources
   void dispose() {
+    _dataCheckTimer?.cancel(); // Cancel the periodic timer
     client.disconnect();
   }
 }
+

@@ -45,7 +45,7 @@ class _TentPageState extends State<TentPage> {
       }, */
       onDeviceConnectionStatusChange: (String, bool) { 
         
-       }, onConnectionStatusChange: (isConnected) {  },
+       }, //onConnectionStatusChange: (isConnected) {  },
     );
 
     // Set up the MQTT client
@@ -114,7 +114,7 @@ class _TentPageState extends State<TentPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-    builder: (context) => TentSettingsWidget(id: widget.id), // Pass deviceId
+    builder: (context) => TentSettingsWidget(deviceId: widget.id), // Pass deviceId
                               ),
                             );
                           },
@@ -124,7 +124,7 @@ class _TentPageState extends State<TentPage> {
                   ),
                   // Title Text
                   Padding(
-                    padding: EdgeInsetsDirectional.fromSTEB(0, 0.5, 0, screenHeight * 0.05),
+                    padding: EdgeInsetsDirectional.fromSTEB(0, 0.9, 0, screenHeight * 0.05),
                     child: Row(
                       mainAxisSize: MainAxisSize.max,
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -161,14 +161,16 @@ class _TentPageState extends State<TentPage> {
                           icon: Icons.lightbulb_outline,
                           iconColor: Colors.yellow,
                           title: 'Light Intensity',
-                          value:  'Connection:'
+                          value:   '${lightState ?? 'Loading...'} %',
                        //   ${isConnected == true ? 'Connected' : 'Disconnected'}'
                        ),
 
-                        
+
                       ],
                     ),
                   ),
+                        SizedBox(height: mediaQuery.size.width * 0.02),
+
                   // Temperature and Water Level Boxes
                   Padding(
                     padding: EdgeInsets.zero,
