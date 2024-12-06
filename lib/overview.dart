@@ -6,7 +6,7 @@ import 'ProfilePage.dart';
 import 'mqttservice.dart';
 import 'notification.dart';
 import 'setting.dart';
-import 'package:flutter/material.dart';
+//import 'package:flutter/material.dart';
 
 class TentPage extends StatefulWidget {
   final String id; // Unique device ID
@@ -130,7 +130,7 @@ class _TentPageState extends State<TentPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-  'Overview (${widget.id})',
+  ' (${widget.id})',
                           style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                             fontSize: screenWidth * 0.08,
                             fontFamily: 'Outfit',

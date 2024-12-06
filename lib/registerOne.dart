@@ -60,7 +60,7 @@ class _Register2WidgetState extends State<Register2Widget> {
 
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const Register4Widget()),
+                  MaterialPageRoute(builder: (context) => const Register4Widget(id: '',)),
                 );
                       },
       ),

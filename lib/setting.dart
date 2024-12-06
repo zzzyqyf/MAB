@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/deviceMnanger.dart';
 import 'package:flutter_application_final/main.dart';
 import 'package:flutter_application_final/name.dart';
 import 'package:flutter_application_final/soundOption.dart';
@@ -230,7 +231,7 @@ class DeleteDialog {
               onPressed: () {
                 // Perform delete action here
                 Provider.of<DeviceManager>(context, listen: false)
-                    .removeDeviceById(id); // Remove the device using DeviceManager
+                    .removeDevice(id); // Remove the device using DeviceManager
                 Navigator.of(context).pop();
                 Navigator.pushReplacement(
     context,
