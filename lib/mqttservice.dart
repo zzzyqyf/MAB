@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 
@@ -84,7 +85,7 @@ class MqttService {
   bool isDataReceived(String deviceId) {
     final lastDataTime = _lastReceivedTimestamps[deviceId];
     if (lastDataTime == null) return false;
-    return DateTime.now().difference(lastDataTime).inSeconds <= 10;
+    return DateTime.now().difference(lastDataTime).inSeconds <= 20;
   }
 
   void _checkDataReception(Timer timer) {

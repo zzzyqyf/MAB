@@ -34,6 +34,8 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
     final fontSizeSubtitle = screenSize.width * 0.045;
     final verticalSpacing = screenSize.height * 0.02;
                       final deviceId = widget.deviceId; // Get the deviceId passed in
+ final deviceManager = Provider.of<DeviceManager>(context);
+    final disconnectionTime = deviceManager.getDisconnectionTime(deviceId);
 
         //final screenWidth = MediaQuery.of(context).size.width;
 
@@ -85,7 +87,7 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                         const SizedBox(
                             height: 10), // Add space between title and subtitle
                         Text(
-                          'Disconnected at 2PM on 27 AUG',
+                          disconnectionTime,
                           style: TextStyle(
                             fontSize: fontSizeTitle, // Responsive subtitle size
                           ),

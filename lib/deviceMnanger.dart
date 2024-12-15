@@ -3,14 +3,23 @@ import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'mqttservice.dart';
+import 'package:uuid/uuid.dart';
+
 
 class DeviceManager extends ChangeNotifier {
   Box? _deviceBox;
   final Map<String, MqttService> _mqttServices = {};
   final Map<String, Timer> _inactivityTimers = {};
+  final double temperatureThreshold = 40.0;
+  final double humidityThreshold = 20.0;
+  final int criticalDuration = 5; // In seconds
 
+  DateTime? tempThresholdStartTime;
+  DateTime? humidityThresholdStartTime;
+Map<String, dynamic> _sensorData = {};
+  Map<String, dynamic> get sensorData => _sensorData;
   DeviceManager() {
-    _initHive();
+    initHive();
   }
 
   /// Getter to access the raw Hive device box
@@ -34,7 +43,7 @@ class DeviceManager extends ChangeNotifier {
   }
 
   /// Initialize Hive and load devices
-  Future<void> _initHive() async {
+  Future<void> initHive() async {
     await Hive.initFlutter();
     _deviceBox = await Hive.openBox('devices');
 
@@ -51,26 +60,38 @@ class DeviceManager extends ChangeNotifier {
 
   /// Initialize an MQTT service for a specific device
   void _initMqtt(String deviceId) {
-    print("Initializing MqttService for $deviceId");
+  print("Initializing MqttService for $deviceId");
 
-    final mqttService = MqttService(
-      id: deviceId,
-      onDataReceived: (temperature, humidity, lightState) {
-        print("Data received: Temp=$temperature, Humidity=$humidity, Light=$lightState");
-        _markDeviceOnline(deviceId);
-      },
-      onDeviceConnectionStatusChange: (deviceId, status) {
-        _updateDeviceStatus(deviceId, status);
-      },
-    );
+  final mqttService = MqttService(
+    id: deviceId,
+    onDataReceived: (temperature, humidity, lightState) {
+      print("Data received: Temp=$temperature, Humidity=$humidity, Light=$lightState");
 
-    _mqttServices[deviceId] = mqttService;
-    mqttService.setupMqttClient();
-  }
+      _sensorData = {
+        'deviceId': deviceId,
+        'temperature': temperature,
+        'humidity': humidity,
+        'lightState': lightState,
+      };
+      notifyListeners();
+
+      // Update device to 'online' and reset inactivity timer
+      _markDeviceOnline(deviceId);
+      _updateDisconnectionTime(deviceId, DateTime.now(), 'online');
+      monitorSensors(temperature!, humidity!, deviceId);
+    },
+    onDeviceConnectionStatusChange: (deviceId, status) {
+      updateDeviceStatus(deviceId, status);
+    },
+  );
+
+  _mqttServices[deviceId] = mqttService;
+  mqttService.setupMqttClient();
+}
 
   /// Start periodic status checks for the device
-  void _startPeriodicStatusCheck(String deviceId) {
-    _inactivityTimers[deviceId] = Timer.periodic(Duration(seconds: 10), (timer) {
+  void _startPeriodicStatusCheck(String deviceId ) {
+    _inactivityTimers[deviceId] = Timer.periodic(const Duration(seconds: 5), (timer) {
       final mqttService = _mqttServices[deviceId];
       if (mqttService == null) {
         timer.cancel();
@@ -79,13 +100,19 @@ class DeviceManager extends ChangeNotifier {
 
       final isDataReceived = mqttService.isDataReceived(deviceId);
       if (!isDataReceived) {
-        _updateDeviceStatus(deviceId, 'offline');
+        updateDeviceStatus(deviceId, 'offline');
+         displayCriticalStatus("no data",deviceId);
+_updateDisconnectionTime(deviceId, DateTime.now(), 'offline');
+
       }
+
+       // displayCriticalStatus("Critical");
+
     });
   }
 
   /// Update the status of a device
-  void _updateDeviceStatus(String deviceId, String newStatus) {
+  void updateDeviceStatus(String deviceId, String newStatus) {
     final device = _deviceBox?.get(deviceId);
     if (device != null) {
       device['status'] = newStatus;
@@ -93,29 +120,81 @@ class DeviceManager extends ChangeNotifier {
       notifyListeners();
     }
   }
-
+void updateSensorData(Map<String, dynamic> newData) {
+    _sensorData = newData;
+    notifyListeners();
+  }
   /// Mark a device as online
   void _markDeviceOnline(String deviceId) {
-    _updateDeviceStatus(deviceId, 'online');
-  }
+    updateDeviceStatus(deviceId, 'online');
 
+  }
+void monitorSensors( temp,  humidity,String deviceId) {
+    final now = DateTime.now();
+
+    // Check temperature
+    if (temp > temperatureThreshold) {
+      tempThresholdStartTime ??= now; // Set start time if not already set
+      if (now.difference(tempThresholdStartTime!).inSeconds >= criticalDuration) {
+        displayCriticalStatus("Critical ",deviceId);
+      }
+    } else {
+      tempThresholdStartTime = null;
+              displayCriticalStatus("good",deviceId);
+ // Reset if within safe range
+    }
+
+    // Check humidity
+    if (humidity < humidityThreshold) {
+      humidityThresholdStartTime ??= now;
+      if (now.difference(humidityThresholdStartTime!).inSeconds >= criticalDuration) {
+        displayCriticalStatus("Critical",deviceId);
+      }
+    } else {
+      humidityThresholdStartTime = null;
+              displayCriticalStatus("good", deviceId);
+
+    }
+  }
+  void displayCriticalStatus(String sensorType,String deviceId) {
+    final device = _deviceBox?.get(deviceId);
+    if (device != null) {
+      device['sensorStatus'] = sensorType;
+      _deviceBox?.put(deviceId, device);
+      notifyListeners();
+    }
+    print("$sensorType has been in the threshold for $criticalDuration seconds!,");
+    // Update your UI or notification here
+  }
   /// Add a new device
   void addDevice(String name) {
-    final deviceId = DateTime.now().toString();
+    final uuid = Uuid();
+   // final deviceId = DateTime.now().toString();
+
+final deviceId = uuid.v4();  // Generates a random UUID
     final device = {
       'id': deviceId,
       'name': name.isEmpty ? 'Unnamed Device' : name,
       'status': 'connecting',
+      'sensorStatus':'no data',
+      'disconnectionTimeResult':'not connected yet!',
     };
     _deviceBox?.put(deviceId, device);
     notifyListeners();
 
     _initMqtt(deviceId);
 
-    Timer(Duration(seconds: 10), () {
+    Timer(Duration(seconds: 5), () {
+      
       if (_deviceBox?.get(deviceId)?['status'] == 'connecting') {
-        _updateDeviceStatus(deviceId, 'offline');
+        updateDeviceStatus(deviceId, 'offline');
         _startPeriodicStatusCheck(deviceId);
+      }
+       if (_deviceBox?.get(deviceId)?['sensorStatus'] == 'no data') {
+           displayCriticalStatus("no data", deviceId);
+          _updateDisconnectionTime(deviceId, DateTime.now(), 'offline');
+                  _startPeriodicStatusCheck(deviceId);
+
       }
     });
   }
@@ -140,4 +219,62 @@ class DeviceManager extends ChangeNotifier {
       notifyListeners();
     }
   }
+  Map<String, dynamic>? getDeviceData(String deviceId) {
+    final device = _deviceBox?.get(deviceId);
+
+    // Explicitly cast the device to Map<String, dynamic> if it is a Map<dynamic, dynamic>
+    return device is Map<String, dynamic> ? device : null; // If it's not Map<String, dynamic>, return null
+  }
+  // Update disconnection time for a device
+void _updateDisconnectionTime(String deviceId, DateTime timestamp, String newStatus) {
+  final device = _deviceBox?.get(deviceId);
+  if (device != null) {
+    if (newStatus == 'offline' && device['disconnectionTimeResult'] != 'offline') {
+      // Set the disconnection time only when transitioning to "offline"
+      device['disconnectionTimestamp'] = timestamp.toLocal().toString(); // Store the timestamp
+      device['disconnectionTimeResult'] = 'offline';
+      print("$deviceId was disconnected at: ${device['disconnectionTimestamp']}");
+    } else if (newStatus == 'online') {
+      // Update status to "connected" without altering disconnection timestamp
+      device['disconnectionTimeResult'] = 'online';
+      print("$deviceId is now connected.");
+    }
+
+    // Save the updated device state
+    _deviceBox?.put(deviceId, device);
+    notifyListeners();
+  }
+}
+
+
+
+
+// Retrieve the disconnection time or connection status
+String getDisconnectionTime(String deviceId) {
+  final device = _deviceBox?.get(deviceId);
+  if (device != null) {
+    final result = device['disconnectionTimeResult'] ?? 'online';
+    if (result == 'online') {
+      return 'Connected'; // Device is currently connected
+    }
+    final timestamp = device['disconnectionTimestamp'] ?? 'N/A';
+    return "Disconnected at $timestamp"; // Display the fixed disconnection time
+  }
+  return 'No data available'; // Default if no device found
+}
+
+
+
+
+// Initialize devices on app startup
+void initializeDevices() {
+  if (_deviceBox != null) {
+    _deviceBox?.toMap().forEach((deviceId, deviceData) {
+      final status = deviceData['disconnectionTimeResult'] ?? 'connected';
+    final timestamp = deviceData['disconnectionTimestamp'] ?? 'N/A';
+     print("Device $deviceId is $status. Last disconnected at: $timestamp");
+      // You can add further initialization logic here
+    });
+  }
+}
 }

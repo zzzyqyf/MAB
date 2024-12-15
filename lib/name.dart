@@ -124,10 +124,10 @@ class _NameWidgetState extends State<NameWidget> {
                   Provider.of<DeviceManager>(context, listen: false). updateDeviceName(deviceId!, name);
 
                   Navigator.pop(context);  // Close current page
-                  Navigator.push(
+                  /*Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) =>  TentSettingsWidget(deviceId: '',)),
-                  );
+                    MaterialPageRoute(builder: (context) =>  TentSettingsWidget(deviceId: deviceId,)),
+                  );*/
                 }
               }
             },

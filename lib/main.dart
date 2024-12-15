@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter_application_final/Navbar.dart';
+import 'package:flutter_application_final/ProfilePage.dart';
+import 'package:flutter_application_final/SensorDataWidget.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
 import 'package:flutter_application_final/mqttTests/MQTT.dart';
 import 'package:flutter_application_final/mqttservice.dart';
+import 'package:flutter_application_final/notification.dart';
 import 'package:flutter_application_final/one.dart';
 import 'package:flutter_application_final/overview.dart';
 import 'package:flutter_application_final/registerFour.dart';
@@ -64,13 +67,16 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+
+
+  
   int _selectedIndex = 0; // Track the selected index
 
   // Define pages to navigate to
   final List<Widget> _pages = [
+     ProfilePage(),
+     notification(),
     Register4Widget(id: '',),
-    TentPage(id: '',),
-    AddDevicePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -143,17 +149,17 @@ class _MyHomePageState extends State<MyHomePage> {
                     return Padding(
                       padding: EdgeInsetsDirectional.fromSTEB(0, mediaQuery.size.height * 0.02, 10, 0),
                       child: TentCard(
-                        tentName: device['name'],
+                       // tentName: 'hi',
                         icon: Icons.portable_wifi_off,
-                        iconColor: Colors.green,
+                       // iconColor: Colors.green,
                         status: device['status'],
                         name: device['name'],
-                
+                        sensorStatus: device['sensorStatus'],                
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => TentPage(id: device['id'] ?? ''),
+                              builder: (context) => TentPage(id: device['id'],name: device['name'],),
                             ),
                           );
                         },
@@ -175,21 +181,23 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class TentCard extends StatelessWidget {
-  final String tentName;
+ // final String tentName;
   final IconData icon;
-  final Color iconColor;
+ // final Color iconColor;
   final String status;
   final String name;
   final VoidCallback onTap;
+  final String sensorStatus;
 
   const TentCard({
     Key? key,
-    required this.tentName,
+   // required this.tentName,
     required this.icon,
-    required this.iconColor,
+    //required this.iconColor,
     required this.status,
     required this.name,
     required this.onTap,
+    required this.sensorStatus
   }) : super(key: key);
 
   @override
@@ -258,12 +266,23 @@ class TentCard extends StatelessWidget {
             ),
             Align(
               alignment: const AlignmentDirectional(-0.09, 0.11),
+              child: Text(
+                sensorStatus,
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  fontSize: mediaQuery.size.width * 0.06,
+                ),
+              ),
+            ),
+           /* Align(
+              alignment: const AlignmentDirectional(-0.09, 0.11),
               child: Icon(
                 icon,
                 color: iconColor,
                 size: mediaQuery.size.width * 0.09,
               ),
-            ),
+          ), */ 
             Align(
               alignment: const AlignmentDirectional(-0.09, 0.63),
               child: Text(
