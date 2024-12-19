@@ -14,6 +14,7 @@ import 'package:flutter_application_final/overview.dart';
 import 'package:flutter_application_final/registerFour.dart';
 import 'package:flutter_application_final/three.dart';
 import 'package:flutter_application_final/two.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
@@ -22,12 +23,20 @@ import 'test.dart';
 
 void main() async{
 
-  
+  WidgetsFlutterBinding.ensureInitialized(); // Ensures Flutter is ready
+  await initNotifications(); 
   // Initialize Hive
   await Hive.initFlutter();
 
   // Open the Hive box before using it
-  await Hive.openBox('deviceBox');  // Open your box here
+  await Hive.openBox('deviceBox');
+    await Hive.openBox('notificationsBox');
+    final deviceManager = DeviceManager();
+  //deviceManager.
+         //  deleteNotificationsByDeviceId("Device Unnamed Device");
+
+ // New box for notifications
+  // Open your box here
   runApp(
     DevicePreview(
       enabled: true, // Enable the device preview for testing
@@ -37,6 +46,19 @@ void main() async{
       ),
     ),
   );
+}
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+Future<void> initNotifications() async {
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher'); // App icon
+
+  const InitializationSettings initializationSettings =
+      InitializationSettings(android: initializationSettingsAndroid);
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 }
 
 class MyApp extends StatelessWidget {
@@ -75,7 +97,7 @@ class _MyHomePageState extends State<MyHomePage> {
   // Define pages to navigate to
   final List<Widget> _pages = [
      ProfilePage(),
-     notification(),
+     NotificationPage(),
     Register4Widget(id: '',),
   ];
 

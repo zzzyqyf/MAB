@@ -67,7 +67,7 @@ late DeviceManager deviceManager;
 
   final List<Widget> _pages = [
     const ProfilePage(),
-    const notification(),
+    const NotificationPage(),
     const MyApp(),
   ];
 

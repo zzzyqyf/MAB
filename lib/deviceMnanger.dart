@@ -4,7 +4,7 @@ import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'mqttservice.dart';
 import 'package:uuid/uuid.dart';
-
+import 'package:flutter_local_notifications/flutter_local_notifications.dart'; // Add this package for notifications
 
 class DeviceManager extends ChangeNotifier {
   Box? _deviceBox;
@@ -16,10 +16,21 @@ class DeviceManager extends ChangeNotifier {
 
   DateTime? tempThresholdStartTime;
   DateTime? humidityThresholdStartTime;
-Map<String, dynamic> _sensorData = {};
+  Map<String, dynamic> _sensorData = {};
   Map<String, dynamic> get sensorData => _sensorData;
+
+  // For notifications
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
   DeviceManager() {
     initHive();
+    _initializeNotifications(); // Initialize notifications
+  }
+
+  Future<void> _initializeNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('app_icon');
+    final InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   }
 
   /// Getter to access the raw Hive device box
@@ -60,37 +71,37 @@ Map<String, dynamic> _sensorData = {};
 
   /// Initialize an MQTT service for a specific device
   void _initMqtt(String deviceId) {
-  print("Initializing MqttService for $deviceId");
+    print("Initializing MqttService for $deviceId");
 
-  final mqttService = MqttService(
-    id: deviceId,
-    onDataReceived: (temperature, humidity, lightState) {
-      print("Data received: Temp=$temperature, Humidity=$humidity, Light=$lightState");
+    final mqttService = MqttService(
+      id: deviceId,
+      onDataReceived: (temperature, humidity, lightState) {
+        print("Data received: Temp=$temperature, Humidity=$humidity, Light=$lightState");
 
-      _sensorData = {
-        'deviceId': deviceId,
-        'temperature': temperature,
-        'humidity': humidity,
-        'lightState': lightState,
-      };
-      notifyListeners();
+        _sensorData = {
+          'deviceId': deviceId,
+          'temperature': temperature,
+          'humidity': humidity,
+          'lightState': lightState,
+        };
+        notifyListeners();
 
-      // Update device to 'online' and reset inactivity timer
-      _markDeviceOnline(deviceId);
-      _updateDisconnectionTime(deviceId, DateTime.now(), 'online');
-      monitorSensors(temperature!, humidity!, deviceId);
-    },
-    onDeviceConnectionStatusChange: (deviceId, status) {
-      updateDeviceStatus(deviceId, status);
-    },
-  );
+        // Update device to 'online' and reset inactivity timer
+        _markDeviceOnline(deviceId);
+        _updateDisconnectionTime(deviceId, DateTime.now(), 'online');
+        monitorSensors(temperature!, humidity!, deviceId);
+      },
+      onDeviceConnectionStatusChange: (deviceId, status) {
+        updateDeviceStatus(deviceId, status);
+      },
+    );
 
-  _mqttServices[deviceId] = mqttService;
-  mqttService.setupMqttClient();
-}
+    _mqttServices[deviceId] = mqttService;
+    mqttService.setupMqttClient();
+  }
 
   /// Start periodic status checks for the device
-  void _startPeriodicStatusCheck(String deviceId ) {
+  void _startPeriodicStatusCheck(String deviceId) {
     _inactivityTimers[deviceId] = Timer.periodic(const Duration(seconds: 5), (timer) {
       final mqttService = _mqttServices[deviceId];
       if (mqttService == null) {
@@ -101,13 +112,9 @@ Map<String, dynamic> _sensorData = {};
       final isDataReceived = mqttService.isDataReceived(deviceId);
       if (!isDataReceived) {
         updateDeviceStatus(deviceId, 'offline');
-         displayCriticalStatus("no data",deviceId);
-_updateDisconnectionTime(deviceId, DateTime.now(), 'offline');
-
+        displayCriticalStatus("no data", deviceId);
+        _updateDisconnectionTime(deviceId, DateTime.now(), 'offline');
       }
-
-       // displayCriticalStatus("Critical");
-
     });
   }
 
@@ -120,56 +127,126 @@ _updateDisconnectionTime(deviceId, DateTime.now(), 'offline');
       notifyListeners();
     }
   }
-void updateSensorData(Map<String, dynamic> newData) {
-    _sensorData = newData;
-    notifyListeners();
-  }
+
   /// Mark a device as online
   void _markDeviceOnline(String deviceId) {
     updateDeviceStatus(deviceId, 'online');
-
   }
-void monitorSensors( temp,  humidity,String deviceId) {
+
+  /// Monitor sensors for critical thresholds
+  void monitorSensors(double temp, double humidity, String deviceId) {
     final now = DateTime.now();
 
     // Check temperature
     if (temp > temperatureThreshold) {
       tempThresholdStartTime ??= now; // Set start time if not already set
       if (now.difference(tempThresholdStartTime!).inSeconds >= criticalDuration) {
-        displayCriticalStatus("Critical ",deviceId);
+        displayCriticalStatus("Critical", deviceId);
       }
     } else {
       tempThresholdStartTime = null;
-              displayCriticalStatus("good",deviceId);
- // Reset if within safe range
+      displayCriticalStatus("good", deviceId); // Reset if within safe range
     }
 
     // Check humidity
     if (humidity < humidityThreshold) {
       humidityThresholdStartTime ??= now;
       if (now.difference(humidityThresholdStartTime!).inSeconds >= criticalDuration) {
-        displayCriticalStatus("Critical",deviceId);
+        displayCriticalStatus("Critical", deviceId);
       }
     } else {
       humidityThresholdStartTime = null;
-              displayCriticalStatus("good", deviceId);
-
+      displayCriticalStatus("good", deviceId);
     }
   }
-  void displayCriticalStatus(String sensorType,String deviceId) {
+
+  /// Display a critical status for a device
+  void displayCriticalStatus(String sensorType, String deviceId) {
     final device = _deviceBox?.get(deviceId);
     if (device != null) {
       device['sensorStatus'] = sensorType;
       _deviceBox?.put(deviceId, device);
       notifyListeners();
     }
-    print("$sensorType has been in the threshold for $criticalDuration seconds!,");
-    // Update your UI or notification here
+    print("$sensorType has been in the threshold for $criticalDuration seconds!");
+    print("Notifications Box: ${Hive.box('notificationsBox').values}");
+
+
+    // Show notification for critical status
+    if (sensorType == "no data") {
+      showNotification(deviceId, "Critical Status: $sensorType");
+    }
   }
+
+  /// Show a notification
+  /// Show a notification with the device name instead of ID
+Future<void> showNotification(String deviceId, String message) async {
+  // Retrieve device details
+  final device = _deviceBox?.get(deviceId);
+  final deviceName = device != null && device['name'] != null
+      ? device['name']
+      : 'Unnamed Device';
+
+  const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    'critical_status_channel',
+    'Critical Status Notifications',
+    channelDescription: 'Notifications for critical device statuses',
+    importance: Importance.high,
+    priority: Priority.high,
+  );
+
+  const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
+
+  // Show the notification
+  await flutterLocalNotificationsPlugin.show(
+    deviceId.hashCode, // Unique ID for each device notification
+    '$deviceName',
+    message,
+    platformDetails,
+    payload: 'device_$deviceId',
+  );
+
+  // Save notification to the notifications box
+  final notificationsBox = Hive.box('notificationsBox');
+  notificationsBox.add({
+    'title': 'Device $deviceName',
+    'message': message,
+    'timestamp': DateTime.now().toString(),
+    'id':deviceId,
+  });
+}
+
+//import 'package:hive/hive.dart';
+
+Future<void> deleteNotificationsByDeviceId(String deviceId) async {
+  final notificationsBox = Hive.box('notificationsBox');
+
+  // Find and filter notifications with the matching deviceId
+  final notificationsToDelete = notificationsBox.values.toList().where((notification) {
+    return notification['id'] == deviceId;
+  }).toList();
+
+  if (notificationsToDelete.isNotEmpty) {
+    // Loop through all matching notifications and delete them
+    for (var notification in notificationsToDelete) {
+      final index = notificationsBox.values.toList().indexOf(notification);
+      await notificationsBox.deleteAt(index);
+    }
+    print('All notifications for device $deviceId deleted.');
+  } else {
+    print('No notifications found for device $deviceId.');
+  }
+}
+
+
+  // Add device, remove device, and other methods...
+
+
+  
   /// Add a new device
   void addDevice(String name) {
     final uuid = Uuid();
-   // final deviceId = DateTime.now().toString();
+   //final deviceId = DateTime.now().toString();
 
 final deviceId = uuid.v4();  // Generates a random UUID
     final device = {
@@ -207,6 +284,8 @@ final deviceId = uuid.v4();  // Generates a random UUID
     _inactivityTimers.remove(deviceId);
 
     _deviceBox?.delete(deviceId);
+        deleteNotificationsByDeviceId(deviceId);
+
     notifyListeners();
   }
 
@@ -216,6 +295,8 @@ final deviceId = uuid.v4();  // Generates a random UUID
     if (device != null) {
       device['name'] = newName;
       _deviceBox?.put(deviceId, device);
+          //showNotification(deviceId, 'Device name updated to $newName');
+
       notifyListeners();
     }
   }
