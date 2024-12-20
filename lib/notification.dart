@@ -16,8 +16,9 @@ class _NotificationPageState extends State<NotificationPage> {
 
   @override
   void initState() {
-    super.initState();
-    notificationsBox = Hive.box('notificationsBox'); // Access the Hive notifications box
+   notificationsBox = Hive.box('notificationsBox');
+       super.initState();
+ // Access the Hive notifications box
   }
 
   @override

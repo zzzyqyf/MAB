@@ -12,7 +12,7 @@ class DeviceManager extends ChangeNotifier {
   final Map<String, Timer> _inactivityTimers = {};
   final double temperatureThreshold = 40.0;
   final double humidityThreshold = 20.0;
-  final int criticalDuration = 5; // In seconds
+  final int criticalDuration = 10; // In seconds
 
   DateTime? tempThresholdStartTime;
   DateTime? humidityThresholdStartTime;
@@ -163,9 +163,11 @@ class DeviceManager extends ChangeNotifier {
   /// Display a critical status for a device
   void displayCriticalStatus(String sensorType, String deviceId) {
     final device = _deviceBox?.get(deviceId);
-    if (device != null) {
+    if (device != null &&sensorType == "no data") {
       device['sensorStatus'] = sensorType;
       _deviceBox?.put(deviceId, device);
+      frequency(sensorType,  deviceId);
+
       notifyListeners();
     }
     print("$sensorType has been in the threshold for $criticalDuration seconds!");
@@ -173,10 +175,27 @@ class DeviceManager extends ChangeNotifier {
 
 
     // Show notification for critical status
-    if (sensorType == "no data") {
-      showNotification(deviceId, "Critical Status: $sensorType");
-    }
+  ///  if (sensorType == "no data") {
+//frequency(sensorType,  deviceId);
+   // }
   }
+Map<String, DateTime> lastNotificationTime = {};
+
+void frequency(String sensorType, String deviceId) {
+  final now = DateTime.now();
+  final lastTime = lastNotificationTime[deviceId] ?? DateTime(2000);
+
+  // Check if 1 minute has passed since the last notification
+  if (now.difference(lastTime).inMinutes < 1) {
+    return; // Skip sending notification
+  }
+
+  // Update the last notification time
+  lastNotificationTime[deviceId] = now;
+
+  // Send the notification
+  showNotification(deviceId, "Critical Status: $sensorType");
+}
 
   /// Show a notification
   /// Show a notification with the device name instead of ID
@@ -191,8 +210,8 @@ Future<void> showNotification(String deviceId, String message) async {
     'critical_status_channel',
     'Critical Status Notifications',
     channelDescription: 'Notifications for critical device statuses',
-    importance: Importance.high,
-    priority: Priority.high,
+    importance: Importance.low,
+    priority: Priority.low,
   );
 
   const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
@@ -278,16 +297,26 @@ final deviceId = uuid.v4();  // Generates a random UUID
 
   /// Remove a device
   void removeDevice(String deviceId) {
-    _mqttServices[deviceId]?.dispose();
-    _mqttServices.remove(deviceId);
-    _inactivityTimers[deviceId]?.cancel();
-    _inactivityTimers.remove(deviceId);
+  // Dispose of MQTT services
+  _mqttServices[deviceId]?.dispose();
+  _mqttServices.remove(deviceId);
 
-    _deviceBox?.delete(deviceId);
-        deleteNotificationsByDeviceId(deviceId);
+  // Cancel and remove the inactivity timer
+  _inactivityTimers[deviceId]?.cancel();
+  _inactivityTimers.remove(deviceId);
 
-    notifyListeners();
-  }
+  // Clear the last notification time for the device
+  lastNotificationTime.remove(deviceId);
+
+  // Delete the device from Hive
+  _deviceBox?.delete(deviceId);
+
+  // Delete notifications associated with the device
+  deleteNotificationsByDeviceId(deviceId);
+
+  notifyListeners();
+}
+
 
   /// Update the name of an existing device
   void updateDeviceName(String deviceId, String newName) {
