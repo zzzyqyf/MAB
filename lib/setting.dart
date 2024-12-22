@@ -178,17 +178,15 @@ DeleteDialog.show(context, widget.deviceId);
               Padding(
                 padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 15.0),
                 child: SettingsItem(
-                  title: 'Mute',
-                  subtitle: 'Stop notifications',
-                  containerHeight: containerHeight,
-                  fontSizeTitle: fontSizeTitle,
-                  fontSizeSubtitle: fontSizeSubtitle,
-                  isSwitch: true,
-                  switchValue: _isMuted,
-                  onSwitchChanged: (value) {
-                    setState(() {
-                      _isMuted = value; // Update mute state
-                    });
+                 title: 'Mute',
+              subtitle: 'Stop notifications',
+              containerHeight: containerHeight, // Example height
+              fontSizeTitle:fontSizeTitle, // Example font size
+              fontSizeSubtitle: fontSizeSubtitle, // Example font size
+              isSwitch: true,
+              switchValue: deviceManager.isMuted,
+              onSwitchChanged: (value) {
+                deviceManager.toggleMute(value);
                   },
                 ),
               ),

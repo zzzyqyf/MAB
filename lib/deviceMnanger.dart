@@ -43,7 +43,14 @@ class DeviceManager extends ChangeNotifier {
     }
     return [];
   }
+ bool _isMuted = false;
 
+  bool get isMuted => _isMuted;
+
+  void toggleMute(bool value) {
+    _isMuted = value;
+    notifyListeners();
+  }
   /// Retrieve a device by its ID
   Map<String, dynamic>? getDeviceById(String deviceId) {
     final device = _deviceBox?.get(deviceId);
@@ -215,8 +222,8 @@ Future<void> showNotification(String deviceId, String message) async {
   );
 
   const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
-
   // Show the notification
+  if (!isMuted) {
   await flutterLocalNotificationsPlugin.show(
     deviceId.hashCode, // Unique ID for each device notification
     '$deviceName',
@@ -224,7 +231,7 @@ Future<void> showNotification(String deviceId, String message) async {
     platformDetails,
     payload: 'device_$deviceId',
   );
-
+  }
   // Save notification to the notifications box
   final notificationsBox = Hive.box('notificationsBox');
   notificationsBox.add({

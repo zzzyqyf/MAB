@@ -32,7 +32,7 @@ void main() async{
   await Hive.openBox('deviceBox');
     await Hive.openBox('notificationsBox');
     final deviceManager = DeviceManager();
-//deviceManager.deleteNotificationsByDeviceId("Device Unnamed Device");
+    //deviceManager.deleteNotificationsByDeviceId("Device Unnamed Device");
 
  // New box for notifications
   // Open your box here
