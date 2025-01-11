@@ -80,14 +80,28 @@ void _startPeriodicCheck() {
       _generateTemperatureData(sensorData); // Check data periodically
     });
   }
-  void loadHistoricalCycles() {
-    int counter = 0;
-    final allCycles = cycleBox.values.toList(); // Retrieve all stored cycles
-    for (var cycle in allCycles) {
-      print(cycle);
-      counter++; // Each cycle is a List of {time, data} maps
+  void loadHistoricalCycles(DateTime selectedDate,String deviceId) {
+  final allCycles = cycleBox.values.toList(); // Retrieve all stored cycles
+
+  // Filter cycles based on the selected date
+  final filteredCycles = allCycles.where((cycle) {
+    final cycleDate = DateTime.parse(cycle['time']).toLocal();
+        return cycle['deviceId'] == deviceId &&
+     cycleDate.year == selectedDate.year &&
+        cycleDate.month == selectedDate.month &&
+        cycleDate.day == selectedDate.day;
+  }).toList();
+
+  if (filteredCycles.isEmpty) {
+    print("No cycles found for the selected date: ${DateFormat('yyyy-MM-dd').format(selectedDate)}");
+  } else {
+    print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
+    for (var cycle in filteredCycles) {
+      print(cycle); // Display filtered cycles in the console
     }
   }
+}
+
 
   void _loadData() {
     //what does this do   final storedData = spotBox.get('spots', defaultValue: []);
@@ -313,19 +327,30 @@ void testingConnection(){
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          loadHistoricalCycles(); // Trigger the method
-                        },
-                        child: Text("Load Historical Cycles"),
-                      ),
-                    ],
-                  ),
-                ),
+  padding: const EdgeInsets.symmetric(vertical: 10.0),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      ElevatedButton(
+        onPressed: () async {
+          // Show a date picker to the user
+          DateTime? pickedDate = await showDatePicker(
+            context: context,
+            initialDate: DateTime.now(),
+            firstDate: DateTime(2020), // Adjust as needed
+            lastDate: DateTime.now(),
+          );
+
+          if (pickedDate != null) {
+            loadHistoricalCycles(pickedDate,widget.deviceId); // Load data for the selected date
+          }
+        },
+        child: Text("Load Historical Cycles for Date"),
+      ),
+    ],
+  ),
+),
+
               ],
             ),
           ),
