@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
+import 'package:flutter_application_final/graph.dart';
 import 'package:flutter_application_final/main.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +17,7 @@ class TentPage extends StatefulWidget {
 
   TentPage({required this.id, required this.name});
 
-  @override
+  @override 
   _TentPageState createState() => _TentPageState();
 }
 
@@ -80,6 +81,7 @@ late DeviceManager deviceManager;
       MaterialPageRoute(builder: (context) => _pages[index]),
     );
   }
+  
 
  @override
   Widget build(BuildContext context) {
@@ -182,12 +184,14 @@ late DeviceManager deviceManager;
                           children: [
                             InkWell(
                               onTap: () {
+                                
                                 Navigator.push(
-                                  context,
+                                 context,
                                   MaterialPageRoute(
-                                    builder: (context) => const MyApp(),
-                                  ),
+                                   builder: (context) => TempVsTimeGraph(deviceId: widget.id),
+                                 ),
                                 );
+                            
                               },
                               child: _buildBox(
                                 context,

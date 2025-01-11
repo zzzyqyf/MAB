@@ -2,10 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
+import 'package:flutter_application_final/DeviceIdProvider.dart';
 import 'package:flutter_application_final/Navbar.dart';
 import 'package:flutter_application_final/ProfilePage.dart';
 import 'package:flutter_application_final/SensorDataWidget.dart';
+import 'package:flutter_application_final/addPage.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
+import 'package:flutter_application_final/graph.dart';
+import 'package:flutter_application_final/graphProvider.dart';
+//import 'package:flutter_application_final/graph.dart';
 import 'package:flutter_application_final/mqttTests/MQTT.dart';
 import 'package:flutter_application_final/mqttservice.dart';
 import 'package:flutter_application_final/notification.dart';
@@ -31,21 +36,45 @@ void main() async{
   // Open the Hive box before using it
   await Hive.openBox('deviceBox');
     await Hive.openBox('notificationsBox');
+if (!Hive.isBoxOpen('graphdata')) {
+    await Hive.openBox('graphdata');
+  }
     final deviceManager = DeviceManager();
+    //final mqttservices=M
     //deviceManager.deleteNotificationsByDeviceId("Device Unnamed Device");
 
  // New box for notifications
   // Open your box here
+ 
   runApp(
-    DevicePreview(
-      enabled: true, // Enable the device preview for testing
-      builder: (context) => ChangeNotifierProvider(
-        create: (_) => DeviceManager(),
-        child: const MyApp(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => DeviceManager()),
+      ChangeNotifierProvider(create: (_) => GraphProvider(deviceManager: deviceManager)),
+             // ChangeNotifierProvider(create: (context) => DeviceIdProvider(deviceManager)),
+
+        ChangeNotifierProvider(
+      create: (context) => MqttService(
+        id: '',
+        onDataReceived: (temperature, humidity, lightState) {
+          // Handle data received
+        },
+        onDeviceConnectionStatusChange: (id, status) {
+          // Handle connection status change
+        },
+      ),
+      child: MyApp(),
+    ),
+  
+      ],
+      child: MaterialApp(
+        home: MyApp(),
       ),
     ),
   );
 }
+
+
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -95,7 +124,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Define pages to navigate to
   final List<Widget> _pages = [
-     ProfilePage(),
+    TempVsTimeGraph(deviceId: '',),
      NotificationPage(),
     Register4Widget(id: '',),
   ];
@@ -143,54 +172,56 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
           Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(
-              10, mediaQuery.size.height * 0.15, 0, 5),
-            child: Consumer<DeviceManager>(
-              builder: (context, deviceManager, child) {
-                // Ensure that the device box is loaded and available
-                if (deviceManager.deviceBox == null) {
-                  return Center(child: CircularProgressIndicator()); // Wait for initialization
-                }
+  padding: EdgeInsetsDirectional.fromSTEB(
+    10, mediaQuery.size.height * 0.15, 0, 5),
+  child: Consumer<DeviceManager>( // Watching DeviceManager for changes
+    builder: (context, deviceManager, child) {
+      // Ensure that the device box is loaded and available
+      if (deviceManager.deviceBox == null) {
+        return Center(child: CircularProgressIndicator()); // Wait for initialization
+      }
 
-                if (deviceManager.devices.isEmpty) {
-                  return Center(child: Text('Please add a device.'));
-                }
+      // Handle case when there are no devices
+      if (deviceManager.devices.isEmpty) {
+        return Center(child: Text('Please add a device.'));
+      }
 
-                return GridView.builder(
-                  padding: EdgeInsets.zero,
-                  shrinkWrap: true,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2, // Two columns
-                    crossAxisSpacing: mediaQuery.size.width * 0.01, // Horizontal spacing
-                    mainAxisSpacing: mediaQuery.size.height * 0.001, // Vertical spacing
+      return GridView.builder(
+        padding: EdgeInsets.zero,
+        shrinkWrap: true,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2, // Two columns
+          crossAxisSpacing: mediaQuery.size.width * 0.01, // Horizontal spacing
+          mainAxisSpacing: mediaQuery.size.height * 0.001, // Vertical spacing
+        ),
+        itemCount: deviceManager.devices.length,
+        itemBuilder: (context, index) {
+          var device = deviceManager.devices[index];
+          print("Device ${device['name']} - Sensor Status: ${device['sensorStatus']}");
+
+          return Padding(
+            padding: EdgeInsetsDirectional.fromSTEB(0, mediaQuery.size.height * 0.02, 10, 0),
+            child: TentCard(
+              icon: Icons.portable_wifi_off,
+              status: device['status'],
+              name: device['name'],
+              sensorStatus: device['sensorStatus'], // This should be updated when sensor status changes
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TentPage(id: device['id'], name: device['name']),
                   ),
-                  itemCount: deviceManager.devices.length,
-                  itemBuilder: (context, index) {
-                    var device = deviceManager.devices[index];
-                    return Padding(
-                      padding: EdgeInsetsDirectional.fromSTEB(0, mediaQuery.size.height * 0.02, 10, 0),
-                      child: TentCard(
-                       // tentName: 'hi',
-                        icon: Icons.portable_wifi_off,
-                       // iconColor: Colors.green,
-                        status: device['status'],
-                        name: device['name'],
-                        sensorStatus: device['sensorStatus'],                
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TentPage(id: device['id'],name: device['name'],),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
                 );
               },
             ),
-          ),
+          );
+        },
+      );
+    },
+  ),
+),
+
         ],
       ),
       bottomNavigationBar: CustomNavbar(

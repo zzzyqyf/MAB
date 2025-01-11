@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -7,10 +8,12 @@ import 'package:uuid/uuid.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart'; // Add this package for notifications
 
 class DeviceManager extends ChangeNotifier {
+    bool _isDeviceActive = false; // Default device status (inactive)
+
   Box? _deviceBox;
   final Map<String, MqttService> _mqttServices = {};
   final Map<String, Timer> _inactivityTimers = {};
-  final double temperatureThreshold = 40.0;
+  final double temperatureThreshold = 32.0;
   final double humidityThreshold = 20.0;
   final int criticalDuration = 10; // In seconds
 
@@ -18,10 +21,24 @@ class DeviceManager extends ChangeNotifier {
   DateTime? humidityThresholdStartTime;
   Map<String, dynamic> _sensorData = {};
   Map<String, dynamic> get sensorData => _sensorData;
+  bool get isDeviceActive => _isDeviceActive;
 
   // For notifications
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
+  void updateSensorData(String deviceId, double? temperature, double? humidity, int? light) {
+    if (!sensorData.containsKey(deviceId)) {
+      sensorData[deviceId] = {
+        'temperatureHistory': <double>[],
+      };
+    }
+
+    if (temperature != null) {
+      sensorData[deviceId]!['temperatureHistory']!.add(temperature);
+    }
+
+    notifyListeners();
+  }
   DeviceManager() {
     initHive();
     _initializeNotifications(); // Initialize notifications
@@ -83,6 +100,8 @@ class DeviceManager extends ChangeNotifier {
     final mqttService = MqttService(
       id: deviceId,
       onDataReceived: (temperature, humidity, lightState) {
+               // displayCriticalStatus("good", deviceId);
+
         print("Data received: Temp=$temperature, Humidity=$humidity, Light=$lightState");
 
         _sensorData = {
@@ -97,6 +116,8 @@ class DeviceManager extends ChangeNotifier {
         _markDeviceOnline(deviceId);
         _updateDisconnectionTime(deviceId, DateTime.now(), 'online');
         monitorSensors(temperature!, humidity!, deviceId);
+       // displayCriticalStatus("good", deviceId);
+
       },
       onDeviceConnectionStatusChange: (deviceId, status) {
         updateDeviceStatus(deviceId, status);
@@ -117,6 +138,8 @@ class DeviceManager extends ChangeNotifier {
       }
 
       final isDataReceived = mqttService.isDataReceived(deviceId);
+          print("Periodic check for device $deviceId: isDataReceived=$isDataReceived");
+
       if (!isDataReceived) {
         updateDeviceStatus(deviceId, 'offline');
         displayCriticalStatus("no data", deviceId);
@@ -127,65 +150,120 @@ class DeviceManager extends ChangeNotifier {
 
   /// Update the status of a device
   void updateDeviceStatus(String deviceId, String newStatus) {
-    final device = _deviceBox?.get(deviceId);
-    if (device != null) {
-      device['status'] = newStatus;
-      _deviceBox?.put(deviceId, device);
-      notifyListeners();
+  final device = _deviceBox?.get(deviceId);
+  if (device != null) {
+    device['status'] = newStatus;
+    if (newStatus == 'offline') {
+      device['sensorStatus'] = 'no data'; // Set sensor status to "no data" when offline
     }
+    _deviceBox?.put(deviceId, device);
+
+    // Update device active status based on new status
+    deviceIsActive(deviceId); // This will update _isDeviceActive
   }
+}
+
+
 
   /// Mark a device as online
   void _markDeviceOnline(String deviceId) {
     updateDeviceStatus(deviceId, 'online');
+
   }
 
-  /// Monitor sensors for critical thresholds
-  void monitorSensors(double temp, double humidity, String deviceId) {
-    final now = DateTime.now();
+/// Check if a device is active
+// Update the device status check and notify listeners
+bool deviceIsActive(String deviceId) {
+  final device = _deviceBox?.get(deviceId);
 
-    // Check temperature
-    if (temp > temperatureThreshold) {
-      tempThresholdStartTime ??= now; // Set start time if not already set
-      if (now.difference(tempThresholdStartTime!).inSeconds >= criticalDuration) {
-        displayCriticalStatus("Critical", deviceId);
-      }
-    } else {
-      tempThresholdStartTime = null;
-      displayCriticalStatus("good", deviceId); // Reset if within safe range
-    }
+  if (device != null) {
+    final status = device['status'];
+    final sensorStatus = device['sensorStatus'];
 
-    // Check humidity
-    if (humidity < humidityThreshold) {
-      humidityThresholdStartTime ??= now;
-      if (now.difference(humidityThresholdStartTime!).inSeconds >= criticalDuration) {
-        displayCriticalStatus("Critical", deviceId);
-      }
-    } else {
-      humidityThresholdStartTime = null;
-      displayCriticalStatus("good", deviceId);
-    }
+    // A device is considered active if:
+    // - It is online
+    // - It has received sensor data (i.e., it's not marked as "no data")
+    final isActive = status == 'online' && sensorStatus != 'no data';
+
+    _isDeviceActive = isActive; // Update the _isDeviceActive state
+    notifyListeners(); // Notify listeners about the change
+    return isActive;
   }
+
+  _isDeviceActive = false; // If device is not found or inactive, mark it as inactive
+  notifyListeners();
+  return false; 
+}
+
+
+  bool isCritical = false; // Flag to check if the device is in a critical state
+
+void monitorSensors(double? temp, double humidity, String deviceId) {
+  final now = DateTime.now();
+  bool isTempCritical = false;
+  bool isHumidityCritical = false;
+  bool isHumNull=false;
+
+
+  // Check temperature
+  if (temp==null){
+    displayCriticalStatus("no data in temperture ok?", deviceId);
+  }
+ else if (temp > temperatureThreshold) {
+    tempThresholdStartTime ??= now;
+    if (now.difference(tempThresholdStartTime!).inSeconds >= criticalDuration) {
+      isTempCritical = true;
+    }
+  } else {
+    tempThresholdStartTime = null; // Reset start time
+  }
+
+  // Check humidity
+   if (isHumNull==true){
+    displayCriticalStatus("no data", deviceId);
+  }
+  if (humidity < humidityThreshold) {
+    humidityThresholdStartTime ??= now;
+    if (now.difference(humidityThresholdStartTime!).inSeconds >= criticalDuration) {
+      isHumidityCritical = true;
+    }
+  } else {
+    humidityThresholdStartTime = null; // Reset start time
+  }
+
+  // If any sensor is critical, update status to "Critical"
+  if (isTempCritical || isHumidityCritical) {
+    displayCriticalStatus("Critical", deviceId);
+  } else {
+    // If neither is critical, reset to "good"
+    displayCriticalStatus("good", deviceId);
+  }
+}
+
 
   /// Display a critical status for a device
   void displayCriticalStatus(String sensorType, String deviceId) {
-    final device = _deviceBox?.get(deviceId);
-    if (device != null &&sensorType == "no data") {
-      device['sensorStatus'] = sensorType;
-      _deviceBox?.put(deviceId, device);
-      frequency(sensorType,  deviceId);
+  final device = _deviceBox?.get(deviceId);
 
+  if (device != null) {
+    if (device['sensorStatus'] != sensorType) {
+      // Update the sensorStatus only if it's different
+      device['sensorStatus'] = sensorType;
+      _deviceBox?.put(deviceId, device); // Save updated device
+      print("Sensor status updated to $sensorType for device $deviceId.");
+
+      // Call frequency function if necessary
+      frequency(sensorType, deviceId);
+
+      // Notify listeners
       notifyListeners();
     }
-    print("$sensorType has been in the threshold for $criticalDuration seconds!");
-    print("Notifications Box: ${Hive.box('notificationsBox').values}");
-
-
-    // Show notification for critical status
-  ///  if (sensorType == "no data") {
-//frequency(sensorType,  deviceId);
-   // }
+  } else {
+    print("Device not found for ID: $deviceId.");
   }
+}
+
+
 Map<String, DateTime> lastNotificationTime = {};
 
 void frequency(String sensorType, String deviceId) {
@@ -293,7 +371,7 @@ final deviceId = uuid.v4();  // Generates a random UUID
         updateDeviceStatus(deviceId, 'offline');
         _startPeriodicStatusCheck(deviceId);
       }
-       if (_deviceBox?.get(deviceId)?['sensorStatus'] == 'no data') {
+       if (_deviceBox?.get(deviceId)?['status'] == 'offline') {
            displayCriticalStatus("no data", deviceId);
           _updateDisconnectionTime(deviceId, DateTime.now(), 'offline');
                   _startPeriodicStatusCheck(deviceId);

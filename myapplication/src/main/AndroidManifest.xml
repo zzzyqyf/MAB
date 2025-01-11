@@ -6,7 +6,9 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Flutter_application_final">
+        android:theme="@style/Theme.Flutter_application_final"
+        android:icon="@drawable/app_icon">
+
         <activity
             android:name=".MainActivity"
             android:exported="true">

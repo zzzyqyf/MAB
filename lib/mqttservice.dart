@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 
-class MqttService {
+class MqttService extends ChangeNotifier {
   final String mqttBroker = 'broker.mqtt.cool';
   final int mqttPort = 1883;
   late MqttServerClient client;
@@ -36,6 +36,7 @@ class MqttService {
     client.onDisconnected = onDisconnected;
 
     final connMessage = MqttConnectMessage()
+    //what is des?
         .withClientIdentifier('FlutterClient_$id')
         .startClean()
         .withWillQos(MqttQos.atLeastOnce);
@@ -77,9 +78,11 @@ class MqttService {
       _lastReceivedTimestamps[id] = DateTime.now();
       _dataReceivedMap[id] = true;
       onDataReceived(temperature, humidity, lightState);
+
+      notifyListeners(); // Notify listeners when data is updated
     });
 
-    _dataCheckTimer = Timer.periodic(Duration(seconds: 5), _checkDataReception);
+    _dataCheckTimer = Timer.periodic(Duration(seconds: 5), checkDataReception);
   }
 
   bool isDataReceived(String deviceId) {
@@ -88,9 +91,10 @@ class MqttService {
     return DateTime.now().difference(lastDataTime).inSeconds <= 20;
   }
 
-  void _checkDataReception(Timer timer) {
+  void checkDataReception(Timer timer) {
     final isDataReceivedFlag = isDataReceived(id);
     onDeviceConnectionStatusChange(id, isDataReceivedFlag ? 'online' : 'offline');
+    notifyListeners(); // Notify listeners about connection status change
   }
 
   void resetDataReceived(String deviceId) {
@@ -108,5 +112,6 @@ class MqttService {
   void dispose() {
     _dataCheckTimer?.cancel();
     client.disconnect();
+    super.dispose();
   }
 }
