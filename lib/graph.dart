@@ -23,8 +23,9 @@ class _TempVsTimeGraphState extends State<TempVsTimeGraph> {
   double minX = 0;
   double maxX = 6;
   List<FlSpot> spots = [];
-  DateTime startTime = DateTime.now();
-  bool isStartTimeSet = false;
+  Map<String, DateTime> deviceStartTimes = {};
+Map<String, bool> deviceStartTimeSet = {};
+
   late Box spotBox;
   late Box cycleBox;
     Map<String, dynamic> sensorData = {}; // Placeholder for sensor data
@@ -104,28 +105,32 @@ void _startPeriodicCheck() {
 
 
   void _loadData() {
-    //what does this do   final storedData = spotBox.get('spots', defaultValue: []);
-  final storedData = spotBox.get('spots', defaultValue: []);
-  final storedStartTime = spotBox.get('startTime', defaultValue: DateTime.now().toIso8601String());
+  // Retrieve stored data for the specific device
+  final storedData = spotBox.get('${widget.deviceId}_spots', defaultValue: []);
+  final storedStartTime = spotBox.get('${widget.deviceId}_startTime', defaultValue: DateTime.now().toIso8601String());
 
   setState(() {
+    // Load the spots and startTime specific to the current device
     spots = (storedData as List<dynamic>)
         .map((item) => FlSpot(item['x'], item['y']))
         .toList();
-    startTime = DateTime.parse(storedStartTime);
-
-    
+    deviceStartTimes[widget.deviceId] = DateTime.parse(storedStartTime);
+    deviceStartTimeSet[widget.deviceId] = true; // Mark startTime as set
   });
 }
 
-
-  void _saveData() {
+void _saveData() {
+  // Prepare the data specific to the current device
   final dataToSave = spots.map((spot) => {'x': spot.x, 'y': spot.y}).toList();
-  //final cyclesToSave = historicalCycles.map((cycle) => cycle.map((spot) => {'x': spot.x, 'y': spot.y}).toList()).toList();
-  spotBox.put('spots', dataToSave);
-  spotBox.put('startTime', startTime.toIso8601String());
-  //spotBox.put('historicalCycles', cyclesToSave);  // Save the historical cycles
+  final deviceStartTime = deviceStartTimes[widget.deviceId];
+
+  // Save data and startTime for the current device
+  spotBox.put('${widget.deviceId}_spots', dataToSave);
+  if (deviceStartTime != null) {
+    spotBox.put('${widget.deviceId}_startTime', deviceStartTime.toIso8601String());
+  }
 }
+
 
   @override
   void dispose() {
@@ -150,51 +155,64 @@ void testingConnection(){
 
   // Use device manager to check device status
   final deviceManager = Provider.of<DeviceManager>(context, listen: false);
-  if (sensorData.isEmpty || !deviceManager.deviceIsActive(widget.deviceId)) { // Check device status
+  if (sensorData.isEmpty || !deviceManager.deviceIsActive(widget.deviceId)) {
     return;
   }
 
-  if (!isStartTimeSet) {
-    startTime = currentTime;
-    isStartTimeSet = true;
+  // Initialize device-specific state maps if not already present
+  deviceStartTimes.putIfAbsent(widget.deviceId, () => currentTime);
+  deviceStartTimeSet.putIfAbsent(widget.deviceId, () => false);
+
+  // Set the start time for this device if not already set
+  if (!deviceStartTimeSet[widget.deviceId]!) {
+    deviceStartTimes[widget.deviceId] = currentTime;
+    deviceStartTimeSet[widget.deviceId] = true;
   }
+
+  // Use the device-specific start time
+  DateTime deviceStartTime = deviceStartTimes[widget.deviceId]!;
 
   sensorData.entries
       .where((entry) => entry.key.contains('temperature'))
       .forEach((entry) {
     final temperature = double.tryParse(entry.value.toString()) ?? 0.0;
-    final timeElapsed = currentTime.difference(startTime).inMinutes.toDouble();
+    final timeElapsed = currentTime.difference(deviceStartTime).inMinutes.toDouble();
     final spot = FlSpot(timeElapsed, temperature);
 
     spots.add(spot);
   });
 
   spots.sort((a, b) => a.x.compareTo(b.x));
+
+  // Handle cycle completion for this device
   if (spots.isNotEmpty && spots.last.x > 3) {
     if (mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         setState(() {
           final cycleId = DateTime.now().millisecondsSinceEpoch.toString();
 
+          // Generate cycle entries specific to this device
           final List<Map<String, dynamic>> cycleEntries = spots.map((spot) {
-            final timestamp = startTime.add(Duration(
+            final timestamp = deviceStartTime.add(Duration(
                 minutes: spot.x.toInt(),
                 seconds: ((spot.x - spot.x.toInt()) * 60).toInt()));
             return {
               'id': cycleId,
               'time': timestamp.toIso8601String(),
               'data': spot.y,
-              'cycleStartTime': startTime.toIso8601String(),
+              'cycleStartTime': deviceStartTime.toIso8601String(),
               'deviceId': widget.deviceId,
             };
           }).toList();
 
+          // Add cycle entries to persistent storage
           for (var entry in cycleEntries) {
             cycleBox.add(entry);
           }
 
-          startTime = DateTime.now();
-          isStartTimeSet = false;
+          // Reset state for the next cycle
+          deviceStartTimes[widget.deviceId] = DateTime.now();
+          deviceStartTimeSet[widget.deviceId] = false;
           spots.clear();
         });
 
@@ -238,20 +256,24 @@ void testingConnection(){
                       titlesData: FlTitlesData(
                         bottomTitles: AxisTitles(
                           sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 32,
-                            interval: 1,
-                            getTitlesWidget: (value, titleMeta) {
-                              DateTime xTime = startTime.add(Duration(minutes: value.toInt()));
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: Text(
-                                  formatTime(xTime),
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                                ),
-                              );
-                            },
-                          ),
+  showTitles: true,
+  reservedSize: 32,
+  interval: 1,
+  getTitlesWidget: (value, titleMeta) {
+    // Use device-specific startTime
+    DateTime deviceStartTime = deviceStartTimes[widget.deviceId] ?? DateTime.now();
+    DateTime xTime = deviceStartTime.add(Duration(minutes: value.toInt()));
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: Text(
+        formatTime(xTime),
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+      ),
+    );
+  },
+),
+
                         ),
                         leftTitles: AxisTitles(
                           sideTitles: SideTitles(
