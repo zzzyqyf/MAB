@@ -81,27 +81,47 @@ void _startPeriodicCheck() {
       _generateTemperatureData(sensorData); // Check data periodically
     });
   }
-  void loadHistoricalCycles(DateTime selectedDate,String deviceId) {
-  final allCycles = cycleBox.values.toList(); // Retrieve all stored cycles
+  void loadHistoricalCycles(DateTime selectedDate, String deviceId) {
+  final allCycles = cycleBox.values.toList();
 
-  // Filter cycles based on the selected date
+  // Filter cycles for the selected date and device
   final filteredCycles = allCycles.where((cycle) {
     final cycleDate = DateTime.parse(cycle['time']).toLocal();
-        return cycle['deviceId'] == deviceId &&
-     cycleDate.year == selectedDate.year &&
+    return cycle['deviceId'] == deviceId &&
+        cycleDate.year == selectedDate.year &&
         cycleDate.month == selectedDate.month &&
         cycleDate.day == selectedDate.day;
   }).toList();
 
   if (filteredCycles.isEmpty) {
     print("No cycles found for the selected date: ${DateFormat('yyyy-MM-dd').format(selectedDate)}");
+    setState(() {
+      spots.clear(); // Clear graph if no data is found
+    });
   } else {
-    print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
+print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
     for (var cycle in filteredCycles) {
       print(cycle); // Display filtered cycles in the console
     }
+    // Get the start time of the first cycle
+    final firstCycleStartTime = DateTime.parse(filteredCycles.first['cycleStartTime']);
+
+    setState(() {
+      // Update the device's start time for the x-axis
+      deviceStartTimes[deviceId] = firstCycleStartTime;
+
+      // Replace graph data with historical cycle spots
+      spots = filteredCycles.map((cycle) {
+        final xTime = DateTime.parse(cycle['time']);
+        final xElapsed = xTime.difference(firstCycleStartTime).inMinutes.toDouble();
+        return FlSpot(xElapsed, cycle['data'].toDouble());
+      }).toList();
+
+      spots.sort((a, b) => a.x.compareTo(b.x)); // Ensure sorted order for graph rendering
+    });
   }
 }
+
 
 
   void _loadData() {
@@ -254,27 +274,29 @@ void testingConnection(){
                     LineChartData(
                       gridData: FlGridData(show: true),
                       titlesData: FlTitlesData(
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-  showTitles: true,
-  reservedSize: 32,
-  interval: 1,
-  getTitlesWidget: (value, titleMeta) {
-    // Use device-specific startTime
-    DateTime deviceStartTime = deviceStartTimes[widget.deviceId] ?? DateTime.now();
-    DateTime xTime = deviceStartTime.add(Duration(minutes: value.toInt()));
+                      bottomTitles: AxisTitles(
+  sideTitles: SideTitles(
+    showTitles: true,
+    reservedSize: 32,
+    interval: 1,
+    getTitlesWidget: (value, titleMeta) {
+      // Use the start time of the historical cycle if available
+      DateTime cycleStartTime = deviceStartTimes[widget.deviceId] ?? DateTime.now();
+      
+      // Add the elapsed time (value in minutes) to the cycle start time
+      DateTime xTime = cycleStartTime.add(Duration(minutes: value.toInt()));
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 8.0),
-      child: Text(
-        formatTime(xTime),
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-      ),
-    );
-  },
+      return Padding(
+        padding: const EdgeInsets.only(top: 8.0),
+        child: Text(
+          DateFormat('HH:mm').format(xTime), // Format time as HH:mm
+          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+        ),
+      );
+    },
+  ),
 ),
 
-                        ),
                         leftTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
