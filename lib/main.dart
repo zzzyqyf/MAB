@@ -6,13 +6,14 @@ import 'package:flutter_application_final/DeviceIdProvider.dart';
 import 'package:flutter_application_final/Navbar.dart';
 import 'package:flutter_application_final/ProfilePage.dart';
 import 'package:flutter_application_final/SensorDataWidget.dart';
+import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:flutter_application_final/addPage.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
 import 'package:flutter_application_final/graph.dart';
 import 'package:flutter_application_final/graphProvider.dart';
 //import 'package:flutter_application_final/graph.dart';
-import 'package:flutter_application_final/mqttTests/MQTT.dart';
-import 'package:flutter_application_final/mqttservice.dart';
+//import 'package:flutter_application_final/mqttTests/MQTT.dart';
+//import 'package:flutter_application_final/mqttservice.dart';
 import 'package:flutter_application_final/notification.dart';
 import 'package:flutter_application_final/one.dart';
 import 'package:flutter_application_final/overview.dart';
@@ -39,7 +40,7 @@ void main() async{
 if (!Hive.isBoxOpen('graphdata')) {
     await Hive.openBox('graphdata');
   }
-    final deviceManager = DeviceManager();
+   // final deviceManager = DeviceManager();
     //final mqttservices=M
     //deviceManager.deleteNotificationsByDeviceId("Device Unnamed Device");
 
@@ -50,9 +51,10 @@ if (!Hive.isBoxOpen('graphdata')) {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => DeviceManager()),
-      ChangeNotifierProvider(create: (_) => GraphProvider(deviceManager: deviceManager)),
-             // ChangeNotifierProvider(create: (context) => DeviceIdProvider(deviceManager)),
 
+     // ChangeNotifierProvider(create: (_) => GraphProvider(deviceManager: deviceManager)),
+             // ChangeNotifierProvider(create: (context) => DeviceIdProvider(deviceManager)),
+/*
         ChangeNotifierProvider(
       create: (context) => MqttService(
         id: '',
@@ -63,8 +65,9 @@ if (!Hive.isBoxOpen('graphdata')) {
           // Handle connection status change
         },
       ),
-      child: MyApp(),
-    ),
+      */
+    //  child: MyApp(),
+    //),
   
       ],
       child: MaterialApp(
@@ -154,21 +157,28 @@ class _MyHomePageState extends State<MyHomePage> {
                   mediaQuery.size.height * 0.06, // Responsive top padding
                   0,
                   0),
-              child: Row(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'PlantCare Hubs',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: mediaQuery.size.width * 0.07, // Responsive font size
-                      letterSpacing: 0.0,
-                    ),
-                  ),
-                ],
-              ),
+             child: GestureDetector(
+      onTap: () async {
+        // Trigger text-to-speech on tap
+                await TextToSpeech.speak('PlantCare Hubs Dashboard');
+
+      },
+            child: Row(
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'PlantCare Hubs Dashboard',
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: mediaQuery.size.width * 0.07, // Responsive font size
+              letterSpacing: 0.0,
+            ),
+          ),
+        ],
+      ),
+          ),
             ),
           ),
           Padding(
@@ -201,20 +211,29 @@ class _MyHomePageState extends State<MyHomePage> {
 
           return Padding(
             padding: EdgeInsetsDirectional.fromSTEB(0, mediaQuery.size.height * 0.02, 10, 0),
+        child: GestureDetector(
+      onTap: () async {
+        // Trigger text-to-speech on tap
+        await TextToSpeech.speak("Device ${device['name']} is ${device['status']} it has "
+        +"${device['sensorStatus']} ");
+      },
             child: TentCard(
               icon: Icons.portable_wifi_off,
               status: device['status'],
               name: device['name'],
               sensorStatus: device['sensorStatus'], // This should be updated when sensor status changes
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TentPage(id: device['id'], name: device['name']),
-                  ),
-                );
-              },
+              
+              onDoubleTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TentPage(id: device['id'], name: device['name']),
             ),
+          );
+        },
+            ),
+          ),
+          
           );
         },
       );
@@ -238,7 +257,7 @@ class TentCard extends StatelessWidget {
  // final Color iconColor;
   final String status;
   final String name;
-  final VoidCallback onTap;
+  final VoidCallback onDoubleTap;
   final String sensorStatus;
 
   const TentCard({
@@ -248,7 +267,7 @@ class TentCard extends StatelessWidget {
     //required this.iconColor,
     required this.status,
     required this.name,
-    required this.onTap,
+    required this.onDoubleTap,
     required this.sensorStatus
   }) : super(key: key);
 
@@ -277,7 +296,7 @@ class TentCard extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: onTap,
+      onDoubleTap: onDoubleTap,
       child: Container(
         width: mediaQuery.size.width * 0.46,
         height: mediaQuery.size.width * 0.46,

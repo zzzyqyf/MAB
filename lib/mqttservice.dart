@@ -36,7 +36,7 @@ class MqttService extends ChangeNotifier {
     client.onDisconnected = onDisconnected;
 
     final connMessage = MqttConnectMessage()
-    //what is des?
+    //client
         .withClientIdentifier('FlutterClient_$id')
         .startClean()
         .withWillQos(MqttQos.atLeastOnce);

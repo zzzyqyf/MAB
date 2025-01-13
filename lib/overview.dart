@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/TempVsTimeGraph.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
 import 'package:flutter_application_final/graph.dart';
 import 'package:flutter_application_final/main.dart';
@@ -6,7 +7,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'Navbar.dart'; // Import CustomNavbar component
 import 'ProfilePage.dart';
-import 'mqttservice.dart';
+//import 'mqttservice.dart';
 import 'notification.dart';
 import 'setting.dart';
 //import 'package:flutter/material.dart';
@@ -22,7 +23,7 @@ class TentPage extends StatefulWidget {
 }
 
 class _TentPageState extends State<TentPage> {
-  late MqttService mqttService;
+ // late MqttService mqttService;
   double? temperature;
   double? humidity;
   int? lightState;
@@ -60,7 +61,7 @@ late DeviceManager deviceManager;
 */
   @override
   void dispose() {
-    mqttService.dispose();
+   // mqttService.dispose();
     super.dispose();
   }
 
@@ -154,7 +155,18 @@ late DeviceManager deviceManager;
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _buildBox(
+                             InkWell(
+                              onTap: () {
+                                
+                                Navigator.push(
+                                 context,
+                                  MaterialPageRoute(
+                                   builder: (context) => HumVsTimeGraph(deviceId: widget.id),
+                                 ),
+                                );
+                            
+                              },
+                              child: _buildBox(
                               context,
                               boxSize: boxSize,
                               icon: Icons.water_drop,
@@ -162,6 +174,7 @@ late DeviceManager deviceManager;
                               title: 'Humidity',
                               value: '${sensorData['humidity'] ?? 'Loading...'} %',
                             ),
+                             ),
                             SizedBox(width: mediaQuery.size.width * 0.02),
                             _buildBox(
                               context,

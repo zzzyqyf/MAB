@@ -25,7 +25,7 @@ class DeviceManager extends ChangeNotifier {
 
   // For notifications
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-
+/*
   void updateSensorData(String deviceId, double? temperature, double? humidity, int? light) {
     if (!sensorData.containsKey(deviceId)) {
       sensorData[deviceId] = {
@@ -39,6 +39,7 @@ class DeviceManager extends ChangeNotifier {
 
     notifyListeners();
   }
+  */
   DeviceManager() {
     initHive();
     _initializeNotifications(); // Initialize notifications
@@ -144,6 +145,7 @@ class DeviceManager extends ChangeNotifier {
         updateDeviceStatus(deviceId, 'offline');
         displayCriticalStatus("no data", deviceId);
         _updateDisconnectionTime(deviceId, DateTime.now(), 'offline');
+        
       }
     });
   }

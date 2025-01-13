@@ -12,24 +12,24 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
-class TempVsTimeGraph extends StatefulWidget {
+class HumVsTimeGraph extends StatefulWidget {
   final String deviceId; // The deviceId will be passed dynamically
 
-  TempVsTimeGraph({required this.deviceId});
+  HumVsTimeGraph({required this.deviceId});
 
   @override
   _TempVsTimeGraphState createState() => _TempVsTimeGraphState();
 }
 
-class _TempVsTimeGraphState extends State<TempVsTimeGraph> {
+class _TempVsTimeGraphState extends State<HumVsTimeGraph> {
   double minX = 0;
   double maxX = 6;
-  List<FlSpot> spots = [];
-  Map<String, DateTime> deviceStartTimes = {};
-Map<String, bool> deviceStartTimeSet = {};
+  List<FlSpot> hspots = [];
+  Map<String, DateTime> hdeviceStartTimes = {};
+Map<String, bool> hdeviceStartTimeSet = {};
 
-  late Box spotBox;
-  late Box cycleBox;
+  late Box hspotBox;
+  late Box hcycleBox;
     Map<String, dynamic> sensorData = {}; // Placeholder for sensor data
   late Timer _timer;  // Declare the timer
 
@@ -43,8 +43,8 @@ List<List<FlSpot>> historicalCycles = [];  // New list to store historical cycle
   }
 
   Future<void> _initializeHive() async {
-    spotBox = await Hive.openBox('temperatureData');
-    cycleBox = await Hive.openBox('cycleData');  // New box for completed cycles
+    hspotBox = await Hive.openBox('humidityData');
+    hcycleBox = await Hive.openBox('hcycleData');  // New box for completed cycles
     _loadData();
     // clearSpotBox();
       //printSpotBoxContents(); // Print the contents after loading data
@@ -84,7 +84,7 @@ void _startPeriodicCheck() {
     });
   }
   void loadHistoricalCycles(DateTime selectedDate, String deviceId) {
-  final allCycles = cycleBox.values.toList();
+  final allCycles = hcycleBox.values.toList();
 
   // Filter cycles for the selected date and device
   final filteredCycles = allCycles.where((cycle) {
@@ -98,8 +98,8 @@ void _startPeriodicCheck() {
   if (filteredCycles.isEmpty) {
     print("No cycles found for the selected date: ${DateFormat('yyyy-MM-dd').format(selectedDate)}");
     setState(() {
-      spots.clear();
-            deviceStartTimes[deviceId] = DateTime.fromMillisecondsSinceEpoch(0); // Reset start time
+      hspots.clear();
+            hdeviceStartTimes[deviceId] = DateTime.fromMillisecondsSinceEpoch(0); // Reset start time
 
        // Clear graph if no data is found
     });
@@ -109,20 +109,20 @@ print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
       print(cycle); // Display filtered cycles in the console
     }
     // Get the start time of the first cycle
-    final firstCycleStartTime = DateTime.parse(filteredCycles.first['cycleStartTime']);
+    final hfirstCycleStartTime = DateTime.parse(filteredCycles.first['cycleStartTime']);
 
     setState(() {
       // Update the device's start time for the x-axis
-      deviceStartTimes[deviceId] = firstCycleStartTime;
+      hdeviceStartTimes[deviceId] = hfirstCycleStartTime;
 
       // Replace graph data with historical cycle spots
-      spots = filteredCycles.map((cycle) {
+      hspots = filteredCycles.map((cycle) {
         final xTime = DateTime.parse(cycle['time']);
-        final xElapsed = xTime.difference(firstCycleStartTime).inMinutes.toDouble();
-        return FlSpot(xElapsed, cycle['data'].toDouble());
+        final xElapsed = xTime.difference(hfirstCycleStartTime).inMinutes.toDouble();
+        return FlSpot(xElapsed, cycle['hdata'].toDouble());
       }).toList();
 
-      spots.sort((a, b) => a.x.compareTo(b.x)); // Ensure sorted order for graph rendering
+      hspots.sort((a, b) => a.x.compareTo(b.x)); // Ensure sorted order for graph rendering
     });
   }
 }
@@ -131,28 +131,28 @@ print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
 
   void _loadData() {
   // Retrieve stored data for the specific device
-  final storedData = spotBox.get('${widget.deviceId}_spots', defaultValue: []);
-  final storedStartTime = spotBox.get('${widget.deviceId}_startTime', defaultValue: DateTime.now().toIso8601String());
+  final storedData = hspotBox.get('${widget.deviceId}_spots', defaultValue: []);
+  final storedStartTime = hspotBox.get('${widget.deviceId}_startTime', defaultValue: DateTime.now().toIso8601String());
 
   setState(() {
     // Load the spots and startTime specific to the current device
-    spots = (storedData as List<dynamic>)
+    hspots = (storedData as List<dynamic>)
         .map((item) => FlSpot(item['x'], item['y']))
         .toList();
-    deviceStartTimes[widget.deviceId] = DateTime.parse(storedStartTime);
-    deviceStartTimeSet[widget.deviceId] = true; // Mark startTime as set
+    hdeviceStartTimes[widget.deviceId] = DateTime.parse(storedStartTime);
+    hdeviceStartTimeSet[widget.deviceId] = true; // Mark startTime as set
   });
 }
 
 void _saveData() {
   // Prepare the data specific to the current device
-  final dataToSave = spots.map((spot) => {'x': spot.x, 'y': spot.y}).toList();
-  final deviceStartTime = deviceStartTimes[widget.deviceId];
+  final dataToSave = hspots.map((spot) => {'x': spot.x, 'y': spot.y}).toList();
+  final deviceStartTime = hdeviceStartTimes[widget.deviceId];
 
   // Save data and startTime for the current device
-  spotBox.put('${widget.deviceId}_spots', dataToSave);
+  hspotBox.put('${widget.deviceId}_spots', dataToSave);
   if (deviceStartTime != null) {
-    spotBox.put('${widget.deviceId}_startTime', deviceStartTime.toIso8601String());
+    hspotBox.put('${widget.deviceId}_startTime', deviceStartTime.toIso8601String());
   }
 }
 
@@ -160,7 +160,7 @@ void _saveData() {
   @override
   void dispose() {
       _saveData(); // Save data when leaving the page
-    spotBox.close();
+    hspotBox.close();
     super.dispose();
   }
 
@@ -184,46 +184,46 @@ void testingConnection(){
   }
 
   // Initialize device-specific state maps if not already present
-  deviceStartTimes.putIfAbsent(widget.deviceId, () => currentTime);
-  deviceStartTimeSet.putIfAbsent(widget.deviceId, () => false);
+  hdeviceStartTimes.putIfAbsent(widget.deviceId, () => currentTime);
+  hdeviceStartTimeSet.putIfAbsent(widget.deviceId, () => false);
 
   // Set the start time for this device if not already set
-  if (!deviceStartTimeSet[widget.deviceId]!) {
-    deviceStartTimes[widget.deviceId] = currentTime;
-    deviceStartTimeSet[widget.deviceId] = true;
+  if (!hdeviceStartTimeSet[widget.deviceId]!) {
+    hdeviceStartTimes[widget.deviceId] = currentTime;
+    hdeviceStartTimeSet[widget.deviceId] = true;
   }
 
   // Use the device-specific start time
-  DateTime deviceStartTime = deviceStartTimes[widget.deviceId]!;
+  DateTime deviceStartTime = hdeviceStartTimes[widget.deviceId]!;
 
   sensorData.entries
-      .where((entry) => entry.key.contains('temperature'))
+      .where((entry) => entry.key.contains('humidity'))
       .forEach((entry) {
-    final temperature = double.tryParse(entry.value.toString()) ?? 0.0;
+    final humidity = double.tryParse(entry.value.toString()) ?? 0.0;
     final timeElapsed = currentTime.difference(deviceStartTime).inMinutes.toDouble();
-    final spot = FlSpot(timeElapsed, temperature);
+    final spot = FlSpot(timeElapsed, humidity);
 
-    spots.add(spot);
+    hspots.add(spot);
   });
 
-  spots.sort((a, b) => a.x.compareTo(b.x));
+  hspots.sort((a, b) => a.x.compareTo(b.x));
 
   // Handle cycle completion for this device
-  if (spots.isNotEmpty && spots.last.x > 3) {
+  if (hspots.isNotEmpty && hspots.last.x > 3) {
     if (mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         setState(() {
           final cycleId = DateTime.now().millisecondsSinceEpoch.toString();
 
           // Generate cycle entries specific to this device
-          final List<Map<String, dynamic>> cycleEntries = spots.map((spot) {
+          final List<Map<String, dynamic>> cycleEntries = hspots.map((spot) {
             final timestamp = deviceStartTime.add(Duration(
                 minutes: spot.x.toInt(),
                 seconds: ((spot.x - spot.x.toInt()) * 60).toInt()));
             return {
               'id': cycleId,
               'time': timestamp.toIso8601String(),
-              'data': spot.y,
+              'hdata': spot.y,
               'cycleStartTime': deviceStartTime.toIso8601String(),
               'deviceId': widget.deviceId,
             };
@@ -231,13 +231,13 @@ void testingConnection(){
 
           // Add cycle entries to persistent storage
           for (var entry in cycleEntries) {
-            cycleBox.add(entry);
+            hcycleBox.add(entry);
           }
 
           // Reset state for the next cycle
-          deviceStartTimes[widget.deviceId] = DateTime.now();
-          deviceStartTimeSet[widget.deviceId] = false;
-          spots.clear();
+          hdeviceStartTimes[widget.deviceId] = DateTime.now();
+          hdeviceStartTimeSet[widget.deviceId] = false;
+          hspots.clear();
         });
 
         _saveData(); // Save the cleared state of current data
@@ -267,7 +267,7 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
         _generateTemperatureData(sensorData);
       final isActive = deviceManager.isDeviceActive;
 
-        final visibleSpots = spots.where((spot) {
+        final visibleSpots = hspots.where((spot) {
           return spot.x >= minX && spot.x <= maxX;
         }).toList();
 
@@ -296,7 +296,7 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
                           interval: 1,
                           getTitlesWidget: (value, titleMeta) {
                             // Use the start time of the historical cycle if available
-                            DateTime cycleStartTime = deviceStartTimes[widget.deviceId] ?? DateTime.now();
+                            DateTime cycleStartTime = hdeviceStartTimes[widget.deviceId] ?? DateTime.now();
 
                             // Add the elapsed time (value in minutes) to the cycle start time
                             DateTime xTime = cycleStartTime.add(Duration(minutes: value.toInt()));
@@ -320,7 +320,7 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
                             return Padding(
                               padding: const EdgeInsets.only(left: 8.0),
                               child: Text(
-                                '${value.toInt()}°C',
+                                '${value.toInt()}%',
                                 style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                               ),
                             );
@@ -338,7 +338,7 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
                     minX: minX,
                     maxX: maxX,
                     minY: 0,
-                    maxY: 50,
+                    maxY: 90,
                     lineBarsData: [
                       LineChartBarData(
                         spots: visibleSpots,
@@ -354,10 +354,10 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
                       touchCallback: (FlTouchEvent event, LineTouchResponse? response) {
                         if (event is FlTapUpEvent && response != null && response.lineBarSpots != null) {
                           final touchedSpot = response.lineBarSpots!.first;
-                          final DateTime spotTime = deviceStartTimes[widget.deviceId]!
+                          final DateTime spotTime = hdeviceStartTimes[widget.deviceId]!
                               .add(Duration(minutes: touchedSpot.x.toInt()));
                           final String message =
-                              "${touchedSpot.y.toStringAsFixed(1)}°C at ${DateFormat('hh:mm a').format(spotTime)}.";
+                              "${touchedSpot.y.toStringAsFixed(1)}% at ${DateFormat('hh:mm a').format(spotTime)}.";
                           TextToSpeech.speak(message); // Call the TextToSpeech method to announce data
                         }
                       },
@@ -380,7 +380,7 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
         maxX -= 1;
       }
       // Always announce the range, regardless of conditions
-      announceRange(minX, maxX, deviceStartTimes[widget.deviceId]!);
+      announceRange(minX, maxX, hdeviceStartTimes[widget.deviceId]!);
     });
   },
 ),
@@ -395,7 +395,7 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
                               maxX += 1;
 
                             }
-                                      announceRange(minX, maxX, deviceStartTimes[widget.deviceId]!);
+                                      announceRange(minX, maxX, hdeviceStartTimes[widget.deviceId]!);
 
                           });
                         },
@@ -443,7 +443,7 @@ void main() async {
     ChangeNotifierProvider(
       create: (_) => DeviceManager(),
       child: MaterialApp(
-        home: TempVsTimeGraph(deviceId: ''), // Pass the deviceId dynamically
+        home: HumVsTimeGraph(deviceId: ''), // Pass the deviceId dynamically
       ),
     ),
   );
