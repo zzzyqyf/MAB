@@ -1,19 +1,19 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/login.dart';
 import 'package:flutter_application_final/main.dart';
-import 'package:flutter_application_final/signUp.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'buttom.dart';
 
-class LoginWidget extends StatefulWidget {
-  const LoginWidget({Key? key}) : super(key: key);
+class SignUpWidget extends StatefulWidget {
+  const SignUpWidget({Key? key}) : super(key: key);
 
   @override
-  State<LoginWidget> createState() => _LoginWidgetState();
+  State<SignUpWidget> createState() => _SignUpWidgetState();
 }
 
-class _LoginWidgetState extends State<LoginWidget> {
+class _SignUpWidgetState extends State<SignUpWidget> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _passwordVisibility = false;
@@ -62,24 +62,24 @@ class _LoginWidgetState extends State<LoginWidget> {
                           ),
                           alignment: const AlignmentDirectional(-1, 0),
                         ),
-                       ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              colors: [
-                Color.fromARGB(255, 6, 94, 135), // Dark cyan-purple blend
-                Color.fromARGB(255, 84, 90, 95), // Complementary color
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ).createShader(bounds),
-            child: Text(
-              'Welcome Back',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 36,
-                fontWeight: FontWeight.w600,
-                color: Colors.white, // This will be overridden by the shader
-              ),
-            ),
-          ),
+                        ShaderMask(
+                          shaderCallback: (bounds) => const LinearGradient(
+                            colors: [
+                              Color.fromARGB(255, 6, 94, 135), // Dark cyan-purple blend
+                              Color.fromARGB(255, 84, 90, 95), // Complementary color
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ).createShader(bounds),
+                          child: Text(
+                            'Create Account',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 36,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white, // This will be overridden by the shader
+                            ),
+                          ),
+                        ),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(32, 32, 32, 32),
                           child: Column(
@@ -171,32 +171,39 @@ class _LoginWidgetState extends State<LoginWidget> {
                                   ),
                                 ),
                               ),
-                              
+                              ReusableBottomButton(
+                                buttonText: 'Sign Up',
+                                padding: 16.0,
+                                fontSize: 18.0,
+                                onPressed: () {
+                                  // Handle sign-up action here
+                                },
+                              ),
                               RichText(
                                 text: TextSpan(
                                   children: [
                                     const TextSpan(
-                                      text: 'Don\'t have an account? ',
+                                      text: 'Already have an account? ',
                                       style: TextStyle(color: Colors.black),
                                     ),
                                     TextSpan(
-                                      text: ' Sign Up here',
+                                      text: ' Login here',
                                       style: GoogleFonts.plusJakartaSans(
-                                          color: Colors.blue,
+                                        color: Colors.blue,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                       ),
                                       recognizer: TapGestureRecognizer()
                                         ..onTap = () {
-Navigator.pushReplacement(
+                                          Navigator.pushReplacement(
                                             context,
-                                            MaterialPageRoute(builder: (context) => const SignUpWidget()),
-                                          );                                        },
+                                            MaterialPageRoute(builder: (context) => const LoginWidget()),
+                                          );
+                                        },
                                     ),
                                   ],
                                 ),
                               ),
-                              
                             ],
                           ),
                         ),
@@ -205,42 +212,9 @@ Navigator.pushReplacement(
                   ),
                 ),
               ),
-              /*
-              Expanded(
-                flex: 6,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      image: DecorationImage(
-                        fit: BoxFit.cover,
-                        image: NetworkImage(
-                          'https://images.unsplash.com/photo-1514924013411-cbf25faa35bb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1380&q=80',
-                        ),
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
-              ),
-              */
             ],
           ),
         ),
-        
-        bottomNavigationBar: ReusableBottomButton(
-        buttonText: 'Login',
-        padding: 16.0,
-        fontSize: 18.0,
-        onPressed: () {
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MyApp()),
-                );
-                      },
-      ),
       ),
     );
   }

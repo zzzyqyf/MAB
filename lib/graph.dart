@@ -23,7 +23,7 @@ class TempVsTimeGraph extends StatefulWidget {
 
 class _TempVsTimeGraphState extends State<TempVsTimeGraph> {
   double minX = 0;
-  double maxX = 6;
+  double maxX = 3;
   List<FlSpot> spots = [];
   Map<String, DateTime> deviceStartTimes = {};
 Map<String, bool> deviceStartTimeSet = {};
@@ -209,7 +209,7 @@ void testingConnection(){
   spots.sort((a, b) => a.x.compareTo(b.x));
 
   // Handle cycle completion for this device
-  if (spots.isNotEmpty && spots.last.x > 3) {
+  if (spots.isNotEmpty && spots.last.x > 12) {
     if (mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         setState(() {
@@ -390,7 +390,7 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
                         icon: Icon(Icons.arrow_forward),
                         onPressed: () {
                           setState(() {
-                            if (maxX < 24) {
+                            if (maxX < 12) {
                               minX += 1;
                               maxX += 1;
 
@@ -414,7 +414,7 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
           DateTime? pickedDate = await showDatePicker(
             context: context,
             initialDate: DateTime.now(),
-            firstDate: DateTime(2020), // Adjust as needed
+            firstDate: DateTime(1970), // Adjust as needed
             lastDate: DateTime.now(),
           );
 

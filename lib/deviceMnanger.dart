@@ -371,14 +371,16 @@ final deviceId = uuid.v4();  // Generates a random UUID
       
       if (_deviceBox?.get(deviceId)?['status'] == 'connecting') {
         updateDeviceStatus(deviceId, 'offline');
-        _startPeriodicStatusCheck(deviceId);
+       // _startPeriodicStatusCheck(deviceId);
       }
        if (_deviceBox?.get(deviceId)?['status'] == 'offline') {
            displayCriticalStatus("no data", deviceId);
-          _updateDisconnectionTime(deviceId, DateTime.now(), 'offline');
-                  _startPeriodicStatusCheck(deviceId);
+         // _updateDisconnectionTime(deviceId, DateTime.now(), 'offline');
+                //  _startPeriodicStatusCheck(deviceId);
 
       }
+              _startPeriodicStatusCheck(deviceId);
+
     });
   }
 
@@ -426,7 +428,7 @@ final deviceId = uuid.v4();  // Generates a random UUID
 void _updateDisconnectionTime(String deviceId, DateTime timestamp, String newStatus) {
   final device = _deviceBox?.get(deviceId);
   if (device != null) {
-    if (newStatus == 'offline' && device['disconnectionTimeResult'] != 'offline') {
+    if (newStatus == 'offline' && device['disconnectionTimeResult'] == 'online') {
       // Set the disconnection time only when transitioning to "offline"
       device['disconnectionTimestamp'] = timestamp.toLocal().toString(); // Store the timestamp
       device['disconnectionTimeResult'] = 'offline';
