@@ -1,3 +1,4 @@
+/*
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/login.dart';
@@ -219,3 +220,4 @@ class _SignUpWidgetState extends State<SignUpWidget> {
     );
   }
 }
+*/

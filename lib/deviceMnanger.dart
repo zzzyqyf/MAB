@@ -16,12 +16,14 @@ class DeviceManager extends ChangeNotifier {
   final double temperatureThreshold = 32.0;
   final double humidityThreshold = 20.0;
   final int criticalDuration = 10; // In seconds
+  Box<Map<String, dynamic>>? _sensorBox;
 
   DateTime? tempThresholdStartTime;
   DateTime? humidityThresholdStartTime;
   Map<String, dynamic> _sensorData = {};
   Map<String, dynamic> get sensorData => _sensorData;
   bool get isDeviceActive => _isDeviceActive;
+  Timer? _timer;
 
   // For notifications
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -42,6 +44,8 @@ class DeviceManager extends ChangeNotifier {
   */
   DeviceManager() {
     initHive();
+        
+
     _initializeNotifications(); // Initialize notifications
   }
 
@@ -77,12 +81,28 @@ class DeviceManager extends ChangeNotifier {
     }
     return null;
   }
+String _deviceId = '';  // Store the deviceId here
+
+  String get deviceId => _deviceId;
+
+  // Method to update the deviceId
+  void setDeviceId(String id) {
+    // Assuming _deviceBox is already initialized and available
+    final device = _deviceBox?.get(id);  // Get the device based on the passed id
+    if (device != null) {
+      final Id = device['id'];  // Retrieve the device ID from the device map
+      _deviceId = Id;  // Set the deviceId
+      notifyListeners();  // Notify listeners when deviceId changes
+    }
+  }
 
   /// Initialize Hive and load devices
   Future<void> initHive() async {
     await Hive.initFlutter();
     _deviceBox = await Hive.openBox('devices');
-
+List<Map<String, dynamic>> cycleBox = [];
+Hive.initFlutter();
+    openCycleBox();
     if (_deviceBox != null) {
       for (var device in _deviceBox!.values) {
         final deviceId = device['id'];
@@ -90,10 +110,26 @@ class DeviceManager extends ChangeNotifier {
         _startPeriodicStatusCheck(deviceId);
       }
     }
+    await Hive.deleteBoxFromDisk('sensorData');
 
+await Hive.initFlutter();
+    _sensorBox = await Hive.openBox<Map<String, dynamic>>('sensorData');
     notifyListeners();
   }
 
+  
+List<Map<String, dynamic>> getSensorDataForDevice(String deviceId) {
+    if (_sensorBox != null && _sensorBox!.isOpen) {
+      return _sensorBox!.values
+          .where((entry) => entry['deviceId'] == deviceId)
+          .toList();
+    }
+    return [];
+  }
+  // Function to open the cycleBox
+  Future<void> openCycleBox() async {
+    cycleBox = await Hive.openBox<Map<String, dynamic>>('cycleBox');
+  }
   /// Initialize an MQTT service for a specific device
   void _initMqtt(String deviceId) {
     print("Initializing MqttService for $deviceId");
@@ -102,6 +138,7 @@ class DeviceManager extends ChangeNotifier {
       id: deviceId,
       onDataReceived: (temperature, humidity, lightState) {
                // displayCriticalStatus("good", deviceId);
+    storeSensorData(deviceId, temperature!, DateTime.now());
 
         print("Data received: Temp=$temperature, Humidity=$humidity, Light=$lightState");
 
@@ -112,7 +149,13 @@ class DeviceManager extends ChangeNotifier {
           'lightState': lightState,
         };
         notifyListeners();
-
+if (temperature != null) {
+  //updateTemperatureHistory(deviceId, temperature);
+}
+void onNewSensorData(String deviceId, Map<String, dynamic> sensorData) {
+    // Process the new sensor data
+    generateTemperatureData(deviceId, sensorData);
+  }
         // Update device to 'online' and reset inactivity timer
         _markDeviceOnline(deviceId);
         _updateDisconnectionTime(deviceId, DateTime.now(), 'online');
@@ -137,7 +180,13 @@ class DeviceManager extends ChangeNotifier {
         timer.cancel();
         return;
       }
-
+void startPeriodicDataStore(String deviceId, double temperature) {
+    _timer = Timer.periodic(Duration(minutes: 1), (Timer timer) {
+      // Pass the required arguments to storeSensorData
+      final currentTimestamp = DateTime.now();
+      storeSensorData(deviceId, temperature, currentTimestamp);
+    });
+  }
       final isDataReceived = mqttService.isDataReceived(deviceId);
           print("Periodic check for device $deviceId: isDataReceived=$isDataReceived");
 
@@ -196,6 +245,43 @@ bool deviceIsActive(String deviceId) {
   notifyListeners();
   return false; 
 }
+Future<void> storeSensorData(String deviceId, double temperature, DateTime timestamp) async {
+  final sensorBox = await Hive.openBox<Map<String, dynamic>>('sensorData');
+  
+  try {
+    // Check if there's already data in the box
+    if (sensorBox.isNotEmpty) {
+      final lastStoredData = sensorBox.values.last;
+      final lastTimestamp = DateTime.parse(lastStoredData['timestamp']);
+      
+      // Compare the minute of the last saved timestamp with the new timestamp
+      if (lastTimestamp.minute == timestamp.minute && lastTimestamp.hour == timestamp.hour) {
+        // If the minute is the same, do not store the data
+        print('Timestamp is the same as the last one. Data not stored.');
+        return;
+      }
+    }
+
+    // Prepare the sensor data to store
+    final sensorData = {
+      'deviceId': deviceId,
+      'temperature': temperature,
+      'timestamp': timestamp.toIso8601String(),
+    };
+
+    // Store the new sensor data
+    sensorBox.add(Map<String, dynamic>.from(sensorData));
+
+    // Print the stored values to verify
+    print('Stored Data: ${sensorBox.values.toList()}');
+  } catch (e) {
+    print('Error storing sensor data: $e');
+  }
+
+  notifyListeners();
+}
+
+
 
 
   bool isCritical = false; // Flag to check if the device is in a critical state
@@ -321,8 +407,177 @@ Future<void> showNotification(String deviceId, String message) async {
     'id':deviceId,
   });
 }
-
+ Map<String, DateTime> deviceStartTimes = {};
+Map<String, bool> deviceStartTimeSet = {};
+  List<FlSpot> spots = [];
+  Map<String, int> deviceCycle = {}; // Track the cycle index for each device
+/*
 //import 'package:hive/hive.dart';
+void updateTemperatureHistory(String deviceId, double temperature) async {
+  // Ensure the Hive box is open
+  final historicalDataBox = await Hive.openBox('historicalData');
+  DateTime currentTime = DateTime.now();
+
+  // Use device manager to check if the device is active
+  if (sensorData.isEmpty || deviceIsActive(deviceId)) {
+    return;
+  }
+
+  // Initialize device-specific state maps if not already present
+  deviceStartTimes.putIfAbsent(deviceId, () => currentTime);
+  deviceStartTimeSet.putIfAbsent(deviceId, () => false);
+  deviceCycle.putIfAbsent(deviceId, () => 0); // Track the current cycle
+
+  // Set the start time for this device if not already set
+  if (!deviceStartTimeSet[deviceId]!) {
+    deviceStartTimes[deviceId] = currentTime;
+    deviceStartTimeSet[deviceId] = true;
+  }
+
+  DateTime deviceStartTime = deviceStartTimes[deviceId]!;
+
+  // Check if the device exists in _sensorData
+  if (!_sensorData.containsKey(deviceId)) {
+    _sensorData[deviceId] = {
+      'temperatureHistory': <Map<String, dynamic>>[],
+      'cycles': <Map<String, dynamic>>[], // Add cycle data storage
+    };
+  }
+
+  // Determine the current cycle (dividing the day into 4 cycles)
+  int cycleIndex = (currentTime.hour / 6).floor(); // 4 cycles in a day, each 6 hours
+  if (cycleIndex >= 4) cycleIndex = 3; // Ensure the cycle index is within bounds (0-3)
+
+  // Track the cycle and ensure it resets daily
+  if (currentTime.hour == 0 && currentTime.minute == 0) {
+    deviceCycle[deviceId] = 0; // Reset cycle count at midnight
+  } else if (cycleIndex != deviceCycle[deviceId]) {
+    deviceCycle[deviceId] = cycleIndex; // Update cycle index
+  }
+
+  // Add the cycle information with temperature data
+  final cycleData = {
+    'deviceId': deviceId,
+    'temperature': temperature,
+    'timestamp': currentTime.toIso8601String(),
+    'cycle': cycleIndex,
+  };
+
+  // Add the cycle data to _sensorData
+  _sensorData[deviceId]!['temperatureHistory']!.add(cycleData);
+
+  // Save the cycle data to Hive box
+  historicalDataBox.add(cycleData);
+
+  // If the cycle is complete (e.g., after 4 cycles in a day), reset for the next day
+  if (cycleIndex == 3) {
+    // Handle the end of the day, potentially store summary data or reset state
+    deviceStartTimes[deviceId] = DateTime.now(); // Reset the start time for the next day
+    deviceCycle[deviceId] = 0; // Reset cycle count for the next day
+  }
+
+  // Notify listeners to update UI
+  notifyListeners();
+}
+
+*/
+
+  late Box<Map<String, dynamic>> cycleBox; // Assuming Hive is used for persistence
+
+  void generateTemperatureData(String deviceId, Map<String, dynamic> sensorData) {
+  DateTime currentTime = DateTime.now();
+
+  // Validate device and sensor data
+  if (sensorData.isEmpty || !deviceIsActive(deviceId)) {
+    return;
+  }
+
+  // Initialise device-specific state maps if not already present
+  deviceStartTimes.putIfAbsent(deviceId, () => currentTime);
+  deviceStartTimeSet.putIfAbsent(deviceId, () => false);
+
+  // Set the start time for this device if not already set
+  if (!deviceStartTimeSet[deviceId]!) {
+    deviceStartTimes[deviceId] = currentTime;
+    deviceStartTimeSet[deviceId] = true;
+  }
+
+  // Use the device-specific start time
+  DateTime deviceStartTime = deviceStartTimes[deviceId]!;
+
+  // Buffer to store processed data
+  final List<Map<String, dynamic>> cycleDataBuffer = [];
+
+  sensorData.entries
+      .where((entry) => entry.key.contains('temperature'))
+      .forEach((entry) {
+    final temperature = double.tryParse(entry.value.toString()) ?? 0.0;
+    final timeElapsed = currentTime.difference(deviceStartTime).inMinutes.toDouble();
+
+    // Add processed data to buffer
+    cycleDataBuffer.add({
+      'timeElapsed': timeElapsed,
+      'temperature': temperature,
+      'deviceId': deviceId,
+    });
+  });
+
+  // Handle cycle completion for this device
+  if (cycleDataBuffer.isNotEmpty && cycleDataBuffer.last['timeElapsed'] > 12) {
+    final cycleId = DateTime.now().millisecondsSinceEpoch.toString();
+
+    // Add cycle data to persistent storage
+    for (var entry in cycleDataBuffer) {
+      cycleBox.add(entry);
+    }
+
+    // Reset state for the next cycle
+    deviceStartTimes[deviceId] = DateTime.now();
+    deviceStartTimeSet[deviceId] = false;
+
+    // Clear the buffer
+    cycleDataBuffer.clear();
+
+    // Notify listeners if needed (optional)
+    notifyListeners();
+  }
+}
+
+// Method to explicitly update the graph
+void updateGraph(String deviceId) {
+  // Retrieve data from cycleBox specific to the device
+  final List<FlSpot> newGraphData = cycleBox.values
+      .where((entry) => entry['deviceId'] == deviceId)
+      .map<FlSpot>((entry) {
+        return FlSpot(
+          (entry['timeElapsed'] as num).toDouble(),
+          (entry['temperature'] as num).toDouble(),
+        );
+      }).toList();
+
+  // Sort new data by x (time)
+  newGraphData.sort((a, b) => a.x.compareTo(b.x));
+
+  // Check for duplicates and append only new data to spots
+  for (var newSpot in newGraphData) {
+    if (!spots.any((existingSpot) => existingSpot.x == newSpot.x)) {
+      spots.add(newSpot);
+    }
+  }
+
+  // Ensure spots are sorted by time after adding new data
+  spots.sort((a, b) => a.x.compareTo(b.x));
+
+  // Notify listeners to refresh the graph
+  notifyListeners();
+}
+
+
+
+  
+  
+  
+
 
 Future<void> deleteNotificationsByDeviceId(String deviceId) async {
   final notificationsBox = Hive.box('notificationsBox');

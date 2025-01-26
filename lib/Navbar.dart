@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-//import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_application_final/TextToSpeech.dart';
 
 class CustomNavbar extends StatelessWidget {
   final int selectedIndex;
@@ -12,42 +12,70 @@ class CustomNavbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-        //final screenWidth = MediaQuery.of(context).size.width;
-
     // Get the width of the screen
     final double screenWidth = MediaQuery.of(context).size.width;
 
     // Calculate responsive icon size based on the screen width
-    final double iconSize = screenWidth * 0.07; // Use 8% of the screen width for icon size
+    final double iconSize = screenWidth * 0.07;
 
     return BottomNavigationBar(
       items: <BottomNavigationBarItem>[
         BottomNavigationBarItem(
-          icon: Icon(
-            Icons.person_2_outlined,
-            size: iconSize,  
-            // Responsive icon size
+          icon: GestureDetector(
+            onTap: () {
+              // Announce the tap action for Profile
+              TextToSpeech.speak('Profile tapped');
+              onItemTapped(0);
+            },
+            onDoubleTap: () {
+              // Navigate to Profile screen on double tap
+              onItemTapped(0);
+            },
+            child: Icon(
+              Icons.person_2_outlined,
+              size: iconSize,
+            ),
           ),
-          label: 'Profile', // Always show label
+          label: 'Profile',
         ),
         BottomNavigationBarItem(
-          icon: Icon(
-  Icons.notifications_none, // Outlined notification icon
-            size: iconSize,  
+          icon: GestureDetector(
+            onTap: () {
+              // Announce the tap action for Notifications
+              TextToSpeech.speak('Notifications tapped');
+              //onItemTapped(1);
+            },
+            onDoubleTap: () {
+              TextToSpeech.speak('Notifications screen');
+              onItemTapped(1);
+            },
+            child: Icon(
+              Icons.notifications_none,
+              size: iconSize,
+            ),
           ),
-          label: 'Notifications', // Always show label
+          label: 'Notifications',
         ),
         BottomNavigationBarItem(
-          icon: Icon(
-            Icons.add,
-            size: iconSize,  
+          icon: GestureDetector(
+            onTap: () {
+              // Announce the tap action for Add
+              TextToSpeech.speak('Add tapped');
+              onItemTapped(2);
+            },
+            onDoubleTap: () {
+              TextToSpeech.speak('Add screen');
+              onItemTapped(2);
+            },
+            child: Icon(
+              Icons.add,
+              size: iconSize,
+            ),
           ),
-          label: 'Add', // Always show label
+          label: 'Add',
         ),
-        
       ],
       currentIndex: selectedIndex,
-     //selectedItemColor: Color.fromARGB(255, 144, 94, 153),
       unselectedItemColor: Colors.blueGrey,
       onTap: onItemTapped,
     );

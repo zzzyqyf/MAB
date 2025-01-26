@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter_application_final/DeviceIdProvider.dart';
@@ -10,7 +11,6 @@ import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:flutter_application_final/addPage.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
 import 'package:flutter_application_final/graph.dart';
-import 'package:flutter_application_final/graphProvider.dart';
 //import 'package:flutter_application_final/graph.dart';
 //import 'package:flutter_application_final/mqttTests/MQTT.dart';
 //import 'package:flutter_application_final/mqttservice.dart';
@@ -29,7 +29,9 @@ import 'test.dart';
 
 void main() async{
 
-  WidgetsFlutterBinding.ensureInitialized(); // Ensures Flutter is ready
+  WidgetsFlutterBinding.ensureInitialized();
+    await Firebase.initializeApp(); // Initialize Firebase
+ // Ensures Flutter is ready
   await initNotifications(); 
   // Initialize Hive
   await Hive.initFlutter();
@@ -47,10 +49,12 @@ if (!Hive.isBoxOpen('graphdata')) {
  // New box for notifications
   // Open your box here
  
+  String deviceId="";
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => DeviceManager()),
+
 
      // ChangeNotifierProvider(create: (_) => GraphProvider(deviceManager: deviceManager)),
              // ChangeNotifierProvider(create: (context) => DeviceIdProvider(deviceManager)),
@@ -127,7 +131,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Define pages to navigate to
   final List<Widget> _pages = [
-    TempVsTimeGraph(deviceId: '',),
+TempVsTimeGraph(deviceId: ''),
+   // TempVsTimeGraph(deviceId: '',),
      NotificationPage(),
     Register4Widget(id: '',),
   ];

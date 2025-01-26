@@ -11,42 +11,49 @@ import 'basePage.dart';
 
 class TentSettingsWidget extends StatefulWidget {
   final String deviceId; // Device ID passed from the parent widget (main class)
+  //final String userRole; // User role passed from InvitationWidget
 
-   TentSettingsWidget({super.key, required this.deviceId}); // Accept deviceId in the constructor
+  TentSettingsWidget({super.key, required this.deviceId}); // Accept deviceId and userRole
 
   @override
   State<TentSettingsWidget> createState() => _TentSettingsWidgetState();
 }
 
-
 class _TentSettingsWidgetState extends State<TentSettingsWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   bool _isMuted = false; // Initial mute state
+  String userRole = "Admin"; // Default role, can be updated
+   
 
+   @override
+  void initState() {
+    super.initState();
+    _loadUserRole();
+  }
+
+  _loadUserRole() async {
+    //SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      //userRole = prefs.getString('userRole') ?? "member"; // Default to member if not found
+    });
+  }
   @override
   Widget build(BuildContext context) {
-    // Get screen size
     final screenSize = MediaQuery.of(context).size;
-    // Determine padding and sizing based on screen size
     final horizontalPadding = screenSize.width * 0.05;
     final containerHeight = screenSize.height * 0.1;
     final fontSizeTitle = screenSize.width * 0.05;
     final fontSizeSubtitle = screenSize.width * 0.045;
     final verticalSpacing = screenSize.height * 0.02;
-                      final deviceId = widget.deviceId; // Get the deviceId passed in
- final deviceManager = Provider.of<DeviceManager>(context);
-    final disconnectionTime = deviceManager.getDisconnectionTime(deviceId);
 
-        //final screenWidth = MediaQuery.of(context).size.width;
-
-    //final screenWidth = MediaQuery.of(context).size.width;
+    final deviceManager = Provider.of<DeviceManager>(context);
+    final disconnectionTime = deviceManager.getDisconnectionTime(widget.deviceId);
 
     return GestureDetector(
-      
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         key: scaffoldKey,
-          backgroundColor: Colors.white,
+        backgroundColor: Colors.white,
         appBar: BasePage(
           title: 'Settings',
           showBackButton: true,
@@ -57,39 +64,34 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 15.0),
-// Adjust the padding as needed
                 child: Container(
-                      height: 85, // Set the fixed height of the box
-
+                  height: 85,
                   decoration: BoxDecoration(
-          color: Theme.of(context).secondaryHeaderColor,
+                    color: Theme.of(context).secondaryHeaderColor,
                     boxShadow: const [
                       BoxShadow(
-                    blurRadius: 5,
-                    color: Color.fromARGB(52, 2, 2, 2),
-                    //offset: const Offset(0, 2),
-                  ),
+                        blurRadius: 5,
+                        color: Color.fromARGB(52, 2, 2, 2),
+                      ),
                     ],
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(
-                        8.0), // Optional: Padding around the content
+                    padding: const EdgeInsets.all(8.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Status',
                           style: TextStyle(
-                            fontSize: fontSizeTitle, // Responsive text size
+                            fontSize: fontSizeTitle,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(
-                            height: 10), // Add space between title and subtitle
+                        const SizedBox(height: 10),
                         Text(
                           disconnectionTime,
                           style: TextStyle(
-                            fontSize: fontSizeTitle, // Responsive subtitle size
+                            fontSize: fontSizeTitle,
                           ),
                         ),
                       ],
@@ -97,28 +99,28 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                   ),
                 ),
               ),
-              //SizedBox(height: 0),
 
-              // Reusable Setting Item for "Name Tent"
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                child: SettingsItem(
-                  title: 'Name Tent',
-                  subtitle: 'Tent',
-                  containerHeight: containerHeight,
-                  fontSizeTitle: fontSizeTitle,
-                  fontSizeSubtitle: fontSizeSubtitle,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => NameWidget(deviceId: deviceId)),
-                    );
-                  },
+              // Conditionally render Name Tent if the user is Admin
+              if (userRole == 'Admin') 
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: SettingsItem(
+                    title: 'Name Tent',
+                    subtitle: 'Tent',
+                    containerHeight: containerHeight,
+                    fontSizeTitle: fontSizeTitle,
+                    fontSizeSubtitle: fontSizeSubtitle,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => NameWidget(deviceId: widget.deviceId)),
+                      );
+                    },
+                  ),
                 ),
-              ),
               SizedBox(height: verticalSpacing),
 
-              // Reusable Setting Item for "Frequency of Alerts"
+              // Other settings
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: SettingsItem(
@@ -137,7 +139,6 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
               ),
               SizedBox(height: verticalSpacing),
 
-              // Reusable Setting Item for "Sound Option"
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: SettingsItem(
@@ -156,43 +157,40 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
               ),
               SizedBox(height: verticalSpacing),
 
-              // Remove Tent
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                child: SettingsItem(
-                  title: 'Remove Tent',
-                  subtitle: 'Removing this tent will delete its data',
-                  containerHeight: containerHeight,
-                  fontSizeTitle: fontSizeTitle,
-                  fontSizeSubtitle: fontSizeSubtitle,
-                  onTap: () {
-                    // Show the pop-up dialog when tapped
-DeleteDialog.show(context, widget.deviceId);
-                  },
+              // Conditionally render Remove Tent if the user is Admin
+              if (userRole == 'Admin') 
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: SettingsItem(
+                    title: 'Remove Tent',
+                    subtitle: 'Removing this tent will delete its data',
+                    containerHeight: containerHeight,
+                    fontSizeTitle: fontSizeTitle,
+                    fontSizeSubtitle: fontSizeSubtitle,
+                    onTap: () {
+                      DeleteDialog.show(context, widget.deviceId);
+                    },
+                  ),
                 ),
-              ),
 
-              // SizedBox(height: verticalSpacing),
+              SizedBox(height: verticalSpacing),
 
-              // Mute with Switch
               Padding(
                 padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 15.0),
                 child: SettingsItem(
-                 title: 'Mute',
-              subtitle: 'Stop notifications',
-              containerHeight: containerHeight, // Example height
-              fontSizeTitle:fontSizeTitle, // Example font size
-              fontSizeSubtitle: fontSizeSubtitle, // Example font size
-              isSwitch: true,
-              switchValue: deviceManager.isMuted,
-              onSwitchChanged: (value) {
-                deviceManager.toggleMute(value);
+                  title: 'Mute',
+                  subtitle: 'Stop notifications',
+                  containerHeight: containerHeight,
+                  fontSizeTitle: fontSizeTitle,
+                  fontSizeSubtitle: fontSizeSubtitle,
+                  isSwitch: true,
+                  switchValue: deviceManager.isMuted,
+                  onSwitchChanged: (value) {
+                    deviceManager.toggleMute(value);
                   },
                 ),
               ),
               SizedBox(height: verticalSpacing),
-
-              //const SizedBox(height: 0.02),
             ],
           ),
         ),

@@ -61,7 +61,7 @@ class MqttService extends ChangeNotifier {
   void subscribeToTopics() {
     client.subscribe('esp32/temperature', MqttQos.atLeastOnce);
     client.subscribe('esp32/humidity', MqttQos.atLeastOnce);
-    client.subscribe('esp32/light', MqttQos.atLeastOnce);
+    client.subscribe('esp32/lights', MqttQos.atLeastOnce);
 
     client.updates!.listen((List<MqttReceivedMessage<MqttMessage>> c) {
       final recMess = c[0].payload as MqttPublishMessage;
@@ -71,7 +71,7 @@ class MqttService extends ChangeNotifier {
         temperature = double.tryParse(message);
       } else if (c[0].topic == 'esp32/humidity') {
         humidity = double.tryParse(message);
-      } else if (c[0].topic == 'esp32/light') {
+      } else if (c[0].topic == 'esp32/lights') {
         lightState = int.tryParse(message);
       }
 

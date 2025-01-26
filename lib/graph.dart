@@ -46,6 +46,7 @@ List<List<FlSpot>> historicalCycles = [];  // New list to store historical cycle
     spotBox = await Hive.openBox('temperatureData');
     cycleBox = await Hive.openBox('cycleData');  // New box for completed cycles
     _loadData();
+    
     // clearSpotBox();
       //printSpotBoxContents(); // Print the contents after loading data
 //clearCycleBox();
@@ -174,7 +175,8 @@ void testingConnection(){
 
 }
 
-  void _generateTemperatureData(Map<String, dynamic> sensorData) {
+  void _generateTemperatureData(Map<String, dynamic> sensorData) async {
+    
   DateTime currentTime = DateTime.now();
 
   // Use device manager to check device status
@@ -182,6 +184,8 @@ void testingConnection(){
   if (sensorData.isEmpty || !deviceManager.deviceIsActive(widget.deviceId)) {
     return;
   }
+
+    // Retrieve the historical data for the current deviceId
 
   // Initialize device-specific state maps if not already present
   deviceStartTimes.putIfAbsent(widget.deviceId, () => currentTime);
@@ -196,20 +200,27 @@ void testingConnection(){
   // Use the device-specific start time
   DateTime deviceStartTime = deviceStartTimes[widget.deviceId]!;
 
-  sensorData.entries
-      .where((entry) => entry.key.contains('temperature'))
-      .forEach((entry) {
-    final temperature = double.tryParse(entry.value.toString()) ?? 0.0;
-    final timeElapsed = currentTime.difference(deviceStartTime).inMinutes.toDouble();
-    final spot = FlSpot(timeElapsed, temperature);
+  // Retrieve historical data from Hive storage
+  final sensorBox = await Hive.openBox<Map<String, dynamic>>('sensorData');
+      final historicalData = deviceManager.getSensorDataForDevice(widget.deviceId);
 
+  // Clear previous spots and add historical data
+  spots.clear();
+  for (var entry in historicalData) {
+    final timestamp = DateTime.parse(entry['timestamp']);
+    final temperature = entry['temperature'] ?? 0.0;
+    final timeElapsed = currentTime.difference(timestamp).inMinutes.toDouble();
+    final spot = FlSpot(timeElapsed, temperature);
     spots.add(spot);
-  });
+  }
 
   spots.sort((a, b) => a.x.compareTo(b.x));
+print('Sensor Data: $sensorData');
+print('Historical Data: $historicalData');
+print('Spots: $spots');
 
   // Handle cycle completion for this device
-  if (spots.isNotEmpty && spots.last.x > 12) {
+  if (spots.isNotEmpty && spots.last.x > 2) {
     if (mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         setState(() {
@@ -245,6 +256,7 @@ void testingConnection(){
     }
   }
 }
+
 void announceRange(double minX, double maxX, DateTime cycleStartTime) {
   DateTime startTime = cycleStartTime.add(Duration(minutes: minX.toInt()));
   DateTime endTime = cycleStartTime.add(Duration(minutes: maxX.toInt()));

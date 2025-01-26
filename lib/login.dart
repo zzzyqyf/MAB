@@ -2,7 +2,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/main.dart';
 import 'package:flutter_application_final/signUp.dart';
+import 'package:flutter_application_final/sinUp.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'buttom.dart';
 
@@ -17,7 +19,6 @@ class _LoginWidgetState extends State<LoginWidget> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _passwordVisibility = false;
-
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -50,36 +51,24 @@ class _LoginWidgetState extends State<LoginWidget> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: double.infinity,
-                          height: 140,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.only(
-                              bottomLeft: Radius.circular(16),
-                              bottomRight: Radius.circular(16),
+                        ShaderMask(
+                          shaderCallback: (bounds) => const LinearGradient(
+                            colors: [
+                              Color.fromARGB(255, 6, 94, 135), // Dark cyan-purple blend
+                              Color.fromARGB(255, 84, 90, 95), // Complementary color
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ).createShader(bounds),
+                          child: Text(
+                            'Welcome Back',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 36,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
                             ),
                           ),
-                          alignment: const AlignmentDirectional(-1, 0),
                         ),
-                       ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              colors: [
-                Color.fromARGB(255, 6, 94, 135), // Dark cyan-purple blend
-                Color.fromARGB(255, 84, 90, 95), // Complementary color
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ).createShader(bounds),
-            child: Text(
-              'Welcome Back',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 36,
-                fontWeight: FontWeight.w600,
-                color: Colors.white, // This will be overridden by the shader
-              ),
-            ),
-          ),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(32, 32, 32, 32),
                           child: Column(
@@ -188,10 +177,11 @@ class _LoginWidgetState extends State<LoginWidget> {
                                       ),
                                       recognizer: TapGestureRecognizer()
                                         ..onTap = () {
-Navigator.pushReplacement(
+                                          Navigator.pushReplacement(
                                             context,
                                             MaterialPageRoute(builder: (context) => const SignUpWidget()),
-                                          );                                        },
+                                          );
+                                        },
                                     ),
                                   ],
                                 ),
@@ -205,43 +195,49 @@ Navigator.pushReplacement(
                   ),
                 ),
               ),
-              /*
-              Expanded(
-                flex: 6,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      image: DecorationImage(
-                        fit: BoxFit.cover,
-                        image: NetworkImage(
-                          'https://images.unsplash.com/photo-1514924013411-cbf25faa35bb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1380&q=80',
-                        ),
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
-              ),
-              */
             ],
           ),
         ),
         
         bottomNavigationBar: ReusableBottomButton(
-        buttonText: 'Login',
-        padding: 16.0,
-        fontSize: 18.0,
-        onPressed: () {
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MyApp()),
-                );
-                      },
-      ),
+          buttonText: 'Login',
+          padding: 16.0,
+          fontSize: 18.0,
+          onPressed: () {
+            _handleLogin();
+          },
+        ),
       ),
     );
+  }
+
+  void _handleLogin() async {
+    String email = _emailController.text.trim();
+    String password = _passwordController.text.trim();
+
+    // Simulate an API call to get the user role (admin or member)
+    String userRole = await fetchUserRoleFromDatabase(email);
+
+    // Store the user role in shared preferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString('userRole', userRole);
+
+    // After this, navigate to your home screen
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const MyApp()), // Replace with your desired screen
+    );
+  }
+
+  Future<String> fetchUserRoleFromDatabase(String email) async {
+    // Simulate a delay for fetching data from a database
+    await Future.delayed(const Duration(seconds: 2));
+
+    // You would replace this with actual backend code to fetch the user role
+    if (email == "admin@example.com") {
+      return "admin"; // Simulate admin role
+    } else {
+      return "member"; // Simulate member role
+    }
   }
 }

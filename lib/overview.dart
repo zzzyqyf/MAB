@@ -3,6 +3,7 @@ import 'package:flutter_application_final/TempVsTimeGraph.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
 import 'package:flutter_application_final/graph.dart';
 import 'package:flutter_application_final/main.dart';
+import 'package:flutter_application_final/tempertureGraph.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'Navbar.dart'; // Import CustomNavbar component

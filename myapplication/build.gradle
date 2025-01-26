@@ -1,19 +1,15 @@
-plugins {
-    id 'com.android.application' version '4.4.0'
-}
-
 android {
     namespace 'com.myfirstapplication.myapplication'
-    compileSdk 33
+    compileSdk 33  // Compile against the latest SDK
 
     defaultConfig {
         applicationId "com.myfirstapplication.myapplication"
-        minSdk 24
-        targetSdk 33
+        minSdk  23  // Minimum SDK version
+        targetSdk 33  // Target SDK version to the latest
         versionCode 1
         versionName "1.0"
 
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -22,11 +18,13 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
 }
+
 
 dependencies {
 
