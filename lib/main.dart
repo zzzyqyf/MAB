@@ -49,7 +49,7 @@ if (!Hive.isBoxOpen('graphdata')) {
  // New box for notifications
   // Open your box here
  
-  String deviceId="";
+  //String deviceId="";
   runApp(
     MultiProvider(
       providers: [

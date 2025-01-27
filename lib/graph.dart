@@ -32,6 +32,7 @@ Map<String, bool> deviceStartTimeSet = {};
   late Box cycleBox;
     Map<String, dynamic> sensorData = {}; // Placeholder for sensor data
   late Timer _timer;  // Declare the timer
+bool isViewingHistoricalData = false;
 
 List<List<FlSpot>> historicalCycles = [];  // New list to store historical cycles
   @override
@@ -85,6 +86,10 @@ void _startPeriodicCheck() {
     });
   }
   void loadHistoricalCycles(DateTime selectedDate, String deviceId) {
+    setState(() {
+    isViewingHistoricalData = true; // Pause periodic updates
+  });
+
   final allCycles = cycleBox.values.toList();
 
   // Filter cycles for the selected date and device
@@ -97,13 +102,16 @@ void _startPeriodicCheck() {
   }).toList();
 
   if (filteredCycles.isEmpty) {
-    print("No cycles found for the selected date: ${DateFormat('yyyy-MM-dd').format(selectedDate)}");
+     TextToSpeech.speak(
+ "No cycles found for the selected date: ${DateFormat('yyyy-MM-dd').format(selectedDate)} returend back to the prevoius screen" 
+     );
+    /*
     setState(() {
       spots.clear();
             deviceStartTimes[deviceId] = DateTime.fromMillisecondsSinceEpoch(0); // Reset start time
 
        // Clear graph if no data is found
-    });
+    });*/
   } else {
 print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
     for (var cycle in filteredCycles) {
@@ -126,6 +134,11 @@ print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
       spots.sort((a, b) => a.x.compareTo(b.x)); // Ensure sorted order for graph rendering
     });
   }
+}
+void exitHistoricalView() {
+  setState(() {
+    isViewingHistoricalData = false; // Resume periodic updates
+  });
 }
 
 
@@ -175,8 +188,9 @@ void testingConnection(){
 
 }
 
-  void _generateTemperatureData(Map<String, dynamic> sensorData) async {
-    
+ void _generateTemperatureData(Map<String, dynamic> sensorData) async {
+  if (isViewingHistoricalData) return; // Skip updates
+
   DateTime currentTime = DateTime.now();
 
   // Use device manager to check device status
@@ -185,9 +199,7 @@ void testingConnection(){
     return;
   }
 
-    // Retrieve the historical data for the current deviceId
-
-  // Initialize device-specific state maps if not already present
+  // Initialise device-specific state maps if not already present
   deviceStartTimes.putIfAbsent(widget.deviceId, () => currentTime);
   deviceStartTimeSet.putIfAbsent(widget.deviceId, () => false);
 
@@ -200,27 +212,18 @@ void testingConnection(){
   // Use the device-specific start time
   DateTime deviceStartTime = deviceStartTimes[widget.deviceId]!;
 
-  // Retrieve historical data from Hive storage
-  final sensorBox = await Hive.openBox<Map<String, dynamic>>('sensorData');
-      final historicalData = deviceManager.getSensorDataForDevice(widget.deviceId);
-
-  // Clear previous spots and add historical data
-  spots.clear();
-  for (var entry in historicalData) {
-    final timestamp = DateTime.parse(entry['timestamp']);
-    final temperature = entry['temperature'] ?? 0.0;
-    final timeElapsed = currentTime.difference(timestamp).inMinutes.toDouble();
-    final spot = FlSpot(timeElapsed, temperature);
-    spots.add(spot);
+  // Retrieve real-time sensor data and calculate elapsed time
+  if (sensorData.containsKey('temperature')) {
+    double temperature = sensorData['temperature'] ?? 0.0;
+    double timeElapsed = currentTime.difference(deviceStartTime).inMinutes.toDouble();
+    spots.add(FlSpot(timeElapsed, temperature));
   }
 
+  // Sort spots to ensure proper plotting
   spots.sort((a, b) => a.x.compareTo(b.x));
-print('Sensor Data: $sensorData');
-print('Historical Data: $historicalData');
-print('Spots: $spots');
 
-  // Handle cycle completion for this device
-  if (spots.isNotEmpty && spots.last.x > 2) {
+  // Check if the cycle is complete
+  if (spots.isNotEmpty && spots.last.x >= 3) {
     if (mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         setState(() {
@@ -241,21 +244,28 @@ print('Spots: $spots');
           }).toList();
 
           // Add cycle entries to persistent storage
+         // final cycleBox = await Hive.openBox<Map<String, dynamic>>('cycleData');
           for (var entry in cycleEntries) {
             cycleBox.add(entry);
           }
 
+          // Filter spots to retain only new data
+          spots = spots.where((spot) => spot.x > 3).toList();
+
           // Reset state for the next cycle
           deviceStartTimes[widget.deviceId] = DateTime.now();
-          deviceStartTimeSet[widget.deviceId] = false;
-          spots.clear();
+          deviceStartTimeSet[widget.deviceId] = true;
         });
 
         _saveData(); // Save the cleared state of current data
       });
     }
   }
+
+  print('Sensor Data: $sensorData');
+  print('Spots: $spots');
 }
+
 
 void announceRange(double minX, double maxX, DateTime cycleStartTime) {
   DateTime startTime = cycleStartTime.add(Duration(minutes: minX.toInt()));
@@ -278,7 +288,7 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
         final sensorData = deviceManager.sensorData;
         _generateTemperatureData(sensorData);
       final isActive = deviceManager.isDeviceActive;
-
+ _saveData();
         final visibleSpots = spots.where((spot) {
           return spot.x >= minX && spot.x <= maxX;
         }).toList();
