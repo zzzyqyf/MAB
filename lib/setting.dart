@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
 import 'package:flutter_application_final/main.dart';
 import 'package:flutter_application_final/name.dart';
 import 'package:flutter_application_final/soundOption.dart';
 import 'package:flutter_application_final/time.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 import 'basePage.dart';
+//import 'text_to_speech.dart'; // Assuming TTS utility is in text_to_speech.dart
 
 class TentSettingsWidget extends StatefulWidget {
-  final String deviceId; // Device ID passed from the parent widget (main class)
-  //final String userRole; // User role passed from InvitationWidget
+  final String deviceId;
 
-  TentSettingsWidget({super.key, required this.deviceId}); // Accept deviceId and userRole
+  const TentSettingsWidget({Key? key, required this.deviceId}) : super(key: key);
 
   @override
   State<TentSettingsWidget> createState() => _TentSettingsWidgetState();
@@ -21,22 +21,20 @@ class TentSettingsWidget extends StatefulWidget {
 
 class _TentSettingsWidgetState extends State<TentSettingsWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
-  bool _isMuted = false; // Initial mute state
-  String userRole = "Admin"; // Default role, can be updated
-   
+  String userRole = "Admin"; // Default role
 
-   @override
+  @override
   void initState() {
     super.initState();
     _loadUserRole();
   }
 
   _loadUserRole() async {
-    //SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      //userRole = prefs.getString('userRole') ?? "member"; // Default to member if not found
+      // Load user role here
     });
   }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -61,47 +59,51 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
         body: SafeArea(
           top: true,
           child: ListView(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 15.0),
-                child: Container(
-                  height: 85,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).secondaryHeaderColor,
-                    boxShadow: const [
-                      BoxShadow(
-                        blurRadius: 5,
-                        color: Color.fromARGB(52, 2, 2, 2),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Status',
-                          style: TextStyle(
-                            fontSize: fontSizeTitle,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          disconnectionTime,
-                          style: TextStyle(
-                            fontSize: fontSizeTitle,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+            children: [Padding(
+  padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 15.0),
+  child: GestureDetector(
+    onTap: () {
+      // Trigger TTS to read the status and disconnection time
+      TextToSpeech.speak('Status $disconnectionTime');
+    },
+    child: Container(
+      height: 85,
+      decoration: BoxDecoration(
+        color: Theme.of(context).secondaryHeaderColor,
+        boxShadow: const [
+          BoxShadow(
+            blurRadius: 5,
+            color: Color.fromARGB(52, 2, 2, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Status',
+              style: TextStyle(
+                fontSize: fontSizeTitle,
+                fontWeight: FontWeight.bold,
               ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              disconnectionTime,
+              style: TextStyle(
+                fontSize: fontSizeTitle,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  ),
+),
 
-              // Conditionally render Name Tent if the user is Admin
-              if (userRole == 'Admin') 
+              if (userRole == 'Admin')
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: SettingsItem(
@@ -111,16 +113,21 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                     fontSizeTitle: fontSizeTitle,
                     fontSizeSubtitle: fontSizeSubtitle,
                     onTap: () {
+                      TextToSpeech.speak('Name Device.');
+                    },
+                    onDoubleTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => NameWidget(deviceId: widget.deviceId)),
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              NameWidget(deviceId: widget.deviceId),
+                              
+                        ),
                       );
                     },
                   ),
                 ),
               SizedBox(height: verticalSpacing),
-
-              // Other settings
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: SettingsItem(
@@ -130,6 +137,10 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                   fontSizeTitle: fontSizeTitle,
                   fontSizeSubtitle: fontSizeSubtitle,
                   onTap: () {
+                    TextToSpeech.speak(
+                        'Frequency of Alerts. Tap again to navigate.');
+                  },
+                  onDoubleTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const time()),
@@ -138,7 +149,6 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                 ),
               ),
               SizedBox(height: verticalSpacing),
-
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: SettingsItem(
@@ -148,6 +158,9 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                   fontSizeTitle: fontSizeTitle,
                   fontSizeSubtitle: fontSizeSubtitle,
                   onTap: () {
+                    TextToSpeech.speak('Sound Option.');
+                  },
+                  onDoubleTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => const SoundWidget()),
@@ -156,25 +169,25 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                 ),
               ),
               SizedBox(height: verticalSpacing),
-
-              // Conditionally render Remove Tent if the user is Admin
-              if (userRole == 'Admin') 
+              if (userRole == 'Admin')
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: SettingsItem(
-                    title: 'Remove Tent',
+                    title: 'Remove Device',
                     subtitle: 'Removing this tent will delete its data',
                     containerHeight: containerHeight,
                     fontSizeTitle: fontSizeTitle,
                     fontSizeSubtitle: fontSizeSubtitle,
                     onTap: () {
+                      TextToSpeech.speak(
+                          'Remove Device. Removing this tent will delete its data.');
+                    },
+                    onDoubleTap: () {
                       DeleteDialog.show(context, widget.deviceId);
                     },
                   ),
                 ),
-
               SizedBox(height: verticalSpacing),
-
               Padding(
                 padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 15.0),
                 child: SettingsItem(
@@ -187,10 +200,25 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                   switchValue: deviceManager.isMuted,
                   onSwitchChanged: (value) {
                     deviceManager.toggleMute(value);
+                    if(value=true){
+                    TextToSpeech.speak('Device Muted');  
+
+                    }
+else{
+                      TextToSpeech.speak('Device unmuted');  
+
+}
+                          //TextToSpeech.speak('Status $disconnectionTime');
+ 
                   },
+                   onTap: () {
+                      TextToSpeech.speak(
+                          'Mute Device. Stop receiving pop up notification');
+                          
+                    },
+                    
                 ),
               ),
-              SizedBox(height: verticalSpacing),
             ],
           ),
         ),
@@ -199,64 +227,96 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
   }
 }
 
-// warning pop-up dialog
 class DeleteDialog {
   static void show(BuildContext context, String id) {
+    TextToSpeech.speak(
+        'Delete Device. Are you sure you want to delete this device? This action cannot be undone.');
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.warning_amber_rounded, color: Colors.red),
-              SizedBox(width: 8),
-              Text('Delete Device'),
+        return GestureDetector(
+          onTap: () {
+            TextToSpeech.speak('Cancel button. Tap again to cancel.');
+          },
+          onDoubleTap: () {
+            Navigator.of(context).pop();
+          },
+          child: AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.red),
+                SizedBox(width: 8),
+                Text('Delete Device'),
+              ],
+            ),
+            content: const Text(
+                'Are you sure you want to delete this device? This action cannot be undone.'),
+            actions: [
+              GestureDetector(
+                onTap: () {
+                  TextToSpeech.speak('Cancel button.');
+                },
+                onDoubleTap: () {
+                  Navigator.of(context).pop();
+                },
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Color.fromARGB(255, 80, 139, 194)),
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  TextToSpeech.speak('Delete button.');
+                },
+                onDoubleTap: () {
+                                    TextToSpeech.speak('Device Deleted');
+
+                  Provider.of<DeviceManager>(context, listen: false)
+                      .removeDevice(id);
+                  Navigator.of(context).pop();
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MyApp()),
+                    
+                  );
+                },
+                child: TextButton(
+                  onPressed: () {
+                    Provider.of<DeviceManager>(context, listen: false)
+                        .removeDevice(id);
+                    Navigator.of(context).pop();
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const MyApp()),
+                    );
+                  },
+                  child: const Text(
+                    'Delete',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              ),
             ],
           ),
-          content: const Text(
-              'Are you sure you want to delete this device? This action cannot be undone.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Color.fromARGB(255, 80, 139, 194)),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                // Perform delete action here
-                Provider.of<DeviceManager>(context, listen: false)
-                    .removeDevice(id); // Remove the device using DeviceManager
-                Navigator.of(context).pop();
-                Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(builder: (context) => const MyApp()), // Replace with your desired screen
-  ); // Close the dialog
-              },
-              child: const Text(
-                'Delete',
-                style: TextStyle(color: Colors.red),
-              ),
-            ),
-          ],
         );
       },
     );
   }
 }
 
-// Reusable SettingsItem Widget
 class SettingsItem extends StatelessWidget {
-  
   final String title;
   final String subtitle;
   final double containerHeight;
   final double fontSizeTitle;
   final double fontSizeSubtitle;
-  final VoidCallback? onTap; // Nullable to allow non-clickable items
+  final VoidCallback? onTap;
+  final VoidCallback? onDoubleTap;
   final bool? isSwitch;
   final bool? switchValue;
   final ValueChanged<bool>? onSwitchChanged;
@@ -269,17 +329,18 @@ class SettingsItem extends StatelessWidget {
     required this.fontSizeTitle,
     required this.fontSizeSubtitle,
     this.onTap,
-    this.isSwitch = false, // Defaults to false (no switch)
+    this.onDoubleTap,
+    this.isSwitch = false,
     this.switchValue,
     this.onSwitchChanged,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-        final screenWidth = MediaQuery.of(context).size.width;
-
-    return InkWell(
-      onTap: onTap, // Makes the widget clickable if onTap is not null
+    final screenWidth = MediaQuery.of(context).size.width;
+    return GestureDetector(
+      onTap: onTap,
+      onDoubleTap: onDoubleTap,
       child: Container(
         height: containerHeight,
         decoration: BoxDecoration(
@@ -287,7 +348,7 @@ class SettingsItem extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               blurRadius: 5,
-          color: Theme.of(context).cardColor,
+              color: Theme.of(context).cardColor,
               offset: const Offset(0, 2),
             )
           ],
@@ -328,9 +389,11 @@ class SettingsItem extends StatelessWidget {
                   inactiveThumbColor: Colors.red,
                 ),
               if (!(isSwitch ?? false))
-                 Icon(Icons.arrow_forward_ios,
-                size: screenWidth * 0.04,
-                color: Colors.grey), 
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: screenWidth * 0.04,
+                  color: Colors.grey,
+                ),
             ],
           ),
         ),

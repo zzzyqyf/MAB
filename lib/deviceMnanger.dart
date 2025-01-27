@@ -14,7 +14,7 @@ class DeviceManager extends ChangeNotifier {
   final Map<String, MqttService> _mqttServices = {};
   final Map<String, Timer> _inactivityTimers = {};
   final double temperatureThreshold = 32.0;
-  final double humidityThreshold = 20.0;
+  final double humidityThreshold = 90.0;
   final int criticalDuration = 10; // In seconds
   Box<Map<String, dynamic>>? _sensorBox;
 
@@ -161,7 +161,6 @@ void onNewSensorData(String deviceId, Map<String, dynamic> sensorData) {
         _updateDisconnectionTime(deviceId, DateTime.now(), 'online');
         monitorSensors(temperature!, humidity!, deviceId);
        // displayCriticalStatus("good", deviceId);
-
       },
       onDeviceConnectionStatusChange: (deviceId, status) {
         updateDeviceStatus(deviceId, status);
@@ -185,6 +184,7 @@ void startPeriodicDataStore(String deviceId, double temperature) {
       // Pass the required arguments to storeSensorData
       final currentTimestamp = DateTime.now();
       storeSensorData(deviceId, temperature, currentTimestamp);
+      
     });
   }
       final isDataReceived = mqttService.isDataReceived(deviceId);
@@ -320,11 +320,20 @@ void monitorSensors(double? temp, double humidity, String deviceId) {
   }
 
   // If any sensor is critical, update status to "Critical"
-  if (isTempCritical || isHumidityCritical) {
-    displayCriticalStatus("Critical", deviceId);
-  } else {
+  if (isTempCritical) {
+    displayCriticalStatus("High Temperture", deviceId);
+        frequency("High Temperture", deviceId);
+
+  }
+  if(isHumidityCritical){
+    displayCriticalStatus("low Humidity", deviceId);
+    frequency("low Humidity", deviceId);
+
+  }
+  
+   else {
     // If neither is critical, reset to "good"
-    displayCriticalStatus("good", deviceId);
+    displayCriticalStatus(" ", deviceId);
   }
 }
 
@@ -367,7 +376,7 @@ void frequency(String sensorType, String deviceId) {
   lastNotificationTime[deviceId] = now;
 
   // Send the notification
-  showNotification(deviceId, "Critical Status: $sensorType");
+  showNotification(deviceId, " $sensorType");
 }
 
   /// Show a notification
@@ -377,7 +386,7 @@ Future<void> showNotification(String deviceId, String message) async {
   final device = _deviceBox?.get(deviceId);
   final deviceName = device != null && device['name'] != null
       ? device['name']
-      : 'Unnamed Device';
+      : 'Unnamed';
 
   const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
     'critical_status_channel',
@@ -401,7 +410,7 @@ Future<void> showNotification(String deviceId, String message) async {
   // Save notification to the notifications box
   final notificationsBox = Hive.box('notificationsBox');
   notificationsBox.add({
-    'title': 'Device $deviceName',
+    'title': ' $deviceName Device',
     'message': message,
     'timestamp': DateTime.now().toString(),
     'id':deviceId,
@@ -612,9 +621,9 @@ Future<void> deleteNotificationsByDeviceId(String deviceId) async {
 final deviceId = uuid.v4();  // Generates a random UUID
     final device = {
       'id': deviceId,
-      'name': name.isEmpty ? 'Unnamed Device' : name,
+      'name': name.isEmpty ? 'Unnamed' : name,
       'status': 'connecting',
-      'sensorStatus':'no data',
+      'sensorStatus':'',
       'disconnectionTimeResult':'not connected yet!',
     };
     _deviceBox?.put(deviceId, device);

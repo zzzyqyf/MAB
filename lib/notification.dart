@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'basePage.dart';
@@ -16,9 +17,8 @@ class _NotificationPageState extends State<NotificationPage> {
 
   @override
   void initState() {
-   notificationsBox = Hive.box('notificationsBox');
-       super.initState();
- // Access the Hive notifications box
+    notificationsBox = Hive.box('notificationsBox'); // Access the Hive notifications box
+    super.initState();
   }
 
   @override
@@ -37,6 +37,7 @@ class _NotificationPageState extends State<NotificationPage> {
             valueListenable: notificationsBox.listenable(),
             builder: (context, Box box, _) {
               if (box.isEmpty) {
+                TextToSpeech.speak('No notifications available.');
                 return const Center(child: Text('No notifications available.'));
               }
               return ListView.builder(
@@ -64,8 +65,8 @@ class _NotificationPageState extends State<NotificationPage> {
       padding: const EdgeInsets.fromLTRB(0, 20, 0, 1),
       child: InkWell(
         onTap: () {
-          // Navigate to another page when tapped
-          Navigator.pushNamed(context, 'AnotherPage');
+          // Trigger Text-to-Speech when tapped
+          TextToSpeech.speak('$title. $subtitle. Received $time.');
         },
         child: Container(
           width: double.infinity,

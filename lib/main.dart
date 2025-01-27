@@ -49,7 +49,7 @@ if (!Hive.isBoxOpen('graphdata')) {
  // New box for notifications
   // Open your box here
  
-  //String deviceId="";
+  String deviceId="";
   runApp(
     MultiProvider(
       providers: [
@@ -318,17 +318,30 @@ class TentCard extends StatelessWidget {
         ),
         child: Stack(
           children: [
+             Align(
+                alignment: const AlignmentDirectional(0, -0.5), // Adjust alignment for vertical centering
+
+              child: Text(
+                name,
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  fontSize: mediaQuery.size.width * 0.06,
+                ),
+              ),
+            ),
             Align(
-              alignment: const AlignmentDirectional(-0.40, -0.5),
+              alignment: const AlignmentDirectional(-0.06, 0.10),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     statusIcon,
                     color: statusIconColor,
-                    size: mediaQuery.size.width * 0.05,
+        size: mediaQuery.size.width * 0.1, // Increased size multiplier
                   ),
                   const SizedBox(width: 8),
+                  /*
                   Text(
                     status.toUpperCase(),
                     style: TextStyle(
@@ -337,11 +350,12 @@ class TentCard extends StatelessWidget {
                       fontSize: mediaQuery.size.width * 0.05,
                     ),
                   ),
+                  */
                 ],
               ),
             ),
             Align(
-              alignment: const AlignmentDirectional(-0.09, 0.11),
+              alignment: const AlignmentDirectional(-0.09, 0.63),
               child: Text(
                 sensorStatus,
                 style: TextStyle(
@@ -359,17 +373,7 @@ class TentCard extends StatelessWidget {
                 size: mediaQuery.size.width * 0.09,
               ),
           ), */ 
-            Align(
-              alignment: const AlignmentDirectional(-0.09, 0.63),
-              child: Text(
-                name,
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  fontSize: mediaQuery.size.width * 0.06,
-                ),
-              ),
-            ),
+           
           ],
         ),
       ),
