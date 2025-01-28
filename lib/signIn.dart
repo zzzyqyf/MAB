@@ -1,26 +1,27 @@
-/*
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/buttom.dart';
 import 'package:flutter_application_final/main.dart';
-import 'package:flutter_application_final/signUp.dart';
 import 'package:flutter_application_final/sinUp.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'buttom.dart';
 
 class LoginWidget extends StatefulWidget {
   const LoginWidget({Key? key}) : super(key: key);
 
   @override
-  State<LoginWidget> createState() => _LoginWidgetState();
+  _LoginWidgetState createState() => _LoginWidgetState();
 }
 
 class _LoginWidgetState extends State<LoginWidget> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
   bool _passwordVisibility = false;
-  final scaffoldKey = GlobalKey<ScaffoldState>();
+  final _formKey = GlobalKey<FormState>();
+    final scaffoldKey = GlobalKey<ScaffoldState>();
+
 
   @override
   void dispose() {
@@ -29,49 +30,73 @@ class _LoginWidgetState extends State<LoginWidget> {
     super.dispose();
   }
 
+  // Login method
+  Future<void> _login() async {
+    if (_formKey.currentState?.validate() ?? false) {
+      try {
+        // Authenticate user with email and password
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+
+        // Navigate to the home screen after successful login
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MyApp()),
+        );
+      } catch (e) {
+        // Handle login errors
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed: $e')),
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: Row(
-            children: [
-              Expanded(
-                flex: 8,
-                child: Container(
-                  width: 100,
-                  height: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                  ),
-                  alignment: const AlignmentDirectional(0, -1),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ShaderMask(
-                          shaderCallback: (bounds) => const LinearGradient(
-                            colors: [
-                              Color.fromARGB(255, 6, 94, 135), // Dark cyan-purple blend
-                              Color.fromARGB(255, 84, 90, 95), // Complementary color
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ).createShader(bounds),
-                          child: Text(
-                            'Welcome Back',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 36,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
+Widget build(BuildContext context) {
+  return GestureDetector(
+    onTap: () => FocusScope.of(context).unfocus(),
+    child: Scaffold(
+      body: SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              flex: 8,
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                ),
+                alignment: Alignment.center,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ShaderMask(
+                        shaderCallback: (bounds) => const LinearGradient(
+                          colors: [
+                            Color.fromARGB(255, 6, 94, 135), // Dark cyan-purple blend
+                            Color.fromARGB(255, 84, 90, 95), // Complementary color
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ).createShader(bounds),
+                        child: Text(
+                          'Welcome Back',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 36,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(32, 32, 32, 32),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Form(
+                          key: _formKey,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -81,8 +106,8 @@ class _LoginWidgetState extends State<LoginWidget> {
                                   width: 370,
                                   child: TextFormField(
                                     controller: _emailController,
+                                    keyboardType: TextInputType.emailAddress,
                                     autofocus: true,
-                                    autofillHints: const [AutofillHints.email],
                                     decoration: InputDecoration(
                                       labelText: 'Email',
                                       labelStyle: GoogleFonts.plusJakartaSans(
@@ -107,7 +132,15 @@ class _LoginWidgetState extends State<LoginWidget> {
                                       filled: true,
                                       fillColor: const Color(0xFFF1F4F8),
                                     ),
-                                    keyboardType: TextInputType.emailAddress,
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Please enter your email';
+                                      } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
+                                          .hasMatch(value)) {
+                                        return 'Please enter a valid email address';
+                                      }
+                                      return null;
+                                    },
                                   ),
                                 ),
                               ),
@@ -117,8 +150,6 @@ class _LoginWidgetState extends State<LoginWidget> {
                                   width: 370,
                                   child: TextFormField(
                                     controller: _passwordController,
-                                    autofocus: true,
-                                    autofillHints: const [AutofillHints.password],
                                     obscureText: !_passwordVisibility,
                                     decoration: InputDecoration(
                                       labelText: 'Password',
@@ -158,10 +189,18 @@ class _LoginWidgetState extends State<LoginWidget> {
                                         },
                                       ),
                                     ),
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Please enter your password';
+                                      } else if (value.length < 6) {
+                                        return 'Password must be at least 6 characters';
+                                      }
+                                      return null;
+                                    },
                                   ),
                                 ),
                               ),
-                              
+                              const SizedBox(height: 16),
                               RichText(
                                 text: TextSpan(
                                   children: [
@@ -172,7 +211,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                                     TextSpan(
                                       text: ' Sign Up here',
                                       style: GoogleFonts.plusJakartaSans(
-                                          color: Colors.blue,
+                                        color: Colors.blue,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -180,66 +219,35 @@ class _LoginWidgetState extends State<LoginWidget> {
                                         ..onTap = () {
                                           Navigator.pushReplacement(
                                             context,
-                                            MaterialPageRoute(builder: (context) => const SignUpWidget()),
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const SignUpWidget(),
+                                            ),
                                           );
                                         },
                                     ),
                                   ],
                                 ),
                               ),
-                              
                             ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
-        
-        bottomNavigationBar: ReusableBottomButton(
-          buttonText: 'Login',
-          padding: 16.0,
-          fontSize: 18.0,
-          onPressed: () {
-            _handleLogin();
-          },
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  void _handleLogin() async {
-    String email = _emailController.text.trim();
-    String password = _passwordController.text.trim();
-
-    // Simulate an API call to get the user role (admin or member)
-    String userRole = await fetchUserRoleFromDatabase(email);
-
-    // Store the user role in shared preferences
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setString('userRole', userRole);
-
-    // After this, navigate to your home screen
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const MyApp()), // Replace with your desired screen
-    );
-  }
-
-  Future<String> fetchUserRoleFromDatabase(String email) async {
-    // Simulate a delay for fetching data from a database
-    await Future.delayed(const Duration(seconds: 2));
-
-    // You would replace this with actual backend code to fetch the user role
-    if (email == "admin@example.com") {
-      return "admin"; // Simulate admin role
-    } else {
-      return "member"; // Simulate member role
-    }
-  }
+      bottomNavigationBar: ReusableBottomButton(
+        buttonText: 'Login',
+        padding: 16.0,
+        fontSize: 18.0,
+        onPressed: _login,
+      ),
+    ),
+  );
 }
-*/
+}

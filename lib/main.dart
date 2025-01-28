@@ -132,6 +132,7 @@ class _MyHomePageState extends State<MyHomePage> {
   // Define pages to navigate to
   final List<Widget> _pages = [
 TempVsTimeGraph(deviceId: ''),
+ProfilePage(),
    // TempVsTimeGraph(deviceId: '',),
      NotificationPage(),
     Register4Widget(id: '',),
