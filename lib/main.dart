@@ -131,7 +131,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Define pages to navigate to
   final List<Widget> _pages = [
-TempVsTimeGraph(deviceId: ''),
+//TempVsTimeGraph(deviceId: ''),
 ProfilePage(),
    // TempVsTimeGraph(deviceId: '',),
      NotificationPage(),
@@ -287,11 +287,11 @@ class TentCard extends StatelessWidget {
 
     switch (status) {
       case 'online':
-        statusIcon = Icons.check_circle;
+        statusIcon = Icons.wifi;
         statusIconColor = Colors.green;
         break;
       case 'offline':
-        statusIcon = Icons.error;
+        statusIcon = Icons.signal_wifi_off;
         statusIconColor = Colors.red;
         break;
       case 'connecting':
@@ -332,7 +332,7 @@ class TentCard extends StatelessWidget {
               ),
             ),
             Align(
-              alignment: const AlignmentDirectional(-0.06, 0.10),
+              alignment: const AlignmentDirectional(-0.03, 0.10),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -355,6 +355,7 @@ class TentCard extends StatelessWidget {
                 ],
               ),
             ),
+            /*
             Align(
               alignment: const AlignmentDirectional(-0.09, 0.63),
               child: Text(
@@ -366,6 +367,7 @@ class TentCard extends StatelessWidget {
                 ),
               ),
             ),
+            */
            /* Align(
               alignment: const AlignmentDirectional(-0.09, 0.11),
               child: Icon(

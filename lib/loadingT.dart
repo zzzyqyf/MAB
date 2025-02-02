@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:flutter_application_final/main.dart';
 //import 'package:google_fonts/google_fonts.dart';
 
@@ -59,13 +60,17 @@ class _LoadingCopyWidgetState extends State<LoadingCopyWidget> {
         padding: 16.0,
         fontSize: 18.0,
         onPressed: () {
+          TextToSpeech.speak('Save Button');
 
-                Navigator.push(
+                      },
+                      onDoubleTap: () {
+    Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const MyApp()),
-                );
-                      },
+                ); // Double tap action
+  },
       ),
+      
 
       ),
     );

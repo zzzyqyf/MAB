@@ -14,7 +14,7 @@ class DeviceManager extends ChangeNotifier {
   final Map<String, MqttService> _mqttServices = {};
   final Map<String, Timer> _inactivityTimers = {};
   final double temperatureThreshold = 32.0;
-  final double humidityThreshold = 90.0;
+  final double humidityThreshold = 20.0;
   final int criticalDuration = 10; // In seconds
   Box<Map<String, dynamic>>? _sensorBox;
 
@@ -333,7 +333,7 @@ void monitorSensors(double? temp, double humidity, String deviceId) {
   
    else {
     // If neither is critical, reset to "good"
-    displayCriticalStatus(" ", deviceId);
+    //displayCriticalStatus(" ", deviceId);
   }
 }
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
 import 'package:flutter_application_final/main.dart';
+import 'package:flutter_application_final/name.dart';
 import 'package:flutter_application_final/test.dart';
 import 'dart:typed_data'; // Import for Uint8List
 import 'dart:io'; // Import for RawDatagramSocket
@@ -26,7 +28,7 @@ class _Register4WidgetState extends State<Register4Widget> {
   bool _passwordVisible = false;
   String? _errorMessage;
   
-  get id => null;
+  //get id => null;
 
   @override
   void dispose() {
@@ -55,7 +57,9 @@ class _Register4WidgetState extends State<Register4Widget> {
 
       // Show success message only if credentials are sent successfully
       ScaffoldMessenger.of(context).showSnackBar(
+        
         SnackBar(content: Text('Credentials sent successfully! ESP32 will now try to connect.')),
+        
       );
     } catch (e) {
       print("Error sending credentials: $e");  // Debug error
@@ -176,7 +180,12 @@ class _Register4WidgetState extends State<Register4Widget> {
                   fontSize: 18.0,
                 onPressed: () async {
   // Retrieve SSID and password
-  String ssid = _ssidController.text.trim();
+            TextToSpeech.speak('Save Button');
+
+},
+onDoubleTap: () async{
+    // Double tap action
+    String ssid = _ssidController.text.trim();
   String password = _passwordController.text.trim();
 
   // Send credentials to ESP32
@@ -199,10 +208,13 @@ class _Register4WidgetState extends State<Register4Widget> {
   // Navigate to the next screen
   Navigator.pushReplacement(
     context,
-    MaterialPageRoute(builder: (context) => const MyApp()), // Replace with your desired screen
-  );
-}
-
+   //  MaterialPageRoute(builder: (context) =>NameWidget(deviceId: widget.deviceId),
+MaterialPageRoute(
+                          builder: (context) =>
+                              NameWidget(deviceId: widget.id),
+                              
+                        ),  );
+  },
 
                 ),
               ),

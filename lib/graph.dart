@@ -1,7 +1,9 @@
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_application_final/DateSelectionPage.dart';
 import 'package:flutter_application_final/DeviceIdProvider.dart';
 import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
@@ -86,7 +88,19 @@ void _startPeriodicCheck() {
     });
   }
   void loadHistoricalCycles(DateTime selectedDate, String deviceId) {
-    setState(() {
+  final now = DateTime.now();
+  final isCurrentDate = selectedDate.year == now.year &&
+      selectedDate.month == now.month &&
+      selectedDate.day == now.day;
+
+  if (isCurrentDate) {
+    // If the selected date is today, exit historical mode and return to real-time data
+    exitHistoricalView();
+    print("Viewing today's live data instead of historical data.");
+    return;
+  }
+
+  setState(() {
     isViewingHistoricalData = true; // Pause periodic updates
   });
 
@@ -102,46 +116,41 @@ void _startPeriodicCheck() {
   }).toList();
 
   if (filteredCycles.isEmpty) {
-     TextToSpeech.speak(
- "No cycles found for the selected date: ${DateFormat('yyyy-MM-dd').format(selectedDate)} returend back to the prevoius screen" 
-     );
+    print("No cycles found for the selected date: ${DateFormat('yyyy-MM-dd').format(selectedDate)}");
+            TextToSpeech.speak('no data for the selected date');
+
     /*
     setState(() {
       spots.clear();
-            deviceStartTimes[deviceId] = DateTime.fromMillisecondsSinceEpoch(0); // Reset start time
-
-       // Clear graph if no data is found
-    });*/
+      deviceStartTimes[deviceId] = DateTime.fromMillisecondsSinceEpoch(0); // Reset start time
+    });
+    */
   } else {
-print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
+    print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
     for (var cycle in filteredCycles) {
       print(cycle); // Display filtered cycles in the console
     }
-    // Get the start time of the first cycle
+
     final firstCycleStartTime = DateTime.parse(filteredCycles.first['cycleStartTime']);
 
     setState(() {
-      // Update the device's start time for the x-axis
       deviceStartTimes[deviceId] = firstCycleStartTime;
-
-      // Replace graph data with historical cycle spots
       spots = filteredCycles.map((cycle) {
         final xTime = DateTime.parse(cycle['time']);
         final xElapsed = xTime.difference(firstCycleStartTime).inMinutes.toDouble();
         return FlSpot(xElapsed, cycle['data'].toDouble());
       }).toList();
 
-      spots.sort((a, b) => a.x.compareTo(b.x)); // Ensure sorted order for graph rendering
+      spots.sort((a, b) => a.x.compareTo(b.x)); 
     });
   }
 }
+
 void exitHistoricalView() {
   setState(() {
     isViewingHistoricalData = false; // Resume periodic updates
   });
 }
-
-
 
   void _loadData() {
   // Retrieve stored data for the specific device
@@ -188,42 +197,11 @@ void testingConnection(){
 
 }
 
- void _generateTemperatureData(Map<String, dynamic> sensorData) async {
-  if (isViewingHistoricalData) return; // Skip updates
-
-  DateTime currentTime = DateTime.now();
-
-  // Use device manager to check device status
-  final deviceManager = Provider.of<DeviceManager>(context, listen: false);
-  if (sensorData.isEmpty || !deviceManager.deviceIsActive(widget.deviceId)) {
-    return;
-  }
-
-  // Initialise device-specific state maps if not already present
-  deviceStartTimes.putIfAbsent(widget.deviceId, () => currentTime);
-  deviceStartTimeSet.putIfAbsent(widget.deviceId, () => false);
-
-  // Set the start time for this device if not already set
-  if (!deviceStartTimeSet[widget.deviceId]!) {
-    deviceStartTimes[widget.deviceId] = currentTime;
-    deviceStartTimeSet[widget.deviceId] = true;
-  }
-
-  // Use the device-specific start time
+  void _generateTemperatureData(Map<String, dynamic> sensorData) async {
+  if (isViewingHistoricalData) return; // Skip updates if viewing historical data
   DateTime deviceStartTime = deviceStartTimes[widget.deviceId]!;
 
-  // Retrieve real-time sensor data and calculate elapsed time
-  if (sensorData.containsKey('temperature')) {
-    double temperature = sensorData['temperature'] ?? 0.0;
-    double timeElapsed = currentTime.difference(deviceStartTime).inMinutes.toDouble();
-    spots.add(FlSpot(timeElapsed, temperature));
-  }
-
-  // Sort spots to ensure proper plotting
-  spots.sort((a, b) => a.x.compareTo(b.x));
-
-  // Check if the cycle is complete
-  if (spots.isNotEmpty && spots.last.x >= 3) {
+if (spots.isNotEmpty && spots.last.x > 2) {
     if (mounted) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         setState(() {
@@ -244,26 +222,78 @@ void testingConnection(){
           }).toList();
 
           // Add cycle entries to persistent storage
-         // final cycleBox = await Hive.openBox<Map<String, dynamic>>('cycleData');
           for (var entry in cycleEntries) {
             cycleBox.add(entry);
           }
 
-          // Filter spots to retain only new data
-          spots = spots.where((spot) => spot.x > 3).toList();
-
           // Reset state for the next cycle
           deviceStartTimes[widget.deviceId] = DateTime.now();
-          deviceStartTimeSet[widget.deviceId] = true;
+          deviceStartTimeSet[widget.deviceId] = false;
+          spots.clear();
         });
 
         _saveData(); // Save the cleared state of current data
       });
     }
   }
+  DateTime currentTime = DateTime.now();
+
+  // Use device manager to check device status
+  final deviceManager = Provider.of<DeviceManager>(context, listen: false);
+  if (sensorData.isEmpty || !deviceManager.deviceIsActive(widget.deviceId)) {
+    return;
+  }
+
+  // Initialize device-specific state maps if not already present
+  deviceStartTimes.putIfAbsent(widget.deviceId, () => currentTime);
+  deviceStartTimeSet.putIfAbsent(widget.deviceId, () => false);
+
+  // Set the start time for this device if not already set
+  if (!deviceStartTimeSet[widget.deviceId]!) {
+    deviceStartTimes[widget.deviceId] = currentTime;
+    deviceStartTimeSet[widget.deviceId] = true;
+  }
+
+  // Use the device-specific start time
+ // DateTime deviceStartTime = deviceStartTimes[widget.deviceId]!;
+
+  // Retrieve historical data from Hive storage
+  final sensorBox = await Hive.openBox<Map<String, dynamic>>('sensorData');
+  final historicalData = deviceManager.getSensorDataForDevice(widget.deviceId);
+
+  // If there's an incomplete cycle, resume it by checking the last recorded spot
+  if (!isViewingHistoricalData) {
+  final timeDifference = currentTime.difference(deviceStartTime).inMinutes;
+
+  if (timeDifference > 4) {
+    // Clear previous spots only if the device has been running for more than 2 minutes
+    spots.clear();
+  }
+
+  // Always update spots with historical data, regardless of clearing
+  for (var entry in historicalData) {
+    final timestamp = DateTime.tryParse(entry['timestamp']);
+    if (timestamp != null && timestamp.isAfter(deviceStartTime)) {
+      final temperature = (entry['temperature'] as num?)?.toDouble() ?? 0.0;
+      final timeElapsed = currentTime.difference(timestamp).inMinutes.toDouble();
+      spots.add(FlSpot(timeElapsed, temperature));
+    }
+  }
+
+  if (timeDifference > 2) {
+    _saveData(); // Save only if data was cleared
+  }
+}
+
+
+  spots.sort((a, b) => a.x.compareTo(b.x));
 
   print('Sensor Data: $sensorData');
+  print('Historical Data: $historicalData');
   print('Spots: $spots');
+
+  // Handle cycle completion for this device
+  
 }
 
 
@@ -286,9 +316,10 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
     return Consumer<DeviceManager>(
       builder: (context, deviceManager, child) {
         final sensorData = deviceManager.sensorData;
-        _generateTemperatureData(sensorData);
+       _generateTemperatureData(sensorData);
       final isActive = deviceManager.isDeviceActive;
  _saveData();
+
         final visibleSpots = spots.where((spot) {
           return spot.x >= minX && spot.x <= maxX;
         }).toList();
@@ -430,23 +461,54 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
   child: Row(
     mainAxisAlignment: MainAxisAlignment.center,
     children: [
-      ElevatedButton(
-        onPressed: () async {
-          // Show a date picker to the user
-          DateTime? pickedDate = await showDatePicker(
-            context: context,
-            initialDate: DateTime.now(),
-            firstDate: DateTime(1970), // Adjust as needed
-            lastDate: DateTime.now(),
-          );
-
-          if (pickedDate != null) {
-            loadHistoricalCycles(pickedDate,widget.deviceId); // Load data for the selected date
-          }
-        },
-        child: Text("Load Historical Cycles for Date"),
+  Container(
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [
+          Color.fromARGB(255, 6, 94, 135),
+          Color.fromARGB(255, 84, 90, 95),
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
       ),
-    ],
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        // Make the button's background transparent so the gradient shows
+        backgroundColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        shadowColor: Colors.transparent,  // Optional: Remove shadow for a cleaner look
+      ),
+      onPressed: () {
+        TextToSpeech.speak('Navigating to history, select a date');
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DateSelectionPage(
+              onDateSelected: (selectedDate) {
+                loadHistoricalCycles(selectedDate, widget.deviceId);
+                TextToSpeech.speak(
+                  "Selected date: ${selectedDate.month}-${selectedDate.day}-${selectedDate.year}",
+                );
+              },
+            ),
+          ),
+        );
+      },
+child: Text(
+  "View old Data",
+  style: TextStyle(
+    color: Colors.white, // Change this to any color you want
+  ),
+),
+    ),
+  ),
+],
+
   ),
 ),
 

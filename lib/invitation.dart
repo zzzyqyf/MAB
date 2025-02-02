@@ -1,10 +1,21 @@
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/TextToSpeech.dart';
+import 'package:flutter_email_sender/flutter_email_sender.dart';
+import 'package:mailer/mailer.dart';
+import 'package:mailer/smtp_server/gmail.dart';
 import 'ProfilePage.dart';
 import 'basePage.dart';
 import 'buttom.dart';
+import 'package:http/http.dart' as http;
 
 class InvitationWidget extends StatefulWidget {
-  const InvitationWidget({super.key});
+  final String deviceId; // Device ID passed from the parent widget (main class)
+
+  const InvitationWidget({Key? key, required this.deviceId}) : super(key: key);
 
   @override
   State<InvitationWidget> createState() => _InvitationWidgetState();
@@ -15,6 +26,7 @@ class _InvitationWidgetState extends State<InvitationWidget> {
   final _emailAddressFocusNode = FocusNode();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   String? _selectedRole; // To track the selected role
+String senderEmail = FirebaseAuth.instance.currentUser!.email!;
 
   @override
   void dispose() {
@@ -23,6 +35,56 @@ class _InvitationWidgetState extends State<InvitationWidget> {
     super.dispose();
   }
 
+  // Function to send email invitation dynamically using the logged-in user's email
+  // This function can be called after the sign-up process is successful
+
+
+
+
+
+Future<void> sendInvitation(String senderEmail, String email, String role, String deviceId) async {
+  final url = Uri.parse('https://api.emailjs.com/api/v1.0/email/send');
+                        String email = _emailAddressTextController.text.trim();
+
+  const serviceId = 'service_ttwl1yt'; // Replace with your actual Service ID
+  const templateId = 'template_f66pszr'; // Replace with your actual Template ID
+  const publicKey = 'gHzghGoNvlAikljf7'; // Replace with your actual Public Key
+
+  final headers = {
+    'origin':'http://localhost',
+    'Content-Type': 'application/json',
+  };
+
+  final body = json.encode({
+    'service_id': serviceId,
+    'template_id': templateId,
+    'user_id': publicKey, // Add Public Key here
+    'template_params': {
+      'sender_email': senderEmail,
+      'recipient_Email': email,
+      'role': role,
+      'device_id': deviceId,
+    },
+  });
+//alifatima.x01@gmail.com
+
+  try {
+    final response = await http.post(url, headers: headers, body: body);
+
+    if (response.statusCode == 200) {
+                      TextToSpeech.speak('Email sent successfully!');
+
+      print('Email sent successfully! $senderEmail');
+    } else {
+      print('Failed to send email. Response: ${response.statusCode}');
+      print('Response body: ${response.body} ${email}');
+    }
+  } catch (e) {
+                          TextToSpeech.speak('Error sending email');
+
+    print('Error sending email: $e');
+  }
+}
   @override
   Widget build(BuildContext context) {
     // Get the screen size for responsive design
@@ -30,8 +92,7 @@ class _InvitationWidgetState extends State<InvitationWidget> {
     final padding = screenSize.width * 0.04; // 4% of screen width
     final textFieldWidth = screenSize.width * 0.9; // 90% of screen width
     const boxHeight = 60.0; // Fixed height for all input boxes
-        final double fontSize = screenSize.width * 0.04; // Responsive font size for labels
-
+    final double fontSize = screenSize.width * 0.04; // Responsive font size for labels
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -55,17 +116,6 @@ class _InvitationWidgetState extends State<InvitationWidget> {
                       child: Column(
                         mainAxisSize: MainAxisSize.max,
                         children: [
-                          /*
-                          Text(
-                            'Enter their email and choose a role',
-                            style: TextStyle(
-                              fontFamily: 'Outfit',
-                              fontSize: 20,
-                            ),
-                            
-                            textAlign: TextAlign.center, // Center text for better aesthetics
-                          ),
-                          */
                           const SizedBox(height: 20),
                           SizedBox(
                             width: textFieldWidth,
@@ -90,7 +140,7 @@ class _InvitationWidgetState extends State<InvitationWidget> {
                                 ),
                                 focusedBorder: const OutlineInputBorder(
                                   borderSide: BorderSide(
-                                  color: Colors.blue,
+                                    color: Colors.blue,
                                     width: 2,
                                   ),
                                 ),
@@ -100,11 +150,13 @@ class _InvitationWidgetState extends State<InvitationWidget> {
                                     width: 2,
                                   ),
                                 ),
-                                
                               ),
                               keyboardType: TextInputType.emailAddress,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
+                                   Future.delayed(Duration(milliseconds: 500), () {
+                    TextToSpeech.speak('Please enter an email address and select a role');
+                  });
                                   return 'Please enter an email address';
                                 }
                                 return null;
@@ -145,17 +197,71 @@ class _InvitationWidgetState extends State<InvitationWidget> {
                 Padding(
                   padding: EdgeInsets.symmetric(vertical: padding, horizontal: 16),
                   child: ReusableBottomButton(
-        buttonText: 'Next',
-        padding: 1.0,
-        fontSize: 18.0,
-        onPressed: () {
+                    buttonText: 'Next',
+                    padding: 1.0,
+                    fontSize: 18.0,
+                    onPressed: () async {
+                               TextToSpeech.speak('Send Innvitation');
 
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ProfilePage()),
-                );
-                      },
-      ),
+                    },
+                    onDoubleTap: () async{
+    if (_formKey.currentState!.validate() && _selectedRole != null) {
+                        String email = _emailAddressTextController.text.trim();
+                        String role = _selectedRole!;
+                        String deviceId = widget.deviceId;
+                        String senderEmail = FirebaseAuth.instance.currentUser!.email!; // Dynamically get the logged-in user's email
+
+                        try {
+                          // Check if the user exists in Firestore
+                          var userQuery = await FirebaseFirestore.instance
+                              .collection('users')
+                              .where('email', isEqualTo: email)
+                              .get();
+
+                          if (userQuery.docs.isNotEmpty) {
+                            // User exists, directly assign device to them
+                            String recipientId = userQuery.docs.first.id;
+
+                            await FirebaseFirestore.instance.collection('users').doc(recipientId).update({
+                              'devices': FieldValue.arrayUnion([{'deviceId': deviceId, 'role': role}])
+                            });
+                          } else {
+                            // User doesn't exist, store invitation in Firestore
+                            await FirebaseFirestore.instance.collection('invitations').add({
+                              'email': email,
+                              'deviceId': deviceId,
+                              'role': role,
+                              'invitedBy': senderEmail, // Store the sender's email (dynamically fetched)
+                              'status': 'pending',
+                              'createdAt': FieldValue.serverTimestamp(),
+                            });
+                          }
+
+                          // Send email invitation dynamically using the logged-in user's email
+                          await sendInvitation(senderEmail, email, role, deviceId);
+
+                          // Navigate to profile page or another screen
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ProfilePage()),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to send invitation: $e')),
+                          );
+                                          TextToSpeech.speak('Failed to send invitation: $e');
+
+                        }
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Please enter an email and select a role')),
+                        );
+                                        TextToSpeech.speak('Please enter an email and select a role');
+
+                      } // Double tap action
+                               TextToSpeech.speak('Sending Invitation Back to Settings');
+  },
+                  ),
                 ),
               ],
             ),
@@ -172,14 +278,14 @@ class _InvitationWidgetState extends State<InvitationWidget> {
         width: width, // Match the width of the text field
         height: height, // Fixed height
         decoration: BoxDecoration(
-                    color: Theme.of(context).secondaryHeaderColor,
+          color: Theme.of(context).secondaryHeaderColor,
           boxShadow: [
-                  BoxShadow(
-                    blurRadius: 3,
-                    color: Colors.black.withOpacity(0.2),
-                    offset: const Offset(0.0, 1),
-                  )
-                ],
+            BoxShadow(
+              blurRadius: 3,
+              color: Colors.black.withOpacity(0.2),
+              offset: const Offset(0.0, 1),
+            )
+          ],
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(

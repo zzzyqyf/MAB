@@ -25,9 +25,10 @@ class CustomNavbar extends StatelessWidget {
             onTap: () {
               // Announce the tap action for Profile
               TextToSpeech.speak('Profile tapped');
-              onItemTapped(0);
+              //onItemTapped(0);
             },
             onDoubleTap: () {
+              TextToSpeech.speak('Profile screen');
               // Navigate to Profile screen on double tap
               onItemTapped(0);
             },
@@ -61,7 +62,7 @@ class CustomNavbar extends StatelessWidget {
             onTap: () {
               // Announce the tap action for Add
               TextToSpeech.speak('Add tapped');
-              onItemTapped(2);
+             // onItemTapped(2);
             },
             onDoubleTap: () {
               TextToSpeech.speak('Add screen');

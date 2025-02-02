@@ -35,31 +35,34 @@ class _SignUpWidgetState extends State<SignUpWidget> {
 
   // Sign up method
   Future<void> _signUp() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      try {
-        // Create the user with email and password
-        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text,
-          password: _passwordController.text,
-        );
+  if (_formKey.currentState?.validate() ?? false) {
+    try {
+      // Create the user with email and password
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
 
-        // Add additional user data (e.g., role) to Firestore
-        await FirebaseFirestore.instance.collection('users').doc(userCredential.user?.uid).set({
-          'email': userCredential.user?.email,
-          'role': 'member', // Default to member, you can add admin logic later
-        });
+      // Add additional user data (e.g., role) to Firestore
+      await FirebaseFirestore.instance.collection('users').doc(userCredential.user?.uid).set({
+        'email': userCredential.user?.email,
+        'role': 'member', // Default to member, you can add admin logic later
+      });
 
-        // Navigate to home screen after successful sign-up
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MyApp()),
-        );
-      } catch (e) {
-        // Handle sign up errors (e.g., weak password, invalid email)
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign up failed: $e')));
-      }
+      // Send an invitation email
+     
+      // Navigate to home screen after successful sign-up
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MyApp()),
+      );
+    } catch (e) {
+      // Handle sign up errors (e.g., weak password, invalid email)
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign up failed: $e')));
     }
   }
+}
+
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -277,7 +280,7 @@ Widget build(BuildContext context) {
                                 padding: 16.0,
                                 fontSize: 18.0,
                                 onPressed: 
-                                  _signUp,// Hdle sign-up action here
+                                  _signUp, onDoubleTap: () {  },// Hdle sign-up action here
                                 
                               ),
                               ),

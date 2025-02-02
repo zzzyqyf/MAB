@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/TextToSpeech.dart';
+import 'package:flutter_application_final/buttom.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
 import 'package:flutter_application_final/main.dart';
 import 'package:flutter_application_final/setting.dart';
@@ -95,6 +97,10 @@ class _NameWidgetState extends State<NameWidget> {
                           cursorColor: Colors.blue,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
+                               Future.delayed(Duration(milliseconds: 500), () {
+                    TextToSpeech.speak('Please enter a name');
+                  });
+                              TextToSpeech.speak('Please enter a name');
                               return 'Please enter a name';
                             }
                             return null;
@@ -111,29 +117,40 @@ class _NameWidgetState extends State<NameWidget> {
             ),
           ),
         ),
-        bottomNavigationBar: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: ElevatedButton(
-            onPressed: () {
-              if (_formKey.currentState?.validate() ?? false) {
-                final name = _controller.text.trim();
-                if (name.isNotEmpty) {
-                  final deviceId = widget.deviceId; // Get the deviceId passed in
-                  // Call the existing addDevice method from the main class
-                 
-                  Provider.of<DeviceManager>(context, listen: false). updateDeviceName(deviceId!, name);
+       bottomNavigationBar: Padding(
+  padding: const EdgeInsets.all(16.0),
+  child: ReusableBottomButton(
+    buttonText: 'Next',  // The text to display on the button
+    padding: 16.0,       // Padding around the button
+    fontSize: 18.0,      // Font size for the text
+    onPressed: () {
+          TextToSpeech.speak('Save Button');
 
-                  Navigator.pop(context);  // Close current page
-                  /*Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) =>  TentSettingsWidget(deviceId: deviceId,)),
-                  );*/
-                }
-              }
-            },
-            child: const Text('Next', style: TextStyle(fontSize: 18)),
-          ),
-        ),
+    },
+    onDoubleTap: () {
+    // Double tap action
+          if (_formKey.currentState?.validate() ?? false) {
+        final name = _controller.text.trim();
+        if (name.isNotEmpty) {
+          final deviceId = widget.deviceId; // Get the deviceId passed in
+          // Call the existing addDevice method from the main class
+          Provider.of<DeviceManager>(context, listen: false).updateDeviceName(deviceId!, name);
+
+          Navigator.pop(context);  // Close current page
+          // Optionally, you can navigate to a new screen after the button press
+          /*Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => TentSettingsWidget(deviceId: deviceId)),
+          );*/
+                          TextToSpeech.speak('Back to Setting');
+
+        }
+      }
+
+  },
+  ),
+),
+
       ),
     );
   }

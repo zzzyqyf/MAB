@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
+import 'package:flutter_application_final/invitation.dart';
 import 'package:flutter_application_final/main.dart';
 import 'package:flutter_application_final/name.dart';
 import 'package:flutter_application_final/soundOption.dart';
@@ -107,8 +108,8 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: SettingsItem(
-                    title: 'Name Tent',
-                    subtitle: 'Tent',
+                    title: 'Name Device',
+                    subtitle: '',
                     containerHeight: containerHeight,
                     fontSizeTitle: fontSizeTitle,
                     fontSizeSubtitle: fontSizeSubtitle,
@@ -128,6 +129,7 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                   ),
                 ),
               SizedBox(height: verticalSpacing),
+              /*
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: SettingsItem(
@@ -169,6 +171,28 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                 ),
               ),
               SizedBox(height: verticalSpacing),
+              */
+              Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: SettingsItem(
+                    title: 'Invite',
+                    subtitle: '',
+                    containerHeight: containerHeight,
+                    fontSizeTitle: fontSizeTitle,
+                    fontSizeSubtitle: fontSizeSubtitle,
+                    onTap: () {
+                      TextToSpeech.speak(
+                          'Send an invitation');
+                    },
+                   onDoubleTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) =>  InvitationWidget(deviceId:  widget.deviceId,)),
+                    );
+                  },
+                  ),
+                ),
+              SizedBox(height: verticalSpacing),
               if (userRole == 'Admin')
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
@@ -189,7 +213,7 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                 ),
               SizedBox(height: verticalSpacing),
               Padding(
-                padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 15.0),
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: SettingsItem(
                   title: 'Mute',
                   subtitle: 'Stop notifications',

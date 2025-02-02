@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:flutter_application_final/signIn.dart';
 //import 'package:provider/provider.dart';
 
@@ -82,7 +83,7 @@ class _ProfileWidgetState extends State<ProfilePage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        SizedBox(height: 8),
+        SizedBox(height: 5),
         Text(
           'fatima@gmail.com',
           style: TextStyle(
@@ -93,12 +94,9 @@ class _ProfileWidgetState extends State<ProfilePage> {
     ),
   ),
 ),
-
-
-
             ),
           //  const SizedBox(height: 10),
-
+/*
             // Profile Options
             _buildProfileOption(
               context,
@@ -121,7 +119,7 @@ class _ProfileWidgetState extends State<ProfilePage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const InvitationWidget()),
+                  MaterialPageRoute(builder: (context) => const InvitationWidget(deviceId: '',)),
                 );
               },
               screenWidth: screenWidth,
@@ -141,19 +139,27 @@ class _ProfileWidgetState extends State<ProfilePage> {
               screenWidth: screenWidth,
             ),
                         const SizedBox(height: 6),
+*/
+           _buildProfileOption(
+  context,
+  title: 'Logout',
+  icon: Icons.logout_sharp,
+  onTap: () {
+    // Announce the tap action for Logout using TextToSpeech
+    TextToSpeech.speak('Logout button');
+  },
+  onDoubleTap: () {
+    // Navigate to Login screen on double-tap
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginWidget()),
+    );
+        TextToSpeech.speak('Logged Out');
 
-            _buildProfileOption(
-              context,
-              title: 'Logout',
-              icon: Icons.logout_sharp,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginWidget()),
-                );
-              },
-              screenWidth: screenWidth,
-            ),
+  },
+  screenWidth: screenWidth,
+),
+
                         const SizedBox(height: 6),
 
           ],
@@ -163,56 +169,52 @@ class _ProfileWidgetState extends State<ProfilePage> {
   }
 
   Widget _buildProfileOption(
-
-    BuildContext context, {
-    required String title,
-    required IconData icon,
-    String? routeName,
-    VoidCallback? onTap,
-    required double screenWidth,
-    
-    //\final screenSize = MediaQuery.of(context).size
-
-    //final containerHeight = screenSize.height * 0.1,
-  }) {
-    return InkWell(
-      onTap: () {
-        if (routeName != null) {
-          Navigator.pushNamed(context, routeName);
-        } else if (onTap != null) {
-          onTap();
-        }
-      },
-      child: Container(
-      //width: 50, // Set the width relative to the screen width (e.g., 90% of screen width)
+  BuildContext context, {
+  required String title,
+  required IconData icon,
+  String? routeName,
+  VoidCallback? onTap,
+  VoidCallback? onDoubleTap,  // Added onDoubleTap parameter
+  required double screenWidth,
+}) {
+  return InkWell(
+    onTap: () {
+      if (onTap != null) {
+        onTap(); // Trigger onTap action
+      } else if (routeName != null) {
+        Navigator.pushNamed(context, routeName);
+      }
+    },
+    onDoubleTap: onDoubleTap,  // Handle onDoubleTap action
+    child: Container(
       height: 70,
-       margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Theme.of(context).secondaryHeaderColor,
-          borderRadius: BorderRadius.circular(12),
-          
-        ),
-        child: Row(
-          children: [
-            Icon(icon,
-                size: screenWidth * 0.06,
-                color: Theme.of(context).primaryColor), // Responsive icon size
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: screenWidth * 0.05, // Responsive text size
-                ),
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).secondaryHeaderColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon,
+              size: screenWidth * 0.06,
+              color: Theme.of(context).primaryColor), // Responsive icon size
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: screenWidth * 0.05, // Responsive text size
               ),
             ),
-            Icon(Icons.arrow_forward_ios,
-                size: screenWidth * 0.05,
-                color: Colors.grey), // Responsive icon size
-          ],
-        ),
+          ),
+          Icon(Icons.arrow_forward_ios,
+              size: screenWidth * 0.05,
+              color: Colors.grey), // Responsive icon size
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 }

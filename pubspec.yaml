@@ -46,10 +46,16 @@ dependencies:
   table_calendar: ^3.0.9
   cloud_firestore: ^4.17.5
   firebase_auth: ^4.19.6
-  firebase_core: ^2.32.0 
+  firebase_core: ^2.32.0
+  #flutter_email_sender: ^6.0.3
+  flutter_email_sender: ^5.0.2
+  mailer: ^6.4.1
+  http: ^1.2.2
+
+
  # Check for the latest version
 
-  http: 1.2.2  # if you are fetching data via HTTP
+  #http: 1.2.2  # if you are fetching data via HTTP
   # Add any database package you are using, like sqflite, firebase, etc.
 
 

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/TempVsTimeGraph.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
@@ -49,10 +50,17 @@ class _TentPageState extends State<TentPage> {
     final screenWidth = mediaQuery.size.width;
     final screenHeight = mediaQuery.size.height;
     final boxSize = screenWidth * 0.46;
+        final deviceManager = Provider.of<DeviceManager>(context);
+
+int deviceIndex = deviceManager.devices.indexWhere((d) => d['id'] == widget.id);
 
     return Consumer<DeviceManager>(
       builder: (context, deviceManager, child) {
+           // final deviceManager = Provider.of<DeviceManager>(context);
+
         final sensorData = deviceManager.sensorData;
+         // var device = deviceManager.devices[index];
+  var device = deviceManager.devices[deviceIndex]; // Get the device at that index
 
         return Scaffold(
           backgroundColor: Colors.white,
@@ -114,13 +122,18 @@ class _TentPageState extends State<TentPage> {
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            
                             _buildBox(
                               context,
                               boxSize: boxSize,
                               icon: Icons.water_drop,
                               iconColor: Colors.blue,
-                              title: 'Humidity',
+                             title: 'Humidity',
                               value: '${sensorData['humidity'] ?? 'Loading...'} %',
+status: device['sensorStatus'] == 'low Humidity' 
+    ? 'Low Humidity' 
+    : '',
+
                               onDoubleTap: () {
                                 Navigator.push(
                                   context,
@@ -138,6 +151,10 @@ class _TentPageState extends State<TentPage> {
                               iconColor: Colors.yellow,
                               title: 'Light Intensity',
                               value: '${sensorData['lightState'] ?? 'Loading...'} %',
+                              status: device['sensorStatus'] == 'high lightIntensity' 
+    ? 'high light' 
+    : '', // This should be updated when sensor status changes
+
                               onDoubleTap: () {
                                 // Add navigation logic if needed
                               },
@@ -160,6 +177,10 @@ class _TentPageState extends State<TentPage> {
                               iconColor: const Color.fromARGB(255, 221, 161, 76),
                               title: 'Temperature',
                               value: '${sensorData['temperature'] ?? 'Loading...'} °C',
+                              status: device['sensorStatus'] == 'High Temperture' 
+    ? 'High Temperture' 
+    : '', // This should be updated when sensor status changes
+
                               onDoubleTap: () {
                                 Navigator.push(
                                   context,
@@ -176,7 +197,11 @@ class _TentPageState extends State<TentPage> {
                               icon: Icons.water_sharp,
                               iconColor: Theme.of(context).colorScheme.error,
                               title: 'Water Level',
-                              value: '50%', // Replace with actual data when available
+                              value: '50%',
+                              status: device['sensorStatus'] == 'low waterLevel' 
+    ? 'Low water' 
+    : '', // This should be updated when sensor status changes
+ // Replace with actual data when available
                               onDoubleTap: () {
                                 // Add navigation logic if needed
                               },
@@ -205,11 +230,13 @@ class _TentPageState extends State<TentPage> {
       required Color iconColor,
       required String title,
       required String value,
+      required String status,
       VoidCallback? onDoubleTap}) {
     return GestureDetector(
       onTap: () {
         // Single tap triggers TTS
-        TextToSpeech.speak('$title: $value');
+        TextToSpeech.speak('$title: $value :$status');
+
       },
       onDoubleTap: onDoubleTap, // Double tap triggers navigation
       child: Container(
@@ -236,10 +263,23 @@ class _TentPageState extends State<TentPage> {
                 size: boxSize * 0.35,
               ),
             ),
-            Align(
+            
+            /*Align(
               alignment: const AlignmentDirectional(0, 0.85),
               child: Text(
                 title,
+                style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                      fontSize: boxSize * 0.12,
+                      fontFamily: 'Outfit',
+                      color: Colors.white,
+                    ),
+              ),
+            ),*/
+            
+            Align(
+              alignment: const AlignmentDirectional(0, 0.85),
+              child: Text(
+                status,
                 style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                       fontSize: boxSize * 0.12,
                       fontFamily: 'Outfit',
