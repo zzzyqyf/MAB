@@ -18,8 +18,10 @@ import 'package:flutter_application_final/notification.dart';
 import 'package:flutter_application_final/one.dart';
 import 'package:flutter_application_final/overview.dart';
 import 'package:flutter_application_final/registerFour.dart';
+import 'package:flutter_application_final/registerOne.dart';
 import 'package:flutter_application_final/three.dart';
 import 'package:flutter_application_final/two.dart';
+import 'package:flutter_application_final/wifiSetup.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -132,10 +134,13 @@ class _MyHomePageState extends State<MyHomePage> {
   // Define pages to navigate to
   final List<Widget> _pages = [
 //TempVsTimeGraph(deviceId: ''),
+//WifiPage(),
 ProfilePage(),
    // TempVsTimeGraph(deviceId: '',),
      NotificationPage(),
-    Register4Widget(id: '',),
+    //Register4Widget(id: '',),
+         Register2Widget(),
+
   ];
 
   void _onItemTapped(int index) {
@@ -178,7 +183,7 @@ ProfilePage(),
             'PlantCare Hubs Dashboard',
             style: TextStyle(
               fontWeight: FontWeight.w500,
-              fontSize: mediaQuery.size.width * 0.07, // Responsive font size
+              fontSize: mediaQuery.size.width * 0.05, // Responsive font size
               letterSpacing: 0.0,
             ),
           ),

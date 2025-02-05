@@ -83,9 +83,9 @@ class _ProfileWidgetState extends State<ProfilePage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        SizedBox(height: 5),
+        SizedBox(height: 2),
         Text(
-          'fatima@gmail.com',
+          'fatimasalaysia@gmail.com',
           style: TextStyle(
             fontSize: fontSizeTitle,
           ),
@@ -140,6 +140,8 @@ class _ProfileWidgetState extends State<ProfilePage> {
             ),
                         const SizedBox(height: 6),
 */
+                        const SizedBox(height: 6),
+
            _buildProfileOption(
   context,
   title: 'Logout',

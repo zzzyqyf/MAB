@@ -6,6 +6,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_application_final/DateSelectionPage.dart';
 import 'package:flutter_application_final/DeviceIdProvider.dart';
 import 'package:flutter_application_final/TextToSpeech.dart';
+import 'package:flutter_application_final/basePage.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
 import 'package:flutter_application_final/mqttservice.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -325,15 +326,18 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
         }).toList();
 
         return Scaffold(
-          appBar: AppBar(
-          title: Text('${isActive ? "Device Active" : "Device Inactive"} - ${widget.deviceId}'),
-          ),
+          appBar: BasePage(
+          title: 'Graph',
+                  //  title: '${isActive ? "Active" : "Inactive"} - ${widget.deviceId}',
+
+          showBackButton: true,
+        ),
           body: Padding(
             padding: const EdgeInsets.only(
-              top: 50.0,
+              top: 5.0,
               left: 5.0,
               right: 15.0,
-              bottom: 150.0,
+              bottom: 15.0,
             ),
             child: Column(
               children: [
@@ -393,16 +397,27 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
                     minY: 0,
                     maxY: 50,
                     lineBarsData: [
-                      LineChartBarData(
-                        spots: visibleSpots,
-                        isCurved: true,
-                        color: Colors.blue,
-                        belowBarData: BarAreaData(
-                          show: true,
-                          color: Colors.blue.withOpacity(0.3),
-                        ),
-                      ),
-                    ],
+  LineChartBarData(
+    spots: visibleSpots,
+    isCurved: true,
+    color: Colors.blue,
+    belowBarData: BarAreaData(
+      show: true,
+      color: Colors.blue.withOpacity(0.3),
+    ),
+    dotData: FlDotData(
+      show: true,
+      getDotPainter: (spot, percent, barData, index) =>
+          FlDotCirclePainter(
+            radius: 8, // Increase this value to make the dots bigger
+            color: const Color.fromARGB(255, 42, 58, 72),
+            strokeWidth: 2,
+            strokeColor: Colors.white,
+          ),
+    ),
+  ),
+],
+
                     lineTouchData: LineTouchData(
                       touchCallback: (FlTouchEvent event, LineTouchResponse? response) {
                         if (event is FlTapUpEvent && response != null && response.lineBarSpots != null) {
@@ -420,8 +435,12 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
                 ),
               ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10.0),
-                  child: Row(
+padding: const EdgeInsets.only(
+  top: 10.0,    // Padding from the top
+  right: 0.0,  // Padding from the right
+  left: 0.0,   // Padding from the left
+  bottom: 100.0, // Padding from the bottom
+),                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                     IconButton(
@@ -457,11 +476,17 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
                   ),
                 ),
                 Padding(
-  padding: const EdgeInsets.symmetric(vertical: 10.0),
-  child: Row(
+padding: const EdgeInsets.only(
+  top: 10.0,    // Padding from the top
+  right: 5.0,  // Padding from the right
+  left: 5.0,   // Padding from the left
+  bottom: 0.0, // Padding from the bottom
+),  child: Row(
     mainAxisAlignment: MainAxisAlignment.center,
     children: [
   Container(
+      width: 360.0, // Adjust this value to set the button width
+
     decoration: BoxDecoration(
       gradient: const LinearGradient(
         colors: [

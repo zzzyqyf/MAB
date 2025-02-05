@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:flutter_application_final/buttom.dart';
 import 'package:flutter_application_final/main.dart';
 import 'package:flutter_application_final/signIn.dart';
@@ -57,6 +58,8 @@ class _SignUpWidgetState extends State<SignUpWidget> {
         MaterialPageRoute(builder: (context) => const MyApp()),
       );
     } catch (e) {
+                  TextToSpeech.speak('Sign up failed');
+
       // Handle sign up errors (e.g., weak password, invalid email)
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign up failed: $e')));
     }
@@ -83,16 +86,24 @@ Widget build(BuildContext context) {
                 decoration: const BoxDecoration(
                   color: Colors.white,
                 ),
+                                  alignment: Alignment.center,
+
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      GestureDetector(
+                          onTap: () {
+                            TextToSpeech.speak('Create Account');
+                          },
+                      /*
                       Container(
                         width: double.infinity,
                         height: 140,
                         alignment: const AlignmentDirectional(-1, 0),
                       ),
-                      ShaderMask(
+                      */
+                    child:  ShaderMask(
                         shaderCallback: (bounds) => const LinearGradient(
                           colors: [
                             Color.fromARGB(255, 6, 94, 135),
@@ -109,6 +120,7 @@ Widget build(BuildContext context) {
                             color: Colors.white,
                           ),
                         ),
+                      ),
                       ),
                       Padding(
                         padding: const EdgeInsets.all(32.0),
@@ -150,9 +162,15 @@ Widget build(BuildContext context) {
                                     ),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
+                                         Future.delayed(Duration(milliseconds: 500), () {
+                                            TextToSpeech.speak('Please enter your email');
+                                          });
                                         return 'Please enter your email';
                                       } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
                                           .hasMatch(value)) {
+                                             Future.delayed(Duration(milliseconds: 500), () {
+                                            TextToSpeech.speak('Please enter a valid email address');
+                                          });
                                         return 'Please enter a valid email address';
                                       }
                                       return null;
@@ -207,8 +225,12 @@ Widget build(BuildContext context) {
                                     ),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
+                                         Future.delayed(Duration(milliseconds: 500), () {
+                                            TextToSpeech.speak('Please enter your details');
+                                          });
                                         return 'Please enter your password';
                                       } else if (value.length < 6) {
+                                        TextToSpeech.speak('Password must be at least 6 characters');
                                         return 'Password must be at least 6 characters';
                                       }
                                       return null;
@@ -263,9 +285,11 @@ Widget build(BuildContext context) {
                                     ),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
+                                        TextToSpeech.speak('Please confirm your password');
                                         return 'Please confirm your password';
                                       } else if (value !=
                                           _passwordController.text) {
+                                            TextToSpeech.speak('Passwords do not match');
                                         return 'Passwords do not match';
                                       }
                                       return null;
@@ -273,17 +297,38 @@ Widget build(BuildContext context) {
                                   ),
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                child:  ReusableBottomButton(
-                                buttonText: 'Sign Up',
-                                padding: 16.0,
-                                fontSize: 18.0,
-                                onPressed: 
-                                  _signUp, onDoubleTap: () {  },// Hdle sign-up action here
-                                
-                              ),
-                              ),
+                              
+                              GestureDetector(
+                                  onTap: () {
+                                    TextToSpeech.speak('Already have an account? Login here ');
+                                  },
+                                  onDoubleTap: () {
+                                    TextToSpeech.speak('Navigating to Login page');
+                                    Navigator.pushReplacement(
+                                      context,
+                                       MaterialPageRoute(builder: (context) => const LoginWidget()),
+
+                                    );
+                                  },
+                                  child: RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        TextSpan(
+                                      text: 'Already have an account? Login here ',
+                                          style: TextStyle(color: Colors.black),
+                                        ),
+                                        TextSpan(
+                                          text: 'Login here',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            color: Colors.blue,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               /*
                                ReusableBottomButton(
                                 buttonText: 'Sign Up',
@@ -293,32 +338,23 @@ Widget build(BuildContext context) {
                                   _signUp,// Hdle sign-up action here
                                 
                               ),
-                              */
-                              RichText(
-                                text: TextSpan(
-                                  children: [
-                                    const TextSpan(
-                                      text: 'Already have an account? ',
-                                      style: TextStyle(color: Colors.black),
-                                    ),
-                                    TextSpan(
-                                      text: 'Log In',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.blue,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(builder: (context) => const LoginWidget()),
-                                          );
-                                        },
-                                    ),
-                                  ],
-                                ),
+                              
+                               Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                child:  ReusableBottomButton(
+                                buttonText: 'Sign Up',
+                                padding: 16.0,
+                                fontSize: 18.0,
+                                 onPressed: () {
+            TextToSpeech.speak('Signup Button');
+          }, 
+                                  onDoubleTap: () { 
+                                    _signUp();
+                                   },// Hdle sign-up action here
+                                
                               ),
+                              ),
+                             */
                             ],
                           ),
                         ),
@@ -331,6 +367,19 @@ Widget build(BuildContext context) {
           ],
         ),
       ),
+      bottomNavigationBar: ReusableBottomButton(
+          buttonText: 'SignUp',
+          padding: 16.0,
+          fontSize: 18.0,
+          onPressed: () {
+            TextToSpeech.speak('Signup Button');
+          },
+          onDoubleTap: () async {
+            TextToSpeech.speak('Signed Up in navigating to dashboard');
+            // Double tap action
+              _signUp();// Hdle sign-up action here
+          },
+        ),
     ),
   );
 }

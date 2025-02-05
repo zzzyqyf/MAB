@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/TextToSpeech.dart';
+import 'package:flutter_application_final/buttom.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
 import 'package:flutter_application_final/invitation.dart';
 import 'package:flutter_application_final/main.dart';
@@ -109,12 +110,12 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: SettingsItem(
                     title: 'Name Device',
-                    subtitle: '',
+                    subtitle: 'Edit Device Name',
                     containerHeight: containerHeight,
                     fontSizeTitle: fontSizeTitle,
                     fontSizeSubtitle: fontSizeSubtitle,
                     onTap: () {
-                      TextToSpeech.speak('Name Device.');
+                      TextToSpeech.speak('Name the Device.');
                     },
                     onDoubleTap: () {
                       Navigator.push(
@@ -176,7 +177,7 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: SettingsItem(
                     title: 'Invite',
-                    subtitle: '',
+                    subtitle: 'Send an invitation',
                     containerHeight: containerHeight,
                     fontSizeTitle: fontSizeTitle,
                     fontSizeSubtitle: fontSizeSubtitle,
@@ -198,7 +199,7 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: SettingsItem(
                     title: 'Remove Device',
-                    subtitle: 'Removing this tent will delete its data',
+                    subtitle: 'Data will be deleted',
                     containerHeight: containerHeight,
                     fontSizeTitle: fontSizeTitle,
                     fontSizeSubtitle: fontSizeSubtitle,
@@ -207,7 +208,12 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                           'Remove Device. Removing this tent will delete its data.');
                     },
                     onDoubleTap: () {
-                      DeleteDialog.show(context, widget.deviceId);
+                      Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) =>  DeletePage(id:  widget.deviceId,)),
+                    );
+                      //DeletePage
+                      //DeleteDialog.show(context, widget.deviceId);
                     },
                   ),
                 ),
@@ -237,7 +243,7 @@ else{
                   },
                    onTap: () {
                       TextToSpeech.speak(
-                          'Mute Device. Stop receiving pop up notification');
+                          'Mute Device. Stop receiving pop up notifications');
                           
                     },
                     
@@ -251,87 +257,67 @@ else{
   }
 }
 
-class DeleteDialog {
-  static void show(BuildContext context, String id) {
+
+
+
+class DeletePage extends StatelessWidget {
+  final String id;
+
+  const DeletePage({Key? key, required this.id}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
     TextToSpeech.speak(
         'Delete Device. Are you sure you want to delete this device? This action cannot be undone.');
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return GestureDetector(
-          onTap: () {
-            TextToSpeech.speak('Cancel button. Tap again to cancel.');
-          },
-          onDoubleTap: () {
-            Navigator.of(context).pop();
-          },
-          child: AlertDialog(
-            title: const Row(
-              children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.red),
-                SizedBox(width: 8),
-                Text('Delete Device'),
-              ],
-            ),
-            content: const Text(
-                'Are you sure you want to delete this device? This action cannot be undone.'),
-            actions: [
-              GestureDetector(
-                onTap: () {
-                  TextToSpeech.speak('Cancel button.');
-                },
-                onDoubleTap: () {
-                  Navigator.of(context).pop();
-                },
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(color: Color.fromARGB(255, 80, 139, 194)),
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  TextToSpeech.speak('Delete button.');
-                },
-                onDoubleTap: () {
-                                    TextToSpeech.speak('Device Deleted');
 
-                  Provider.of<DeviceManager>(context, listen: false)
-                      .removeDevice(id);
-                  Navigator.of(context).pop();
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const MyApp()),
-                    
-                  );
-                },
-                child: TextButton(
-                  onPressed: () {
-                    Provider.of<DeviceManager>(context, listen: false)
-                        .removeDevice(id);
-                    Navigator.of(context).pop();
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const MyApp()),
-                    );
-                  },
-                  child: const Text(
-                    'Delete',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+    return Scaffold(
+      appBar: BasePage(
+        title: 'Delete Page',
+        showBackButton: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 16),
+            const Text(
+              'Are you sure you want to delete this device? This action cannot be undone.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18),
+            ),
+            const SizedBox(height: 24),
+            ReusableBottomButton(
+              buttonText: 'Delete',
+              padding: 16.0,
+              fontSize: 18.0,
+              onPressed: () {
+                Provider.of<DeviceManager>(context, listen: false).removeDevice(id);
+                Navigator.of(context).pop();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MyApp()),
+                );
+              },
+              onDoubleTap: () {
+                TextToSpeech.speak('Device Deleted');
+                Provider.of<DeviceManager>(context, listen: false).removeDevice(id);
+                Navigator.of(context).pop();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MyApp()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
+
+
 
 class SettingsItem extends StatelessWidget {
   final String title;

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/TempVsTimeGraph.dart';
+import 'package:flutter_application_final/basePage.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
 import 'package:flutter_application_final/graph.dart';
 import 'package:flutter_application_final/main.dart';
@@ -64,6 +65,10 @@ int deviceIndex = deviceManager.devices.indexWhere((d) => d['id'] == widget.id);
 
         return Scaffold(
           backgroundColor: Colors.white,
+          appBar: BasePage(
+        title: 'Overview',
+        showBackButton: true,
+      ),
           body: SafeArea(
             child: Stack(
               children: [
@@ -281,7 +286,7 @@ status: device['sensorStatus'] == 'low Humidity'
               child: Text(
                 status,
                 style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                      fontSize: boxSize * 0.12,
+                      fontSize: boxSize * 0.07,
                       fontFamily: 'Outfit',
                       color: Colors.white,
                     ),
@@ -292,7 +297,7 @@ status: device['sensorStatus'] == 'low Humidity'
               child: Text(
                 value,
                 style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                      fontSize: boxSize * 0.14,
+                      fontSize: boxSize * 0.07,
                       fontFamily: 'Outfit',
                       color: Colors.white,
                     ),

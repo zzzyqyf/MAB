@@ -90,13 +90,19 @@ class _Register4WidgetState extends State<Register4Widget> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Fill in the Wi-Fi Details',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 20,
-                        letterSpacing: 0.0,
+                    GestureDetector(
+                      onTap: () {
+                        // Trigger text-to-speech when the text is tapped
+                        TextToSpeech.speak('Fill in the Wi-Fi Details below there are two fields wifi name and password');
+                      },
+                      child: const Text(
+                        'Fill in the Wi-Fi Details',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 20,
+                          letterSpacing: 0.0,
                       ),
+                    ),
                     ),
                     // SSID Field
                     TextFormField(
@@ -208,12 +214,11 @@ onDoubleTap: () async{
   // Navigate to the next screen
   Navigator.pushReplacement(
     context,
-   //  MaterialPageRoute(builder: (context) =>NameWidget(deviceId: widget.deviceId),
-MaterialPageRoute(
-                          builder: (context) =>
-                              NameWidget(deviceId: widget.id),
-                              
-                        ),  );
+    MaterialPageRoute(builder: (context) =>MyApp(),
+
+//MaterialPageRoute(builder: (context) => NameWidget(deviceId: widget.id),
+),  
+);
   },
 
                 ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/TextToSpeech.dart';
+import 'package:flutter_application_final/basePage.dart';
 import 'package:flutter_application_final/buttom.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
 import 'package:flutter_application_final/main.dart';
@@ -39,6 +40,11 @@ class _NameWidgetState extends State<NameWidget> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: Colors.white,
+        appBar: BasePage(
+          title: 'Name Page',
+          showBackButton: true,
+        ),
+        /*
         appBar: AppBar(
           title: const Text('Edit Name'),
           leading: IconButton(
@@ -46,6 +52,7 @@ class _NameWidgetState extends State<NameWidget> {
             onPressed: () => Navigator.pop(context),
           ),
         ),
+        */
         body: SafeArea(
           child: Form(
             key: _formKey,
@@ -57,10 +64,13 @@ class _NameWidgetState extends State<NameWidget> {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
                     child: Column(
                       children: [
-                        Text(
-                          'Fill in the new Name below',
-                          style: GoogleFonts.outfit(fontSize: screenWidth * 0.05),
-                          textAlign: TextAlign.center,
+                       GestureDetector(
+                          onTap: () => TextToSpeech.speak("Fill in the new Name below"), // Tap to hear again
+                          child: Text(
+                            'Fill in the new Name below',
+                            style: GoogleFonts.outfit(fontSize: screenWidth * 0.05),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                         const SizedBox(height: 20),
                         TextFormField(
