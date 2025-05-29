@@ -23,7 +23,7 @@ class _SoundWidgetState extends State<time> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: Colors.white,
-       appBar: BasePage(
+       appBar: const BasePage(
         title: 'Profile',
         showBackButton: true,
       ),

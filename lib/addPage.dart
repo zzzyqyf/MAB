@@ -5,7 +5,7 @@ class addPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BasePage(
+    return const BasePage(
       title: '2 Page',
       //body: Center(
        // child: Text('This is the Second Page'),

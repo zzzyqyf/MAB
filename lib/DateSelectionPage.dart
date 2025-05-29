@@ -19,8 +19,8 @@ class _DateSelectionPageState extends State<DateSelectionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
             colors: [
               Color.fromARGB(255, 6, 94, 135),
               Color.fromARGB(255, 84, 90, 95),
@@ -33,8 +33,8 @@ class _DateSelectionPageState extends State<DateSelectionPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20.0),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20.0),
                 child: Text(
                   "Select a Date",
                   style: TextStyle(
@@ -68,13 +68,13 @@ class _DateSelectionPageState extends State<DateSelectionPage> {
                         );
                       });
                     },
-                    calendarStyle: CalendarStyle(
+                    calendarStyle: const CalendarStyle(
                       selectedDecoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 6, 94, 135),
+                        color: Color.fromARGB(255, 6, 94, 135),
                         shape: BoxShape.circle,
                       ),
                       todayDecoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 84, 90, 95),
+                        color: Color.fromARGB(255, 84, 90, 95),
                         shape: BoxShape.circle,
                       ),
                       defaultTextStyle: TextStyle(
@@ -87,27 +87,27 @@ class _DateSelectionPageState extends State<DateSelectionPage> {
                       ),
                       outsideDaysVisible: false,
                     ),
-                    headerStyle: HeaderStyle(
+                    headerStyle: const HeaderStyle(
                       formatButtonVisible: false,
                       titleCentered: true,
                       titleTextStyle: TextStyle(
-                        color: const Color.fromARGB(255, 6, 94, 135),
+                        color: Color.fromARGB(255, 6, 94, 135),
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       ),
                       leftChevronIcon: Icon(
                         Icons.chevron_left,
-                        color: const Color.fromARGB(255, 6, 94, 135),
+                        color: Color.fromARGB(255, 6, 94, 135),
                       ),
                       rightChevronIcon: Icon(
                         Icons.chevron_right,
-                        color: const Color.fromARGB(255, 6, 94, 135),
+                        color: Color.fromARGB(255, 6, 94, 135),
                       ),
                     ),
                   ),
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
@@ -122,7 +122,7 @@ class _DateSelectionPageState extends State<DateSelectionPage> {
                     Navigator.pop(context);
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
+                      const SnackBar(
                         content: Text(
                           "Please select a date first.",
                           style: TextStyle(color: Colors.white),
@@ -132,7 +132,7 @@ class _DateSelectionPageState extends State<DateSelectionPage> {
                     );
                   }
                 },
-                child: Text(
+                child: const Text(
                   "Confirm Date",
                   style: TextStyle(
                     fontSize: 16,
@@ -140,7 +140,7 @@ class _DateSelectionPageState extends State<DateSelectionPage> {
                   ),
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
             ],
           ),
         ),

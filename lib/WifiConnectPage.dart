@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_final/main.dart';
 import 'package:flutter_application_final/registerFour.dart';
 import 'package:wifi_iot/wifi_iot.dart';
-import 'DashboardPage.dart';  // Replace with the actual path to your dashboard page
+// Replace with the actual path to your dashboard page
 
 class WifiConnectPage extends StatefulWidget {
   final String ssid;
 
-  WifiConnectPage({required this.ssid});
+  const WifiConnectPage({super.key, required this.ssid});
 
   @override
   _WifiConnectPageState createState() => _WifiConnectPageState();
@@ -28,13 +27,13 @@ class _WifiConnectPageState extends State<WifiConnectPage> {
 
       if (success) {
         // Wait for a brief moment to simulate loading
-        await Future.delayed(Duration(seconds: 2));
+        await Future.delayed(const Duration(seconds: 2));
 
         // Navigate to the Dashboard after successful connection
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => Register4Widget(id: '',),
+            builder: (context) => const Register4Widget(id: '',),
 
           ),
         );
@@ -48,7 +47,7 @@ class _WifiConnectPageState extends State<WifiConnectPage> {
           context: context,
           builder: (context) {
             return AlertDialog(
-              title: Text("Connection Failed"),
+              title: const Text("Connection Failed"),
               content: Text("Could not connect to ${widget.ssid}. Please try again."),
               actions: [
                 TextButton(
@@ -56,7 +55,7 @@ class _WifiConnectPageState extends State<WifiConnectPage> {
                     Navigator.pop(context);
                     Navigator.pop(context); // Go back to the previous screen
                   },
-                  child: Text("OK"),
+                  child: const Text("OK"),
                 ),
               ],
             );
@@ -72,7 +71,7 @@ class _WifiConnectPageState extends State<WifiConnectPage> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: Text("Error"),
+            title: const Text("Error"),
             content: Text("An error occurred: $e"),
             actions: [
               TextButton(
@@ -80,7 +79,7 @@ class _WifiConnectPageState extends State<WifiConnectPage> {
                   Navigator.pop(context);
                   Navigator.pop(context); // Go back to the previous screen
                 },
-                child: Text("OK"),
+                child: const Text("OK"),
               ),
             ],
           );
@@ -98,20 +97,20 @@ class _WifiConnectPageState extends State<WifiConnectPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Connecting to Wi-Fi")),
+      appBar: AppBar(title: const Text("Connecting to Wi-Fi")),
       body: SafeArea(
         child: Center(
           child: _isLoading
-              ? CircularProgressIndicator()  // Show a loading spinner while connecting
+              ? const CircularProgressIndicator()  // Show a loading spinner while connecting
               : Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Failed to connect, try again!'),
+                    const Text('Failed to connect, try again!'),
                     ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context);  // Go back to the previous page
                       },
-                      child: Text('Back'),
+                      child: const Text('Back'),
                     ),
                   ],
                 ),

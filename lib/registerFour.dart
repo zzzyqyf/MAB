@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
 import 'package:flutter_application_final/main.dart';
-import 'package:flutter_application_final/name.dart';
-import 'package:flutter_application_final/test.dart';
 import 'dart:typed_data'; // Import for Uint8List
 import 'dart:io'; // Import for RawDatagramSocket
 import 'basePage.dart';
 import 'buttom.dart';
-import 'loadingO.dart';
 import 'package:provider/provider.dart';
 //import 'test.dart'; // Import your DeviceManager
 
@@ -58,7 +55,7 @@ class _Register4WidgetState extends State<Register4Widget> {
       // Show success message only if credentials are sent successfully
       ScaffoldMessenger.of(context).showSnackBar(
         
-        SnackBar(content: Text('Credentials sent successfully! ESP32 will now try to connect.')),
+        const SnackBar(content: Text('Credentials sent successfully! ESP32 will now try to connect.')),
         
       );
     } catch (e) {
@@ -77,7 +74,7 @@ class _Register4WidgetState extends State<Register4Widget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: Colors.white,
-        appBar: BasePage(
+        appBar: const BasePage(
           title: 'Connect to Wifi',
           showBackButton: true,
         ),
@@ -169,7 +166,7 @@ class _Register4WidgetState extends State<Register4Widget> {
                     if (_errorMessage != null)
                       Text(
                         _errorMessage!,
-                        style: TextStyle(color: Colors.red),
+                        style: const TextStyle(color: Colors.red),
                       ),
                     const SizedBox(height: 300),
                   ],
@@ -214,7 +211,7 @@ onDoubleTap: () async{
   // Navigate to the next screen
   Navigator.pushReplacement(
     context,
-    MaterialPageRoute(builder: (context) =>MyApp(),
+    MaterialPageRoute(builder: (context) =>const MyApp(),
 
 //MaterialPageRoute(builder: (context) => NameWidget(deviceId: widget.id),
 ),  

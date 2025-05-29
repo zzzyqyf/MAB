@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:flutter_application_final/registerFour.dart';
-import 'package:flutter_application_final/registerThree.dart';
 import 'basePage.dart';
 import 'buttom.dart';
 
@@ -31,7 +30,7 @@ class _Register2WidgetState extends State<Register2Widget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: Colors.white, // Use your desired background color
-        appBar: BasePage(
+        appBar: const BasePage(
           title: 'Activate Device',
           showBackButton: true,
         ),

@@ -5,8 +5,6 @@ import 'package:flutter_application_final/deviceMnanger.dart';
 import 'package:flutter_application_final/invitation.dart';
 import 'package:flutter_application_final/main.dart';
 import 'package:flutter_application_final/name.dart';
-import 'package:flutter_application_final/soundOption.dart';
-import 'package:flutter_application_final/time.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'basePage.dart';
@@ -54,7 +52,7 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: Colors.white,
-        appBar: BasePage(
+        appBar: const BasePage(
           title: 'Settings',
           showBackButton: true,
         ),
@@ -271,7 +269,7 @@ class DeletePage extends StatelessWidget {
         'Delete Device. Are you sure you want to delete this device? This action cannot be undone.');
 
     return Scaffold(
-      appBar: BasePage(
+      appBar: const BasePage(
         title: 'Delete Page',
         showBackButton: true,
       ),

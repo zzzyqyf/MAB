@@ -9,10 +9,10 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Connected Devices'),
+        title: const Text('Connected Devices'),
       ),
       body: devices.isEmpty
-          ? Center(child: Text('No devices added yet.'))
+          ? const Center(child: Text('No devices added yet.'))
           : ListView.builder(
               itemCount: devices.length,
               itemBuilder: (context, index) {
@@ -25,7 +25,7 @@ class DashboardPage extends StatelessWidget {
                     );
                   },
                   child: Card(
-                    margin: EdgeInsets.all(8.0),
+                    margin: const EdgeInsets.all(8.0),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
@@ -33,11 +33,11 @@ class DashboardPage extends StatelessWidget {
                         children: [
                           Text(
                             'ID: ${device['id']}',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Text('Name: ${device['name']}'),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Text('Status: ${device['status']}'),
                         ],
                       ),

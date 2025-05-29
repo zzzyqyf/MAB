@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/TextToSpeech.dart';
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'basePage.dart';
 
@@ -28,7 +27,7 @@ class _NotificationPageState extends State<NotificationPage> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: Colors.white,
-        appBar: BasePage(
+        appBar: const BasePage(
           title: 'Notifications',
           showBackButton: true,
         ),

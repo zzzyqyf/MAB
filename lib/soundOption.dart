@@ -23,7 +23,7 @@ class _SoundWidgetState extends State<SoundWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: Colors.white,
-       appBar: BasePage(
+       appBar: const BasePage(
         title: 'Sound',
         showBackButton: true,
       ),

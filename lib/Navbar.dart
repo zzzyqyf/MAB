@@ -16,7 +16,7 @@ class CustomNavbar extends StatelessWidget {
   Widget build(BuildContext context) {
     // Get the width of the screen
     final double screenWidth = MediaQuery.of(context).size.width;
-  Timer? _tapTimer; // Timer to detect single taps and delay the action
+  Timer? tapTimer; // Timer to detect single taps and delay the action
 
     // Calculate responsive icon size based on the screen width
     final double iconSize = screenWidth * 0.07;
@@ -26,18 +26,18 @@ class CustomNavbar extends StatelessWidget {
         BottomNavigationBarItem(
           icon: GestureDetector(
             onTap: () {
-                      _tapTimer?.cancel();
+                      tapTimer?.cancel();
 
               // Announce the tap action for Profile
               TextToSpeech.speak('Profile tap');
               //onItemTapped(0);
-               _tapTimer = Timer(const Duration(milliseconds: 300), () {
+               tapTimer = Timer(const Duration(milliseconds: 300), () {
           // Do something if no double-tap is detected within 300ms
           // This prevents navigation on single tap
         });
             },
             onDoubleTap: () {
-                                    _tapTimer?.cancel();
+                                    tapTimer?.cancel();
 
               TextToSpeech.speak('Profile screen');
               // Navigate to Profile screen on double tap
@@ -53,18 +53,18 @@ class CustomNavbar extends StatelessWidget {
         BottomNavigationBarItem(
           icon: GestureDetector(
             onTap: () {
-                      _tapTimer?.cancel();
+                      tapTimer?.cancel();
 
               // Announce the tap action for Notifications
               TextToSpeech.speak('Notifications tap');
               //onItemTapped(1);
-               _tapTimer = Timer(const Duration(milliseconds: 300), () {
+               tapTimer = Timer(const Duration(milliseconds: 300), () {
           // Do something if no double-tap is detected within 300ms
           // This prevents navigation on single tap
         });
             },
             onDoubleTap: () {
-                                    _tapTimer?.cancel();
+                                    tapTimer?.cancel();
 
               TextToSpeech.speak('Notifications screen');
               onItemTapped(1);
@@ -80,19 +80,19 @@ class CustomNavbar extends StatelessWidget {
           icon: GestureDetector(
            onTap: () {
         // If a double-tap happens, cancel the single tap action
-        _tapTimer?.cancel();
+        tapTimer?.cancel();
         
         // Announce the single tap action for Add
         TextToSpeech.speak('Add tapped');
         
         // Add a delay before executing any action
-        _tapTimer = Timer(const Duration(milliseconds: 300), () {
+        tapTimer = Timer(const Duration(milliseconds: 300), () {
           // Do something if no double-tap is detected within 300ms
           // This prevents navigation on single tap
         });
       },
             onDoubleTap: () {
-                      _tapTimer?.cancel();
+                      tapTimer?.cancel();
 
               TextToSpeech.speak('Add screen');
               onItemTapped(2);

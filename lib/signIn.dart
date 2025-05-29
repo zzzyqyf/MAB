@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:flutter_application_final/buttom.dart';
@@ -47,7 +46,7 @@ class _LoginWidgetState extends State<LoginWidget> {
       } catch (e) {
         // Handle login errors
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('')),
+          const SnackBar(content: Text('')),
                    // SnackBar(content: Text('Login failed: $e')),
         );
             TextToSpeech.speak('Login failed Check email or password');
@@ -142,13 +141,13 @@ class _LoginWidgetState extends State<LoginWidget> {
                                       ),
                                       validator: (value) {
                                         if (value == null || value.isEmpty) {
-                                          Future.delayed(Duration(milliseconds: 500), () {
+                                          Future.delayed(const Duration(milliseconds: 500), () {
                                             TextToSpeech.speak('Please enter your email');
                                           });
                                           return 'Please enter your email';
                                         } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
                                             .hasMatch(value)) {
-                                          Future.delayed(Duration(milliseconds: 500), () {
+                                          Future.delayed(const Duration(milliseconds: 500), () {
                                             TextToSpeech.speak('Please enter a valid email address');
                                           });
                                           return 'Please enter a valid email address';
@@ -205,7 +204,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                                       ),
                                       validator: (value) {
                                         if (value == null || value.isEmpty) {
-                                          Future.delayed(Duration(milliseconds: 500), () {
+                                          Future.delayed(const Duration(milliseconds: 500), () {
                                             TextToSpeech.speak('Please enter your password');
                                           });
                                           return 'Please enter your password';
@@ -235,7 +234,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                                   child: RichText(
                                     text: TextSpan(
                                       children: [
-                                        TextSpan(
+                                        const TextSpan(
                                           text: 'Don\'t have an account? ',
                                           style: TextStyle(color: Colors.black),
                                         ),

@@ -1,10 +1,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
-import 'package:flutter_application_final/main.dart';
 import 'package:provider/provider.dart';
 
-import 'test.dart';
 
 //import 'test.dart';
 

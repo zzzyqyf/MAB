@@ -4,13 +4,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_application_final/DateSelectionPage.dart';
-import 'package:flutter_application_final/DeviceIdProvider.dart';
 import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:flutter_application_final/basePage.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
-import 'package:flutter_application_final/mqttservice.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -18,7 +15,7 @@ import 'package:intl/intl.dart';
 class TempVsTimeGraph extends StatefulWidget {
   final String deviceId; // The deviceId will be passed dynamically
 
-  TempVsTimeGraph({required this.deviceId});
+  const TempVsTimeGraph({super.key, required this.deviceId});
 
   @override
   _TempVsTimeGraphState createState() => _TempVsTimeGraphState();
@@ -84,7 +81,7 @@ void printCycleBoxContents() {
 
 */
 void _startPeriodicCheck() {
-    _timer = Timer.periodic(Duration(seconds: 5), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
       _generateTemperatureData(sensorData); // Check data periodically
     });
   }
@@ -302,14 +299,10 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
   DateTime startTime = cycleStartTime.add(Duration(minutes: minX.toInt()));
   DateTime endTime = cycleStartTime.add(Duration(minutes: maxX.toInt()));
 
-  String announcement = "You are now exploring data from " +
-      DateFormat('hh:mm a').format(startTime) +
-      " to " +
-      DateFormat('hh:mm a').format(endTime) +
-      ".";
+  String announcement = "You are now exploring data from ${DateFormat('hh:mm a').format(startTime)} to ${DateFormat('hh:mm a').format(endTime)}.";
   TextToSpeech.speak(announcement);
 }
-    FlutterTts _tts = FlutterTts();
+    final FlutterTts _tts = FlutterTts();
 
 
   @override
@@ -326,7 +319,7 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
         }).toList();
 
         return Scaffold(
-          appBar: BasePage(
+          appBar: const BasePage(
           title: 'Graph',
                   //  title: '${isActive ? "Active" : "Inactive"} - ${widget.deviceId}',
 
@@ -344,7 +337,7 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
                 Expanded(
                 child: LineChart(
                   LineChartData(
-                    gridData: FlGridData(show: true),
+                    gridData: const FlGridData(show: true),
                     titlesData: FlTitlesData(
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
@@ -362,7 +355,7 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
                               padding: const EdgeInsets.only(top: 8.0),
                               child: Text(
                                 DateFormat('HH:mm').format(xTime), // Format time as HH:mm
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                               ),
                             );
                           },
@@ -378,16 +371,16 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
                               padding: const EdgeInsets.only(left: 8.0),
                               child: Text(
                                 '${value.toInt()}°C',
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                               ),
                             );
                           },
                         ),
                       ),
-                      topTitles: AxisTitles(
+                      topTitles: const AxisTitles(
                         sideTitles: SideTitles(showTitles: false),
                       ),
-                      rightTitles: AxisTitles(
+                      rightTitles: const AxisTitles(
                         sideTitles: SideTitles(showTitles: false),
                       ),
                     ),
@@ -429,7 +422,7 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
                           TextToSpeech.speak(message); // Call the TextToSpeech method to announce data
                         }
                       },
-                      touchTooltipData: LineTouchTooltipData(tooltipBgColor: Colors.transparent), // Disable visual tooltips
+                      touchTooltipData: const LineTouchTooltipData(tooltipBgColor: Colors.transparent), // Disable visual tooltips
                     ),
                   ),
                 ),
@@ -444,7 +437,7 @@ padding: const EdgeInsets.only(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                     IconButton(
-  icon: Icon(Icons.arrow_back),
+  icon: const Icon(Icons.arrow_back),
   onPressed: () {
     setState(() {
       if (minX > 0) {
@@ -459,7 +452,7 @@ padding: const EdgeInsets.only(
 
                       Text('Scroll Time Range: $minX - $maxX minutes'),
                       IconButton(
-                        icon: Icon(Icons.arrow_forward),
+                        icon: const Icon(Icons.arrow_forward),
                         onPressed: () {
                           setState(() {
                             if (maxX < 12) {
@@ -524,7 +517,7 @@ padding: const EdgeInsets.only(
           ),
         );
       },
-child: Text(
+child: const Text(
   "View old Data",
   style: TextStyle(
     color: Colors.white, // Change this to any color you want
@@ -551,7 +544,7 @@ void main() async {
   runApp(
     ChangeNotifierProvider(
       create: (_) => DeviceManager(),
-      child: MaterialApp(
+      child: const MaterialApp(
         home: TempVsTimeGraph(deviceId: ''), // Pass the deviceId dynamically
       ),
     ),

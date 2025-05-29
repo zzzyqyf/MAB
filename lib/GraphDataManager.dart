@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:intl/intl.dart';
 
 class GraphManagerModel extends ChangeNotifier {
   final String deviceId;
@@ -23,7 +22,7 @@ class GraphManagerModel extends ChangeNotifier {
   }
 
   void _startPeriodicCheck() {
-    _timer = Timer.periodic(Duration(seconds: 5), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
       _generateTemperatureData(); // Generate data periodically
     });
   }

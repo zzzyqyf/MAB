@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:flutter_application_final/buttom.dart';
@@ -162,13 +161,13 @@ Widget build(BuildContext context) {
                                     ),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
-                                         Future.delayed(Duration(milliseconds: 500), () {
+                                         Future.delayed(const Duration(milliseconds: 500), () {
                                             TextToSpeech.speak('Please enter your email');
                                           });
                                         return 'Please enter your email';
                                       } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
                                           .hasMatch(value)) {
-                                             Future.delayed(Duration(milliseconds: 500), () {
+                                             Future.delayed(const Duration(milliseconds: 500), () {
                                             TextToSpeech.speak('Please enter a valid email address');
                                           });
                                         return 'Please enter a valid email address';
@@ -225,7 +224,7 @@ Widget build(BuildContext context) {
                                     ),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
-                                         Future.delayed(Duration(milliseconds: 500), () {
+                                         Future.delayed(const Duration(milliseconds: 500), () {
                                             TextToSpeech.speak('Please enter your details');
                                           });
                                         return 'Please enter your password';
@@ -313,7 +312,7 @@ Widget build(BuildContext context) {
                                   child: RichText(
                                     text: TextSpan(
                                       children: [
-                                        TextSpan(
+                                        const TextSpan(
                                       text: 'Already have an account? Login here ',
                                           style: TextStyle(color: Colors.black),
                                         ),

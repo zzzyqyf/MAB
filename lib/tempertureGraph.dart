@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 class TemperatureGraph extends StatelessWidget {
   final String deviceId;
 
-  TemperatureGraph({required this.deviceId});
+  const TemperatureGraph({super.key, required this.deviceId});
 
   @override
   Widget build(BuildContext context) {
@@ -29,8 +29,8 @@ class TemperatureGraph extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: LineChart(
           LineChartData(
-            gridData: FlGridData(show: true),
-            titlesData: FlTitlesData(show: true),
+            gridData: const FlGridData(show: true),
+            titlesData: const FlTitlesData(show: true),
             borderData: FlBorderData(
               border: const Border(
                 left: BorderSide(color: Colors.black),

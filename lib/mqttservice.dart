@@ -82,7 +82,7 @@ class MqttService extends ChangeNotifier {
       notifyListeners(); // Notify listeners when data is updated
     });
 
-    _dataCheckTimer = Timer.periodic(Duration(seconds: 5), checkDataReception);
+    _dataCheckTimer = Timer.periodic(const Duration(seconds: 5), checkDataReception);
   }
 
   bool isDataReceived(String deviceId) {
@@ -109,6 +109,7 @@ class MqttService extends ChangeNotifier {
     print('Disconnected from MQTT broker.');
   }
 
+  @override
   void dispose() {
     _dataCheckTimer?.cancel();
     client.disconnect();

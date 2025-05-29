@@ -3,8 +3,6 @@ import 'package:flutter_application_final/TextToSpeech.dart';
 import 'package:flutter_application_final/basePage.dart';
 import 'package:flutter_application_final/buttom.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
-import 'package:flutter_application_final/main.dart';
-import 'package:flutter_application_final/setting.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -40,7 +38,7 @@ class _NameWidgetState extends State<NameWidget> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: Colors.white,
-        appBar: BasePage(
+        appBar: const BasePage(
           title: 'Name Page',
           showBackButton: true,
         ),
@@ -107,7 +105,7 @@ class _NameWidgetState extends State<NameWidget> {
                           cursorColor: Colors.blue,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                               Future.delayed(Duration(milliseconds: 500), () {
+                               Future.delayed(const Duration(milliseconds: 500), () {
                     TextToSpeech.speak('Please enter a name');
                   });
                               TextToSpeech.speak('Please enter a name');
@@ -144,7 +142,7 @@ class _NameWidgetState extends State<NameWidget> {
         if (name.isNotEmpty) {
           final deviceId = widget.deviceId; // Get the deviceId passed in
           // Call the existing addDevice method from the main class
-          Provider.of<DeviceManager>(context, listen: false).updateDeviceName(deviceId!, name);
+          Provider.of<DeviceManager>(context, listen: false).updateDeviceName(deviceId, name);
 
           Navigator.pop(context);  // Close current page
           // Optionally, you can navigate to a new screen after the button press

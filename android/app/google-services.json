@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "1057190145634",
-    "project_id": "mabb-d5b57",
-    "storage_bucket": "mabb-d5b57.firebasestorage.app"
+    "project_number": "243707806517",
+    "project_id": "mab-fyp",
+    "storage_bucket": "mab-fyp.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1057190145634:android:a7620cad869979cad3eb3b",
+        "mobilesdk_app_id": "1:243707806517:android:eae273e6b6c7ebe1f1427c",
         "android_client_info": {
-          "package_name": "mab.final"
+          "package_name": "com.example.flutter_application_final"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDnT8zGml-gRdF-xAXTsA2KC4YFJhEhJIk"
+          "current_key": "AIzaSyA68fu6-TsdAo05rh7S4VAJx1uP83_OuXM"
         }
       ],
       "services": {

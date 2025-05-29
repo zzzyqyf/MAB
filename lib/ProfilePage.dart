@@ -4,10 +4,6 @@ import 'package:flutter_application_final/signIn.dart';
 //import 'package:provider/provider.dart';
 
 import 'basePage.dart';
-import 'editProfile.dart';
-import 'invitation.dart';
-import 'login.dart';
-import 'members.dart';
 //import 'test.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -48,7 +44,7 @@ class _ProfileWidgetState extends State<ProfilePage> {
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: BasePage(
+      appBar: const BasePage(
         title: 'Profile',
         showBackButton: true,
       ),
@@ -83,7 +79,7 @@ class _ProfileWidgetState extends State<ProfilePage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        SizedBox(height: 2),
+        const SizedBox(height: 2),
         Text(
           'fatimasalaysia@gmail.com',
           style: TextStyle(

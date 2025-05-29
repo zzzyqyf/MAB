@@ -4,9 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_final/TextToSpeech.dart';
-import 'package:flutter_email_sender/flutter_email_sender.dart';
-import 'package:mailer/mailer.dart';
-import 'package:mailer/smtp_server/gmail.dart';
 import 'ProfilePage.dart';
 import 'basePage.dart';
 import 'buttom.dart';
@@ -77,7 +74,7 @@ Future<void> sendInvitation(String senderEmail, String email, String role, Strin
       print('Email sent successfully! $senderEmail');
     } else {
       print('Failed to send email. Response: ${response.statusCode}');
-      print('Response body: ${response.body} ${email}');
+      print('Response body: ${response.body} $email');
     }
   } catch (e) {
                           TextToSpeech.speak('Error sending email');
@@ -97,7 +94,7 @@ Future<void> sendInvitation(String senderEmail, String email, String role, Strin
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        appBar: BasePage(
+        appBar: const BasePage(
           title: 'Invitation',
           showBackButton: true,
         ),
@@ -154,7 +151,7 @@ Future<void> sendInvitation(String senderEmail, String email, String role, Strin
                               keyboardType: TextInputType.emailAddress,
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                   Future.delayed(Duration(milliseconds: 500), () {
+                                   Future.delayed(const Duration(milliseconds: 500), () {
                     TextToSpeech.speak('Please enter an email address and select a role');
                   });
                                   return 'Please enter an email address';
@@ -254,7 +251,7 @@ Future<void> sendInvitation(String senderEmail, String email, String role, Strin
                         }
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Please enter an email and select a role')),
+                          const SnackBar(content: Text('Please enter an email and select a role')),
                         );
                                         TextToSpeech.speak('Please enter an email and select a role');
 

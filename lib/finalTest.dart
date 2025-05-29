@@ -1,15 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:provider/provider.dart';
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:intl/intl.dart';
 
 class TempVsTimeGraph extends StatefulWidget {
   final String deviceId;
 
-  TempVsTimeGraph({required this.deviceId});
+  const TempVsTimeGraph({super.key, required this.deviceId});
 
   @override
   _TempVsTimeGraphState createState() => _TempVsTimeGraphState();
@@ -50,7 +47,7 @@ class _TempVsTimeGraphState extends State<TempVsTimeGraph> with WidgetsBindingOb
   }
 
   void _startBackgroundTimer() {
-    _timer = Timer.periodic(Duration(seconds: 5), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
       // Simulate periodic data updates
       _generateTemperatureData();
     });
@@ -90,10 +87,10 @@ class _TempVsTimeGraphState extends State<TempVsTimeGraph> with WidgetsBindingOb
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Temp vs Time Graph')),
+      appBar: AppBar(title: const Text('Temp vs Time Graph')),
       body: LineChart(
         LineChartData(
-          gridData: FlGridData(show: true),
+          gridData: const FlGridData(show: true),
           titlesData: FlTitlesData(
             bottomTitles: AxisTitles(
               sideTitles: SideTitles(
@@ -137,7 +134,7 @@ class _TempVsTimeGraphState extends State<TempVsTimeGraph> with WidgetsBindingOb
 void main() async {
   await Hive.initFlutter();
   runApp(
-    MaterialApp(
+    const MaterialApp(
       home: TempVsTimeGraph(deviceId: 'device1'),
     ),
   );

@@ -36,7 +36,7 @@ class _MemberListWidgetState extends State<MemberListWidget>
         key: scaffoldKey,
         backgroundColor: const Color.fromARGB(255, 18, 108, 210), // Dark cyan-purple blend
 
-         appBar: BasePage(
+         appBar: const BasePage(
           title: 'Members',
           showBackButton: true,
         ),

@@ -10,7 +10,7 @@ import 'package:flutter_application_final/TextToSpeech.dart'; // Assuming you're
 class GraphManager extends StatefulWidget {
   final String deviceId;
 
-  GraphManager({required this.deviceId});
+  const GraphManager({super.key, required this.deviceId});
 
   @override
   _GraphManagerState createState() => _GraphManagerState();
@@ -34,14 +34,10 @@ class _GraphManagerState extends State<GraphManager> {
   DateTime startTime = cycleStartTime.add(Duration(minutes: minX.toInt()));
   DateTime endTime = cycleStartTime.add(Duration(minutes: maxX.toInt()));
 
-  String announcement = "You are now exploring data from " +
-      DateFormat('hh:mm a').format(startTime) +
-      " to " +
-      DateFormat('hh:mm a').format(endTime) +
-      ".";
+  String announcement = "You are now exploring data from ${DateFormat('hh:mm a').format(startTime)} to ${DateFormat('hh:mm a').format(endTime)}.";
   TextToSpeech.speak(announcement);
 }
-    FlutterTts _tts = FlutterTts();
+    final FlutterTts _tts = FlutterTts();
 
   void loadHistoricalCycles(DateTime selectedDate, String deviceId) {
     final graphManagerModel = Provider.of<GraphManagerModel>(context, listen: false);
@@ -118,7 +114,7 @@ print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
                 Expanded(
                   child: LineChart(
                     LineChartData(
-                      gridData: FlGridData(show: true),
+                      gridData: const FlGridData(show: true),
                       titlesData: FlTitlesData(
                         bottomTitles: AxisTitles(
                           sideTitles: SideTitles(
@@ -133,7 +129,7 @@ print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
                                 padding: const EdgeInsets.only(top: 8.0),
                                 child: Text(
                                   DateFormat('HH:mm').format(xTime),
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                                 ),
                               );
                             },
@@ -149,14 +145,14 @@ print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
                                 padding: const EdgeInsets.only(left: 8.0),
                                 child: Text(
                                   '${value.toInt()}°C',
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                                 ),
                               );
                             },
                           ),
                         ),
-                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                       ),
                       borderData: FlBorderData(show: true),
                       minX: minX,
@@ -185,7 +181,7 @@ print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
                             TextToSpeech.speak(message); // Announce data
                           }
                         },
-                        touchTooltipData: LineTouchTooltipData(tooltipBgColor: Colors.transparent),
+                        touchTooltipData: const LineTouchTooltipData(tooltipBgColor: Colors.transparent),
                       ),
                     ),
                   ),
@@ -196,7 +192,7 @@ print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       IconButton(
-                        icon: Icon(Icons.arrow_back),
+                        icon: const Icon(Icons.arrow_back),
                         onPressed: () {
                           setState(() {
                             if (minX > 0) {
@@ -209,7 +205,7 @@ print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
                       ),
                       Text('Scroll Time Range: $minX - $maxX minutes'),
                       IconButton(
-                        icon: Icon(Icons.arrow_forward),
+                        icon: const Icon(Icons.arrow_forward),
                         onPressed: () {
                           setState(() {
                             if (maxX < 12) {
@@ -241,7 +237,7 @@ print("Cycles for ${DateFormat('yyyy-MM-dd').format(selectedDate)}:");
                             loadHistoricalCycles(pickedDate, widget.deviceId);
                           }
                         },
-                        child: Text("Load Historical Cycles for Date"),
+                        child: const Text("Load Historical Cycles for Date"),
                       ),
                     ],
                   ),

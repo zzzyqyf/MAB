@@ -3,33 +3,31 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
-import 'package:flutter_application_final/DeviceIdProvider.dart';
 import 'package:flutter_application_final/Navbar.dart';
 import 'package:flutter_application_final/ProfilePage.dart';
-import 'package:flutter_application_final/SensorDataWidget.dart';
 import 'package:flutter_application_final/TextToSpeech.dart';
-import 'package:flutter_application_final/addPage.dart';
 import 'package:flutter_application_final/deviceMnanger.dart';
-import 'package:flutter_application_final/graph.dart';
 //import 'package:flutter_application_final/graph.dart';
 //import 'package:flutter_application_final/mqttTests/MQTT.dart';
 //import 'package:flutter_application_final/mqttservice.dart';
+import 'package:flutter/material.dart';
+import 'mqttTests/mqtt_service.dart';
 import 'package:flutter_application_final/notification.dart';
-import 'package:flutter_application_final/one.dart';
 import 'package:flutter_application_final/overview.dart';
-import 'package:flutter_application_final/registerFour.dart';
 import 'package:flutter_application_final/registerOne.dart';
-import 'package:flutter_application_final/three.dart';
-import 'package:flutter_application_final/two.dart';
-import 'package:flutter_application_final/wifiSetup.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
-import 'aTent.dart';
-import 'test.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 void main() async{
+
+    WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
 
   WidgetsFlutterBinding.ensureInitialized();
     await Firebase.initializeApp(); // Initialize Firebase
@@ -76,7 +74,7 @@ if (!Hive.isBoxOpen('graphdata')) {
     //),
   
       ],
-      child: MaterialApp(
+      child: const MaterialApp(
         home: MyApp(),
       ),
     ),
@@ -89,8 +87,8 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 Future<void> initNotifications() async {
-  const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher'); // App icon
+ const AndroidInitializationSettings initializationSettingsAndroid =
+    AndroidInitializationSettings('app_icon'); // match your custom icon name  // App icon
 
   const InitializationSettings initializationSettings =
       InitializationSettings(android: initializationSettingsAndroid);
@@ -98,9 +96,10 @@ Future<void> initNotifications() async {
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 }
 
+
+
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -135,11 +134,11 @@ class _MyHomePageState extends State<MyHomePage> {
   final List<Widget> _pages = [
 //TempVsTimeGraph(deviceId: ''),
 //WifiPage(),
-ProfilePage(),
+const ProfilePage(),
    // TempVsTimeGraph(deviceId: '',),
-     NotificationPage(),
+     const NotificationPage(),
     //Register4Widget(id: '',),
-         Register2Widget(),
+         const Register2Widget(),
 
   ];
 
@@ -199,12 +198,12 @@ ProfilePage(),
     builder: (context, deviceManager, child) {
       // Ensure that the device box is loaded and available
       if (deviceManager.deviceBox == null) {
-        return Center(child: CircularProgressIndicator()); // Wait for initialization
+        return const Center(child: CircularProgressIndicator()); // Wait for initialization
       }
 
       // Handle case when there are no devices
       if (deviceManager.devices.isEmpty) {
-        return Center(child: Text('Please add a device.'));
+        return const Center(child: Text('Please add a device.'));
       }
 
       return GridView.builder(
@@ -226,7 +225,7 @@ ProfilePage(),
       onTap: () async {
         // Trigger text-to-speech on tap
         await TextToSpeech.speak("Device ${device['name']} is ${device['status']} it has "
-        +"${device['sensorStatus']} ");
+        "${device['sensorStatus']} ");
       },
             child: TentCard(
               icon: Icons.portable_wifi_off,

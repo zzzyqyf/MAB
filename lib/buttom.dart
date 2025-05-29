@@ -7,7 +7,7 @@ class ReusableBottomButton extends StatelessWidget {
   final VoidCallback onPressed;
   final VoidCallback onDoubleTap; // Added callback for double tap
 
-   ReusableBottomButton({
+   const ReusableBottomButton({
     Key? key,
     required this.buttonText,
     required this.padding,
