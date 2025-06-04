@@ -3,76 +3,52 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:device_preview/device_preview.dart';
-import 'package:flutter_application_final/Navbar.dart';
-import 'package:flutter_application_final/ProfilePage.dart';
-import 'package:flutter_application_final/TextToSpeech.dart';
-import 'package:flutter_application_final/deviceMnanger.dart';
-//import 'package:flutter_application_final/graph.dart';
-//import 'package:flutter_application_final/mqttTests/MQTT.dart';
-//import 'package:flutter_application_final/mqttservice.dart';
-import 'package:flutter/material.dart';
-import 'mqttTests/mqtt_service.dart';
-import 'package:flutter_application_final/notification.dart';
-import 'package:flutter_application_final/overview.dart';
-import 'package:flutter_application_final/registerOne.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
 
-void main() async{
+// Core imports
+import 'core/constants/firebase_options.dart';
+import 'core/theme/app_theme.dart';
 
-    WidgetsFlutterBinding.ensureInitialized();
+// Dependency Injection
+import 'injection_container.dart' as di;
+
+// Shared imports
+import 'shared/widgets/Navbar.dart';
+import 'shared/services/TextToSpeech.dart';
+
+// Feature imports
+import 'features/profile/presentation/pages/ProfilePage.dart';
+import 'features/device_management/presentation/viewmodels/deviceManager.dart';
+import 'features/device_management/presentation/viewmodels/device_view_model.dart';
+import 'features/notifications/presentation/pages/notification.dart';
+import 'features/dashboard/presentation/pages/overview.dart';
+import 'features/registration/presentation/pages/registerOne.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-
-  WidgetsFlutterBinding.ensureInitialized();
-    await Firebase.initializeApp(); // Initialize Firebase
- // Ensures Flutter is ready
-  await initNotifications(); 
+  // Initialize notifications
+  await initNotifications();
+  
   // Initialize Hive
   await Hive.initFlutter();
+  
+  // Initialize dependency injection
+  await di.init();
+  await di.initializeHive();
 
-  // Open the Hive box before using it
-  await Hive.openBox('deviceBox');
-    await Hive.openBox('notificationsBox');
-if (!Hive.isBoxOpen('graphdata')) {
-    await Hive.openBox('graphdata');
-  }
-   // final deviceManager = DeviceManager();
-    //final mqttservices=M
-    //deviceManager.deleteNotificationsByDeviceId("Device Unnamed Device");
-
- // New box for notifications
-  // Open your box here
- 
-  String deviceId="";
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => DeviceManager()),
-
-
-     // ChangeNotifierProvider(create: (_) => GraphProvider(deviceManager: deviceManager)),
-             // ChangeNotifierProvider(create: (context) => DeviceIdProvider(deviceManager)),
-/*
-        ChangeNotifierProvider(
-      create: (context) => MqttService(
-        id: '',
-        onDataReceived: (temperature, humidity, lightState) {
-          // Handle data received
-        },
-        onDeviceConnectionStatusChange: (id, status) {
-          // Handle connection status change
-        },
-      ),
-      */
-    //  child: MyApp(),
-    //),
-  
+        ChangeNotifierProvider(create: (_) => di.sl<DeviceViewModel>()),
       ],
       child: const MaterialApp(
         home: MyApp(),
@@ -107,10 +83,9 @@ class MyApp extends StatelessWidget {
       builder: DevicePreview.appBuilder, // Wraps the app with DevicePreview
       locale: DevicePreview.locale(context), // Supports locale changes in DevicePreview
       title: 'PlantCare Hubs',
-      theme: ThemeData(
-        primarySwatch: Colors.blueGrey,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      theme: AppTheme.lightTheme,
+      debugShowCheckedModeBanner: false,
+      home: const MyHomePage(title: 'PlantCare Hubs'),
     );
   }
 }
