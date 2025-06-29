@@ -1,47 +1,47 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Primary Color Palette - Professional IoT Blue
-  static const Color primary = Color(0xFF1976D2);
-  static const Color primaryVariant = Color(0xFF1565C0);
+  // High Contrast Color Palette for Accessibility - Designed for visually impaired users
+  static const Color primary = Color(0xFF000080); // Dark navy blue for maximum contrast
+  static const Color primaryVariant = Color(0xFF000066);
   static const Color onPrimary = Color(0xFFFFFFFF);
   
-  // Secondary Color Palette - Modern Teal
-  static const Color secondary = Color(0xFF00ACC1);
-  static const Color secondaryVariant = Color(0xFF00838F);
+  // Secondary Color Palette - High contrast teal
+  static const Color secondary = Color(0xFF006666);
+  static const Color secondaryVariant = Color(0xFF004D4D);
   static const Color onSecondary = Color(0xFFFFFFFF);
   
-  // Surface Colors
+  // Surface Colors - High contrast
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFF5F5F5);
-  static const Color onSurface = Color(0xFF1C1B1F);
-  static const Color onSurfaceVariant = Color(0xFF49454F);
+  static const Color surfaceVariant = Color(0xFFF0F0F0);
+  static const Color onSurface = Color(0xFF000000);
+  static const Color onSurfaceVariant = Color(0xFF2D2D2D);
   
-  // Background Colors
-  static const Color background = Color(0xFFFFFBFE);
-  static const Color onBackground = Color(0xFF1C1B1F);
+  // Background Colors - Pure white for maximum contrast
+  static const Color background = Color(0xFFFFFFFF);
+  static const Color onBackground = Color(0xFF000000);
   
-  // Error Colors
-  static const Color error = Color(0xFFB3261E);
-  static const Color errorContainer = Color(0xFFF9DEDC);
+  // Error Colors - High contrast red
+  static const Color error = Color(0xFFCC0000);
+  static const Color errorContainer = Color(0xFFFFEBEE);
   static const Color onError = Color(0xFFFFFFFF);
-  static const Color onErrorContainer = Color(0xFF410E0B);
+  static const Color onErrorContainer = Color(0xFF800000);
   
-  // Warning Colors
-  static const Color warning = Color(0xFFFF9800);
-  static const Color warningContainer = Color(0xFFFFE0B2);
+  // Warning Colors - High contrast orange
+  static const Color warning = Color(0xFFFF8800);
+  static const Color warningContainer = Color(0xFFFFF3E0);
   static const Color onWarning = Color(0xFFFFFFFF);
-  static const Color onWarningContainer = Color(0xFF3F2416);
+  static const Color onWarningContainer = Color(0xFFBF6600);
   
-  // Success Colors
-  static const Color success = Color(0xFF4CAF50);
-  static const Color successContainer = Color(0xFFC8E6C9);
+  // Success Colors - High contrast green
+  static const Color success = Color(0xFF006600);
+  static const Color successContainer = Color(0xFFE8F5E8);
   static const Color onSuccess = Color(0xFFFFFFFF);
-  static const Color onSuccessContainer = Color(0xFF1B5E20);
+  static const Color onSuccessContainer = Color(0xFF003300);
   
-  // Outline Colors
-  static const Color outline = Color(0xFF79747E);
-  static const Color outlineVariant = Color(0xFFCAC4D0);
+  // Outline Colors - Higher contrast
+  static const Color outline = Color(0xFF444444);
+  static const Color outlineVariant = Color(0xFF888888);
   
   // Shadow and Overlay
   static const Color shadow = Color(0xFF000000);

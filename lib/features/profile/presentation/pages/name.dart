@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../../../../shared/services/TextToSpeech.dart';
 import '../../../../shared/widgets/basePage.dart';
 import '../../../../shared/widgets/buttom.dart';
-import '../../../device_management/presentation/viewmodels/deviceMnanger.dart';
+import '../../../device_management/presentation/viewmodels/deviceManager.dart';
 
 
 class NameWidget extends StatefulWidget {
@@ -136,41 +136,26 @@ class _NameWidgetState extends State<NameWidget> {
     onPressed: () {
           TextToSpeech.speak('Save Button');
 
-    },
-    onDoubleTap: () {
-    // Double tap action
-          if (_formKey.currentState?.validate() ?? false) {
+    },    onDoubleTap: () {
+      // Double tap action
+      if (_formKey.currentState?.validate() ?? false) {
         final name = _controller.text.trim();
         if (name.isNotEmpty) {
           final deviceId = widget.deviceId; // Get the deviceId passed in
-          // Call the existing addDevice method from the main class
+          
+          // Update device name
           Provider.of<DeviceManager>(context, listen: false).updateDeviceName(deviceId, name);
-
-          Navigator.pop(context);  // Close current page
-          // Optionally, you can navigate to a new screen after the button press
-          /*Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => TentSettingsWidget(deviceId: deviceId)),
-          );*/
-                          TextToSpeech.speak('Back to Setting');
-
+          
+          // Provide feedback
+          TextToSpeech.speak('Device name updated to $name. Going back to settings.');
+          
+          // Navigate back
+          Navigator.pop(context);
         }
       }
-
-  },
+    },
   ),
-),
-
-      ),
+),      ),
     );
-  }
-
-  // This method would access the addDevice method from your main class or provider
-  void _addDeviceFromMainClass(String deviceId, String name) {
-    // Assuming you have a method in your main class (or any global provider) like this:
-    // Provider.of<DeviceManager>(context, listen: false).addDevice(deviceId, name);
-    
-    // This is just an example. Modify it based on how you've structured your app.
-    print('Device added with ID: $deviceId and Name: $name');
   }
 }

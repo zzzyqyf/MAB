@@ -50,8 +50,20 @@ void main() async {
         ChangeNotifierProvider(create: (_) => DeviceManager()),
         ChangeNotifierProvider(create: (_) => di.sl<DeviceViewModel>()),
       ],
-      child: const MaterialApp(
-        home: MyApp(),
+      child: MaterialApp(
+        // Enhanced accessibility configuration
+        home: const MyApp(),
+        debugShowCheckedModeBanner: false,
+        builder: (context, child) {
+          // Apply accessibility scaling and high contrast
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaleFactor: 1.2, // Larger text for better readability
+              boldText: true, // Bolder text for high contrast
+            ),
+            child: DevicePreview.appBuilder(context, child),
+          );
+        },
       ),
     ),
   );
@@ -107,21 +119,16 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Define pages to navigate to
   final List<Widget> _pages = [
-//TempVsTimeGraph(deviceId: ''),
-//WifiPage(),
-const ProfilePage(),
-   // TempVsTimeGraph(deviceId: '',),
-     const NotificationPage(),
-    //Register4Widget(id: '',),
-         const Register2Widget(),
-
+    const ProfilePage(),      // Index 0: Profile
+    const Register2Widget(),  // Index 1: Add Device (Registration)
+    const NotificationPage(), // Index 2: Notifications
   ];
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index; // Update selected index
     });
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => _pages[index]),
     );
@@ -142,85 +149,161 @@ const ProfilePage(),
                   mediaQuery.size.height * 0.06, // Responsive top padding
                   0,
                   0),
-             child: GestureDetector(
-      onTap: () async {
-        // Trigger text-to-speech on tap
-                await TextToSpeech.speak('PlantCare Hubs Dashboard');
-
-      },
-            child: Row(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'PlantCare Hubs Dashboard',
-            style: TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: mediaQuery.size.width * 0.05, // Responsive font size
-              letterSpacing: 0.0,
+              child: SizedBox.shrink(), // Remove the Dashboard text completely
             ),
-          ),
-        ],
-      ),
-          ),
-            ),
-          ),
-          Padding(
+          ),          Padding(
   padding: EdgeInsetsDirectional.fromSTEB(
-    10, mediaQuery.size.height * 0.15, 0, 5),
+    16, mediaQuery.size.height * 0.15, 16, 16),
   child: Consumer<DeviceManager>( // Watching DeviceManager for changes
     builder: (context, deviceManager, child) {
       // Ensure that the device box is loaded and available
       if (deviceManager.deviceBox == null) {
-        return const Center(child: CircularProgressIndicator()); // Wait for initialization
+        return const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text(
+                'Loading devices...',
+                style: TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
+        );
       }
 
       // Handle case when there are no devices
       if (deviceManager.devices.isEmpty) {
-        return const Center(child: Text('Please add a device.'));
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.device_hub_outlined,
+                size: 80,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'No Devices Found',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Add your first device to get started',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),              ElevatedButton.icon(
+                onPressed: () {
+                  print('Add Device button pressed'); // Debug print
+                  try {
+                    // Navigate to device registration page without waiting for TextToSpeech
+                    TextToSpeech.speak('Opening device registration'); // Don't await
+                    print('Starting navigation'); // Debug print
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const Register2Widget(),
+                      ),
+                    );
+                    print('Navigation completed'); // Debug print
+                  } catch (e) {
+                    print('Error in Add Device button: $e'); // Debug print
+                  }
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Add Device'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        );
       }
 
-      return GridView.builder(
-        padding: EdgeInsets.zero,
-        shrinkWrap: true,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2, // Two columns
-          crossAxisSpacing: mediaQuery.size.width * 0.01, // Horizontal spacing
-          mainAxisSpacing: mediaQuery.size.height * 0.001, // Vertical spacing
-        ),
-        itemCount: deviceManager.devices.length,
-        itemBuilder: (context, index) {
-          var device = deviceManager.devices[index];
-          print("Device ${device['name']} - Sensor Status: ${device['sensorStatus']}");
+      // Calculate responsive grid layout
+      final crossAxisCount = mediaQuery.size.width > 600 ? 3 : 2;
+      final spacing = mediaQuery.size.width * 0.03;
 
-          return Padding(
-            padding: EdgeInsetsDirectional.fromSTEB(0, mediaQuery.size.height * 0.02, 10, 0),
-        child: GestureDetector(
-      onTap: () async {
-        // Trigger text-to-speech on tap
-        await TextToSpeech.speak("Device ${device['name']} is ${device['status']} it has "
-        "${device['sensorStatus']} ");
-      },
-            child: TentCard(
-              icon: Icons.portable_wifi_off,
-              status: device['status'],
-              name: device['name'],
-              sensorStatus: device['sensorStatus'], // This should be updated when sensor status changes
-              
-              onDoubleTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TentPage(id: device['id'], name: device['name']),
-            ),
-          );
-        },
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header section
+          Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'My Devices',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${deviceManager.devices.length} device${deviceManager.devices.length != 1 ? 's' : ''} connected',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
           
-          );
-        },
+          // Devices grid
+          Expanded(
+            child: GridView.builder(
+              padding: EdgeInsets.zero,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: spacing,
+                childAspectRatio: 1.0,
+              ),
+              itemCount: deviceManager.devices.length,
+              itemBuilder: (context, index) {
+                var device = deviceManager.devices[index];
+                print("Device ${device['name']} - Sensor Status: ${device['sensorStatus']}");
+
+                return GestureDetector(
+                  onTap: () async {
+                    // Trigger text-to-speech on tap
+                    await TextToSpeech.speak("Device ${device['name']} is ${device['status']}${device['sensorStatus'].isNotEmpty ? ' with ${device['sensorStatus']}' : ''}");
+                  },
+                  child: TentCard(
+                    icon: Icons.eco,
+                    status: device['status'],
+                    name: device['name'],
+                    sensorStatus: device['sensorStatus'],
+                    onDoubleTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TentPage(id: device['id'], name: device['name']),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       );
     },
   ),
@@ -237,9 +320,7 @@ const ProfilePage(),
 }
 
 class TentCard extends StatelessWidget {
- // final String tentName;
   final IconData icon;
- // final Color iconColor;
   final String status;
   final String name;
   final VoidCallback onDoubleTap;
@@ -247,9 +328,7 @@ class TentCard extends StatelessWidget {
 
   const TentCard({
     Key? key,
-   // required this.tentName,
     required this.icon,
-    //required this.iconColor,
     required this.status,
     required this.name,
     required this.onDoubleTap,
@@ -259,104 +338,148 @@ class TentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var mediaQuery = MediaQuery.of(context);
+    final theme = Theme.of(context);
 
     // Define icon and color based on the status
     IconData statusIcon;
     Color statusIconColor;
+    Color cardColor;
 
     switch (status) {
       case 'online':
         statusIcon = Icons.wifi;
         statusIconColor = Colors.green;
+        cardColor = theme.colorScheme.primary;
         break;
       case 'offline':
         statusIcon = Icons.signal_wifi_off;
         statusIconColor = Colors.red;
+        cardColor = theme.colorScheme.error;
         break;
       case 'connecting':
       default:
         statusIcon = Icons.sync;
         statusIconColor = Colors.orange;
+        cardColor = theme.colorScheme.tertiary;
         break;
     }
 
-    return GestureDetector(
-      onDoubleTap: onDoubleTap,
-      child: Container(
-        width: mediaQuery.size.width * 0.46,
-        height: mediaQuery.size.width * 0.46,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              Color.fromARGB(255, 6, 94, 135),
-              Color.fromARGB(255, 84, 90, 95),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Stack(
-          children: [
-             Align(
-                alignment: const AlignmentDirectional(0, -0.5), // Adjust alignment for vertical centering
-
-              child: Text(
-                name,
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  fontSize: mediaQuery.size.width * 0.06,
-                ),
-              ),
+    return Semantics(
+      label: 'Device $name is $status with $sensorStatus',
+      hint: 'Double tap to view device details',
+      child: GestureDetector(
+        onDoubleTap: onDoubleTap,
+        child: Container(
+          width: mediaQuery.size.width * 0.46,
+          height: mediaQuery.size.width * 0.46,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                cardColor.withOpacity(0.9),
+                cardColor.withOpacity(0.7),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            Align(
-              alignment: const AlignmentDirectional(-0.03, 0.10),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: cardColor.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Status indicator in top right
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(
                     statusIcon,
                     color: statusIconColor,
-        size: mediaQuery.size.width * 0.1, // Increased size multiplier
+                    size: 20,
                   ),
-                  const SizedBox(width: 8),
-                  /*
-                  Text(
-                    status.toUpperCase(),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      fontSize: mediaQuery.size.width * 0.05,
-                    ),
-                  ),
-                  */
-                ],
-              ),
-            ),
-            /*
-            Align(
-              alignment: const AlignmentDirectional(-0.09, 0.63),
-              child: Text(
-                sensorStatus,
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  fontSize: mediaQuery.size.width * 0.06,
                 ),
               ),
-            ),
-            */
-           /* Align(
-              alignment: const AlignmentDirectional(-0.09, 0.11),
-              child: Icon(
-                icon,
-                color: iconColor,
-                size: mediaQuery.size.width * 0.09,
+              
+              // Device name
+              Align(
+                alignment: const AlignmentDirectional(0, -0.3),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    name,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      fontSize: mediaQuery.size.width * 0.055,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.3),
+                          offset: const Offset(0, 1),
+                          blurRadius: 2,
+                        ),
+                      ],
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ),
-          ), */ 
-           
-          ],
+              
+              // Device icon
+              Align(
+                alignment: const AlignmentDirectional(0, 0.3),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    Icons.eco,
+                    color: Colors.white,
+                    size: mediaQuery.size.width * 0.08,
+                  ),
+                ),
+              ),
+              
+              // Sensor status indicator
+              if (sensorStatus.isNotEmpty)
+                Positioned(
+                  bottom: 12,
+                  left: 12,
+                  right: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      sensorStatus,
+                      style: TextStyle(
+                        fontSize: mediaQuery.size.width * 0.03,
+                        fontWeight: FontWeight.w500,
+                        color: statusIconColor,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

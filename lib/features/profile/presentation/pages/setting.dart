@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../../../../shared/services/TextToSpeech.dart';
 import '../../../../shared/widgets/buttom.dart';
 import '../../../device_management/presentation/viewmodels/deviceManager.dart';
-import 'invitation.dart';
 import '../../../../main.dart';
 import 'name.dart';
 import '../../../../shared/widgets/basePage.dart';
@@ -105,6 +104,57 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
   ),
 ),
 
+// Device ID Section
+Padding(
+  padding: const EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
+  child: GestureDetector(
+    onTap: () {
+      // Trigger TTS to read the device ID
+      TextToSpeech.speak('Device ID ${widget.deviceId}');
+    },
+    child: Container(
+      height: 85,
+      decoration: BoxDecoration(
+        color: Theme.of(context).secondaryHeaderColor,
+        boxShadow: const [
+          BoxShadow(
+            blurRadius: 5,
+            color: Color.fromARGB(52, 2, 2, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Device ID',
+              style: TextStyle(
+                fontSize: fontSizeTitle,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Text(
+                  widget.deviceId,
+                  style: TextStyle(
+                    fontSize: fontSizeSubtitle,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  ),
+),
+
               if (userRole == 'Admin')
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
@@ -116,14 +166,14 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                     fontSizeSubtitle: fontSizeSubtitle,
                     onTap: () {
                       TextToSpeech.speak('Name the Device.');
-                    },
-                    onDoubleTap: () {
+                    },                    onDoubleTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              NameWidget(deviceId: widget.deviceId),
-                              
+                          builder: (context) => ChangeNotifierProvider.value(
+                            value: Provider.of<DeviceManager>(context, listen: false),
+                            child: NameWidget(deviceId: widget.deviceId),
+                          ),
                         ),
                       );
                     },
@@ -171,29 +221,7 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
                   },
                 ),
               ),
-              SizedBox(height: verticalSpacing),
-              */
-              Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                  child: SettingsItem(
-                    title: 'Invite',
-                    subtitle: 'Send an invitation',
-                    containerHeight: containerHeight,
-                    fontSizeTitle: fontSizeTitle,
-                    fontSizeSubtitle: fontSizeSubtitle,
-                    onTap: () {
-                      TextToSpeech.speak(
-                          'Send an invitation');
-                    },
-                   onDoubleTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) =>  InvitationWidget(deviceId:  widget.deviceId,)),
-                    );
-                  },
-                  ),
-                ),
-              SizedBox(height: verticalSpacing),
+              SizedBox(height: verticalSpacing),              */
               if (userRole == 'Admin')
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),

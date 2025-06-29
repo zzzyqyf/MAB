@@ -5,10 +5,10 @@ import 'dart:io'; // Import for RawDatagramSocket
 
 // Project imports
 import '../../../../shared/services/TextToSpeech.dart';
-import '../../../device_management/presentation/viewmodels/deviceMnanger.dart';
-import '../../../../main.dart';
+import '../../../device_management/presentation/viewmodels/deviceManager.dart';
 import '../../../../shared/widgets/basePage.dart';
 import '../../../../shared/widgets/buttom.dart';
+import 'registerOne.dart';
 //import 'test.dart'; // Import your DeviceManager
 
 class Register4Widget extends StatefulWidget {
@@ -76,9 +76,16 @@ class _Register4WidgetState extends State<Register4Widget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: Colors.white,
-        appBar: const BasePage(
+        appBar: BasePage(
           title: 'Connect to Wifi',
           showBackButton: true,
+          onBackPressed: () {
+            // Navigate back to previous registration step (Activate Device page)
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const Register2Widget()),
+            );
+          },
         ),
         body: SafeArea(
           top: true,
@@ -191,33 +198,67 @@ class _Register4WidgetState extends State<Register4Widget> {
 onDoubleTap: () async{
     // Double tap action
     String ssid = _ssidController.text.trim();
-  String password = _passwordController.text.trim();
+    String password = _passwordController.text.trim();
+    
+    // Show loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Adding device...'), duration: Duration(seconds: 1)),
+    );
+    
+    // Debug provider
+    print("Checking for DeviceManager provider...");
+    try {
+      final deviceManager = Provider.of<DeviceManager>(context, listen: false);
+      print("DeviceManager provider found!");
+    } catch (e) {
+      print("DeviceManager provider ERROR: $e");
+    }
 
-  // Send credentials to ESP32
-  await sendCredentials(ssid, password);
+    // Send credentials to ESP32
+    await sendCredentials(ssid, password);
+    
+    // Debug print for troubleshooting
+    print("Creating device with SSID: $ssid");
 
-  // Access DeviceManager
-  final deviceManager = Provider.of<DeviceManager>(context, listen: false);
+    try {
+      // Access DeviceManager
+      final deviceManager = Provider.of<DeviceManager>(context, listen: false);
 
-  // Check if the device already exists by its ID
-  final existingDevice = deviceManager.getDeviceById(widget.id);
+      // Use SSID as device name instead of empty ID
+      String deviceName = ssid.isNotEmpty ? ssid : "New Device";
+      print("Adding new device with name: $deviceName");
 
-  if (existingDevice != null) {
-    print("Device ID '${widget.id}' exists for device '$ssid': $existingDevice");
-  } else {
-    print("Device ID '${widget.id}' does not exist. Adding a new device.");
-    // Add the device if not found
-    deviceManager.addDevice(widget.id); // Use SSID as the name for the new device
-  }
+      // Add the device with a descriptive name (the SSID)
+      deviceManager.addDevice(deviceName);
+      
+      // Print device count after adding
+      print("Device count after adding: ${deviceManager.devices.length}");
+      print("Devices: ${deviceManager.devices}");
 
-  // Navigate to the next screen
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(builder: (context) =>const MyApp(),
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Device added successfully!'), duration: Duration(seconds: 2)),
+      );
+    } catch (e) {
+      print("Error adding device: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error adding device: $e'), duration: Duration(seconds: 3)),
+      );
+    }
 
-//MaterialPageRoute(builder: (context) => NameWidget(deviceId: widget.id),
-),  
-);
+  // Navigate back to main screen without recreating the app
+  await Future.delayed(Duration(milliseconds: 500)); // Short delay to let state update
+  
+  // Pop all screens and go back to main screen
+  Navigator.of(context).popUntil((route) => route.isFirst);
+  
+  // Let the user know they should now see the device on the main screen
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Return to main screen - your device should appear there'),
+      duration: Duration(seconds: 3),
+    ),
+  );
   },
 
                 ),

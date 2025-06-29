@@ -54,11 +54,28 @@ class DeviceManager extends ChangeNotifier {
   }
 
   Map<String, dynamic>? getDeviceById(String deviceId) {
-    final device = _deviceBox?.get(deviceId);
-    if (device != null) {
-      return Map<String, dynamic>.from(device);
+    print("DeviceManager: Looking up device with ID: $deviceId");
+    
+    // Check if device box is available
+    if (_deviceBox == null || !_deviceBox!.isOpen) {
+      print("DeviceManager: Device box not available");
+      return null;
     }
-    return null;
+    
+    // Attempt to get the device by ID
+    final device = _deviceBox?.get(deviceId);
+    
+    if (device != null) {
+      print("DeviceManager: Found device: $deviceId - ${device['name']}");
+      return Map<String, dynamic>.from(device);
+    } else {
+      print("DeviceManager: Device not found: $deviceId");
+      
+      // Log all available devices for debugging
+      print("DeviceManager: Available devices: ${_deviceBox!.keys.toList()}");
+      
+      return null;
+    }
   }
 
   String _deviceId = '';
@@ -74,19 +91,48 @@ class DeviceManager extends ChangeNotifier {
   }
 
   Future<void> initHive() async {
-    await Hive.initFlutter();
-    _deviceBox = await Hive.openBox('devices');
-    openCycleBox();
-    if (_deviceBox != null) {
-      for (var device in _deviceBox!.values) {
-        final deviceId = device['id'];
-        _initMqtt(deviceId);
-        _startPeriodicStatusCheck(deviceId);
+    try {
+      print("DeviceManager: Initializing Hive...");
+      
+      // Initialize Hive
+      await Hive.initFlutter();
+      
+      // Open devices box
+      print("DeviceManager: Opening devices box...");
+      _deviceBox = await Hive.openBox('devices');
+      print("DeviceManager: Devices box opened. Contains ${_deviceBox?.length ?? 0} devices");
+      
+      // Open cycle box
+      await openCycleBox();
+      
+      // Initialize MQTT for each device
+      if (_deviceBox != null && _deviceBox!.isOpen) {
+        print("DeviceManager: Initializing MQTT for ${_deviceBox!.length} devices");
+        for (var device in _deviceBox!.values) {
+          final deviceId = device['id'];
+          print("DeviceManager: Setting up device: $deviceId - ${device['name']}");
+          _initMqtt(deviceId);
+          _startPeriodicStatusCheck(deviceId);
+        }
       }
+      
+      // Handle sensor data box separately
+      print("DeviceManager: Setting up sensor data box...");
+      try {
+        await Hive.deleteBoxFromDisk('sensorData');
+      } catch (e) {
+        print("DeviceManager: Error deleting sensorData box: $e");
+        // Continue anyway
+      }
+      
+      // Re-initialize Hive to ensure clean state
+      _sensorBox = await Hive.openBox<Map<String, dynamic>>('sensorData');
+      print("DeviceManager: Sensor data box initialized");
+      
+      print("DeviceManager: Hive initialization complete");
+    } catch (e) {
+      print("DeviceManager ERROR: Failed to initialize Hive: $e");
     }
-    await Hive.deleteBoxFromDisk('sensorData');
-    await Hive.initFlutter();
-    _sensorBox = await Hive.openBox<Map<String, dynamic>>('sensorData');
     notifyListeners();
   }
 
@@ -399,29 +445,58 @@ class DeviceManager extends ChangeNotifier {
   }
 
   void addDevice(String name) {
-    final uuid = Uuid();
-    final deviceId = uuid.v4();
-    final device = {
-      'id': deviceId,
-      'name': name.isEmpty ? 'Unnamed' : name,
-      'status': 'connecting',
-      'sensorStatus': '',
-      'disconnectionTimeResult': 'not connected yet!',
-    };
-    _deviceBox?.put(deviceId, device);
-    notifyListeners();
-
-    _initMqtt(deviceId);
-
-    Timer(Duration(seconds: 5), () {
-      if (_deviceBox?.get(deviceId)?['status'] == 'connecting') {
-        updateDeviceStatus(deviceId, 'offline');
+    print("DeviceManager: Adding device with name: $name");
+    
+    try {
+      // Make sure Hive is initialized
+      if (_deviceBox == null || !_deviceBox!.isOpen) {
+        print("DeviceManager: Device box not initialized, reinitializing Hive");
+        // We'll continue anyway, but log the issue
       }
-      if (_deviceBox?.get(deviceId)?['status'] == 'offline') {
-        displayCriticalStatus("no data", deviceId);
-      }
-      _startPeriodicStatusCheck(deviceId);
-    });
+      
+      final uuid = Uuid();
+      final deviceId = uuid.v4();
+      final device = {
+        'id': deviceId,
+        'name': name.isEmpty ? 'Unnamed' : name,
+        'status': 'connecting',
+        'sensorStatus': '',
+        'disconnectionTimeResult': 'not connected yet!',
+      };
+      
+      print("DeviceManager: Creating device with ID: $deviceId and name: $name");
+      
+      // Add to Hive box if available
+      _deviceBox?.put(deviceId, device);
+      
+      print("DeviceManager: Device added to Hive box");
+      print("DeviceManager: Current devices count: ${_deviceBox?.length ?? 0}");
+      
+      // Notify listeners of the change
+      notifyListeners();
+      print("DeviceManager: Notified listeners");
+
+      // Initialize MQTT for the new device
+      _initMqtt(deviceId);
+
+      // Set a timer to update device status if it remains in connecting state
+      Timer(Duration(seconds: 5), () {
+        if (_deviceBox?.get(deviceId)?['status'] == 'connecting') {
+          updateDeviceStatus(deviceId, 'offline');
+        }
+        if (_deviceBox?.get(deviceId)?['status'] == 'offline') {
+          displayCriticalStatus("no data", deviceId);
+        }
+        _startPeriodicStatusCheck(deviceId);
+        
+        // Notify listeners again after status update
+        notifyListeners();
+      });
+    } catch (e) {
+      print("DeviceManager ERROR: Failed to add device: $e");
+      // Still notify listeners even if there was an error
+      notifyListeners();
+    }
   }
 
   void removeDevice(String deviceId) {

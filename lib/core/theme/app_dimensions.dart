@@ -44,60 +44,60 @@ class AppDimensions {
   static const double elevationHigh = 8.0;
   static const double elevationVeryHigh = 12.0;
   
-  // Icon sizes
-  static const double iconTiny = 16.0;
-  static const double iconSmall = 20.0;
-  static const double iconMedium = 24.0;
-  static const double iconLarge = 32.0;
-  static const double iconXLarge = 48.0;
-  static const double iconXXLarge = 64.0;
+  // Icon sizes - Larger for accessibility
+  static const double iconTiny = 20.0; // Increased from 16
+  static const double iconSmall = 28.0; // Increased from 20
+  static const double iconMedium = 32.0; // Increased from 24
+  static const double iconLarge = 40.0; // Increased from 32
+  static const double iconXLarge = 56.0; // Increased from 48
+  static const double iconXXLarge = 72.0; // Increased from 64
   
-  // Button dimensions
-  static const double buttonHeightSmall = 32.0;
-  static const double buttonHeightMedium = 40.0;
-  static const double buttonHeightLarge = 48.0;
-  static const double buttonHeightXLarge = 56.0;
+  // Button dimensions - Larger for better touch targets
+  static const double buttonHeightSmall = 44.0; // Increased from 32
+  static const double buttonHeightMedium = 52.0; // Increased from 40
+  static const double buttonHeightLarge = 60.0; // Increased from 48
+  static const double buttonHeightXLarge = 68.0; // Increased from 56
   
-  static const double buttonMinWidth = 64.0;
-  static const double buttonMaxWidth = 320.0;
+  static const double buttonMinWidth = 80.0; // Increased from 64
+  static const double buttonMaxWidth = 360.0; // Increased from 320
   
-  // Input field dimensions
-  static const double inputHeightSmall = 32.0;
-  static const double inputHeightMedium = 40.0;
-  static const double inputHeightLarge = 48.0;
-  static const double inputHeightMultiline = 80.0;
+  // Input field dimensions - Larger for easier interaction
+  static const double inputHeightSmall = 44.0; // Increased from 32
+  static const double inputHeightMedium = 52.0; // Increased from 40
+  static const double inputHeightLarge = 60.0; // Increased from 48
+  static const double inputHeightMultiline = 100.0; // Increased from 80
   
-  // Card dimensions
-  static const double cardMinHeight = 80.0;
-  static const double cardMaxWidth = 400.0;
+  // Card dimensions - Larger for better content visibility
+  static const double cardMinHeight = 100.0; // Increased from 80
+  static const double cardMaxWidth = 450.0; // Increased from 400
   static const double cardAspectRatio = 16 / 9;
   
-  // IoT specific dimensions
-  static const double sensorCardHeight = 120.0;
-  static const double sensorCardWidth = 160.0;
-  static const double chartMinHeight = 200.0;
-  static const double chartMaxHeight = 400.0;
+  // IoT specific dimensions - Enhanced for accessibility
+  static const double sensorCardHeight = 150.0; // Increased from 120
+  static const double sensorCardWidth = 200.0; // Increased from 160
+  static const double chartMinHeight = 250.0; // Increased from 200
+  static const double chartMaxHeight = 450.0; // Increased from 400
   
-  // Device card dimensions
-  static const double deviceCardHeight = 140.0;
-  static const double deviceCardMinWidth = 280.0;
-  static const double deviceCardMaxWidth = 360.0;
+  // Device card dimensions - Larger for better interaction
+  static const double deviceCardHeight = 170.0; // Increased from 140
+  static const double deviceCardMinWidth = 320.0; // Increased from 280
+  static const double deviceCardMaxWidth = 400.0; // Increased from 360
   
-  // Navigation dimensions
-  static const double navigationBarHeight = 60.0;
-  static const double tabBarHeight = 48.0;
-  static const double appBarHeight = 56.0;
-  static const double extendedAppBarHeight = 112.0;
+  // Navigation dimensions - Taller for better accessibility
+  static const double navigationBarHeight = 72.0; // Increased from 60
+  static const double tabBarHeight = 56.0; // Increased from 48
+  static const double appBarHeight = 64.0; // Increased from 56
+  static const double extendedAppBarHeight = 128.0; // Increased from 112
   
-  // Divider and border widths
-  static const double dividerThickness = 1.0;
-  static const double borderThin = 1.0;
-  static const double borderMedium = 2.0;
-  static const double borderThick = 4.0;
+  // Divider and border widths - Thicker for better visibility
+  static const double dividerThickness = 2.0; // Increased from 1
+  static const double borderThin = 2.0; // Increased from 1
+  static const double borderMedium = 3.0; // Increased from 2
+  static const double borderThick = 5.0; // Increased from 4
   
-  // Touch target sizes (accessibility)
-  static const double minTouchTarget = 44.0;
-  static const double recommendedTouchTarget = 48.0;
+  // Touch target sizes (accessibility) - Enhanced for visually impaired users
+  static const double minTouchTarget = 56.0; // Increased from 44
+  static const double recommendedTouchTarget = 60.0; // Increased from 48
   
   // Screen breakpoints
   static const double mobileBreakpoint = 600.0;

@@ -5,145 +5,145 @@ class AppTextStyles {
   // Base font family
   static const String fontFamily = 'Roboto';
   
-  // Text Themes based on Material Design 3
+  // Text Themes based on Material Design 3 - Enhanced for Accessibility
   static const TextTheme textTheme = TextTheme(
-    // Display styles
+    // Display styles - Larger for accessibility
     displayLarge: TextStyle(
       fontFamily: fontFamily,
-      fontSize: 57,
-      fontWeight: FontWeight.w400,
+      fontSize: 72, // Increased from 57
+      fontWeight: FontWeight.w600,
       letterSpacing: -0.25,
       height: 1.12,
     ),
     displayMedium: TextStyle(
       fontFamily: fontFamily,
-      fontSize: 45,
-      fontWeight: FontWeight.w400,
+      fontSize: 56, // Increased from 45
+      fontWeight: FontWeight.w600,
       letterSpacing: 0,
       height: 1.16,
     ),
     displaySmall: TextStyle(
       fontFamily: fontFamily,
-      fontSize: 36,
-      fontWeight: FontWeight.w400,
+      fontSize: 44, // Increased from 36
+      fontWeight: FontWeight.w600,
       letterSpacing: 0,
       height: 1.22,
     ),
     
-    // Headline styles
+    // Headline styles - Larger and bolder
     headlineLarge: TextStyle(
       fontFamily: fontFamily,
-      fontSize: 32,
-      fontWeight: FontWeight.w400,
+      fontSize: 40, // Increased from 32
+      fontWeight: FontWeight.w700,
       letterSpacing: 0,
       height: 1.25,
     ),
     headlineMedium: TextStyle(
       fontFamily: fontFamily,
-      fontSize: 28,
-      fontWeight: FontWeight.w400,
+      fontSize: 34, // Increased from 28
+      fontWeight: FontWeight.w700,
       letterSpacing: 0,
       height: 1.29,
     ),
     headlineSmall: TextStyle(
       fontFamily: fontFamily,
-      fontSize: 24,
-      fontWeight: FontWeight.w400,
+      fontSize: 28, // Increased from 24
+      fontWeight: FontWeight.w600,
       letterSpacing: 0,
       height: 1.33,
     ),
     
-    // Title styles
+    // Title styles - Much larger
     titleLarge: TextStyle(
       fontFamily: fontFamily,
-      fontSize: 22,
-      fontWeight: FontWeight.w500,
+      fontSize: 26, // Increased from 22
+      fontWeight: FontWeight.w600,
       letterSpacing: 0,
       height: 1.27,
     ),
     titleMedium: TextStyle(
       fontFamily: fontFamily,
-      fontSize: 16,
-      fontWeight: FontWeight.w500,
+      fontSize: 20, // Increased from 16
+      fontWeight: FontWeight.w600,
       letterSpacing: 0.15,
       height: 1.50,
     ),
     titleSmall: TextStyle(
       fontFamily: fontFamily,
-      fontSize: 14,
-      fontWeight: FontWeight.w500,
+      fontSize: 18, // Increased from 14
+      fontWeight: FontWeight.w600,
       letterSpacing: 0.1,
       height: 1.43,
     ),
     
-    // Body styles
+    // Body styles - Larger for better readability
     bodyLarge: TextStyle(
       fontFamily: fontFamily,
-      fontSize: 16,
-      fontWeight: FontWeight.w400,
+      fontSize: 20, // Increased from 16
+      fontWeight: FontWeight.w500,
       letterSpacing: 0.5,
       height: 1.50,
     ),
     bodyMedium: TextStyle(
       fontFamily: fontFamily,
-      fontSize: 14,
-      fontWeight: FontWeight.w400,
+      fontSize: 18, // Increased from 14
+      fontWeight: FontWeight.w500,
       letterSpacing: 0.25,
       height: 1.43,
     ),
     bodySmall: TextStyle(
       fontFamily: fontFamily,
-      fontSize: 12,
-      fontWeight: FontWeight.w400,
+      fontSize: 16, // Increased from 12
+      fontWeight: FontWeight.w500,
       letterSpacing: 0.4,
       height: 1.33,
     ),
     
-    // Label styles
+    // Label styles - Larger for accessibility
     labelLarge: TextStyle(
       fontFamily: fontFamily,
-      fontSize: 14,
-      fontWeight: FontWeight.w500,
+      fontSize: 18, // Increased from 14
+      fontWeight: FontWeight.w600,
       letterSpacing: 0.1,
       height: 1.43,
     ),
     labelMedium: TextStyle(
       fontFamily: fontFamily,
-      fontSize: 12,
-      fontWeight: FontWeight.w500,
+      fontSize: 16, // Increased from 12
+      fontWeight: FontWeight.w600,
       letterSpacing: 0.5,
       height: 1.33,
     ),
     labelSmall: TextStyle(
       fontFamily: fontFamily,
-      fontSize: 11,
-      fontWeight: FontWeight.w500,
+      fontSize: 14, // Increased from 11
+      fontWeight: FontWeight.w600,
       letterSpacing: 0.5,
       height: 1.45,
     ),
   );
   
-  // Custom app-specific text styles
+  // Custom app-specific text styles - Enhanced for accessibility
   static const TextStyle appBarTitle = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 20,
-    fontWeight: FontWeight.w600,
+    fontSize: 24, // Increased from 20
+    fontWeight: FontWeight.w700,
     letterSpacing: 0,
     height: 1.4,
   );
   
   static const TextStyle cardTitle = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
+    fontSize: 22, // Increased from 18
+    fontWeight: FontWeight.w700,
     letterSpacing: 0,
     height: 1.33,
   );
   
   static const TextStyle cardSubtitle = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
+    fontSize: 18, // Increased from 14
+    fontWeight: FontWeight.w500,
     letterSpacing: 0.25,
     height: 1.43,
     color: AppColors.onSurfaceVariant,
@@ -151,7 +151,7 @@ class AppTextStyles {
   
   static const TextStyle dataValue = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 24,
+    fontSize: 28, // Increased from 24
     fontWeight: FontWeight.w700,
     letterSpacing: 0,
     height: 1.17,
@@ -159,8 +159,8 @@ class AppTextStyles {
   
   static const TextStyle dataUnit = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
+    fontSize: 18, // Increased from 14
+    fontWeight: FontWeight.w500,
     letterSpacing: 0.25,
     height: 1.43,
     color: AppColors.onSurfaceVariant,
@@ -168,49 +168,49 @@ class AppTextStyles {
   
   static const TextStyle buttonTextLarge = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
+    fontSize: 20, // Increased from 16
+    fontWeight: FontWeight.w700,
     letterSpacing: 0.1,
     height: 1.25,
   );
   
   static const TextStyle buttonTextMedium = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
+    fontSize: 18, // Increased from 14
+    fontWeight: FontWeight.w700,
     letterSpacing: 0.1,
     height: 1.43,
   );
   
   static const TextStyle chipText = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
+    fontSize: 16, // Increased from 12
+    fontWeight: FontWeight.w600,
     letterSpacing: 0.1,
     height: 1.33,
   );
   
   static const TextStyle statusText = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 12,
-    fontWeight: FontWeight.w600,
+    fontSize: 16, // Increased from 12
+    fontWeight: FontWeight.w700,
     letterSpacing: 0.1,
     height: 1.33,
   );
   
   static const TextStyle timestampText = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 11,
-    fontWeight: FontWeight.w400,
+    fontSize: 14, // Increased from 11
+    fontWeight: FontWeight.w500,
     letterSpacing: 0.5,
     height: 1.45,
     color: AppColors.onSurfaceVariant,
   );
   
-  // IoT specific text styles
+  // IoT specific text styles - Enhanced for accessibility
   static const TextStyle sensorValue = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 28,
+    fontSize: 32, // Increased from 28
     fontWeight: FontWeight.w700,
     letterSpacing: -0.5,
     height: 1.14,

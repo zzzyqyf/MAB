@@ -4,6 +4,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 // Project imports
 import '../../../../shared/services/TextToSpeech.dart';
 import '../../../../shared/widgets/basePage.dart';
+import '../../../../shared/widgets/Navbar.dart';
+import '../../../profile/presentation/pages/ProfilePage.dart';
+import '../../../registration/presentation/pages/registerOne.dart';
+import '../../../../main.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -15,11 +19,38 @@ class NotificationPage extends StatefulWidget {
 class _NotificationPageState extends State<NotificationPage> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   late Box notificationsBox;
+  int _selectedIndex = 2; // Notifications page is index 2
 
   @override
   void initState() {
     notificationsBox = Hive.box('notificationsBox'); // Access the Hive notifications box
     super.initState();
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0:
+        // Navigate to Profile page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfilePage()),
+        );
+        break;
+      case 1:
+        // Navigate to Add Device page (Registration)
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Register2Widget()),
+        );
+        break;
+      case 2:
+        // Already on Notifications page, do nothing
+        break;
+    }
   }
 
   @override
@@ -29,9 +60,16 @@ class _NotificationPageState extends State<NotificationPage> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: Colors.white,
-        appBar: const BasePage(
+        appBar: BasePage(
           title: 'Notifications',
           showBackButton: true,
+          onBackPressed: () {
+            // Navigate back to main Dashboard page
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MyHomePage(title: 'PlantCare Hubs')),
+            );
+          },
         ),
         body: SafeArea(
           child: ValueListenableBuilder(
@@ -55,6 +93,10 @@ class _NotificationPageState extends State<NotificationPage> {
               );
             },
           ),
+        ),
+        bottomNavigationBar: CustomNavbar(
+          selectedIndex: _selectedIndex,
+          onItemTapped: _onItemTapped,
         ),
       ),
     );

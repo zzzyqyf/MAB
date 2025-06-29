@@ -4,12 +4,27 @@ import '../services/TextToSpeech.dart'; // Import your TTS class
 class BasePage extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool showBackButton;
+  final VoidCallback? onBackPressed; // Custom back action
 
   const BasePage({
     Key? key,
     required this.title,
     this.showBackButton = true,
+    this.onBackPressed,
   }) : super(key: key);
+
+  void _handleBackNavigation(BuildContext context) {
+    if (onBackPressed != null) {
+      // Use custom back action if provided
+      onBackPressed!();
+    } else if (Navigator.canPop(context)) {
+      // If there's a previous route, pop it
+      Navigator.pop(context);
+    } else {
+      // If no previous route and no custom action, do nothing to prevent crash
+      TextToSpeech.speak('Already at main screen');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +38,7 @@ class BasePage extends StatelessWidget implements PreferredSizeWidget {
       onDoubleTap: () {
         // Double tap retains the existing behavior
         if (showBackButton) {
-          Navigator.pop(context); // Navigate back
+          _handleBackNavigation(context);
         }
       },
       child: AppBar(
@@ -37,7 +52,7 @@ class BasePage extends StatelessWidget implements PreferredSizeWidget {
                   size: screenWidth * 0.06, // Responsive icon size
                 ),
                 onPressed: () {
-                  Navigator.pop(context); // Navigate back
+                  _handleBackNavigation(context);
                 },
               )
             : null,

@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 
 // Project imports
 import '../../../../shared/services/TextToSpeech.dart';
-import 'registerFour.dart';
+import 'register4_provider.dart';
 import '../../../../shared/widgets/basePage.dart';
 import '../../../../shared/widgets/buttom.dart';
+import '../../../../shared/widgets/Navbar.dart';
+import '../../../profile/presentation/pages/ProfilePage.dart';
+import '../../../notifications/presentation/pages/notification.dart';
+import '../../../../main.dart';
 
 class Register2Widget extends StatefulWidget {
   const Register2Widget({Key? key}) : super(key: key);
@@ -16,10 +20,37 @@ class Register2Widget extends StatefulWidget {
 class _Register2WidgetState extends State<Register2Widget> {
   final _formKey = GlobalKey<FormState>();
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  int _selectedIndex = 1; // Add Device/Registration page is index 1
 
   // Function to speak the text
   void _speakText(String text) {
     TextToSpeech.speak(text);
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0:
+        // Navigate to Profile page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfilePage()),
+        );
+        break;
+      case 1:
+        // Already on Add Device/Registration page, do nothing
+        break;
+      case 2:
+        // Navigate to Notifications page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const NotificationPage()),
+        );
+        break;
+    }
   }
 
   @override
@@ -32,9 +63,16 @@ class _Register2WidgetState extends State<Register2Widget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: Colors.white, // Use your desired background color
-        appBar: const BasePage(
+        appBar: BasePage(
           title: 'Activate Device',
           showBackButton: true,
+          onBackPressed: () {
+            // Navigate back to main Dashboard page
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const MyHomePage(title: 'PlantCare Hubs')),
+            );
+          },
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -84,19 +122,30 @@ class _Register2WidgetState extends State<Register2Widget> {
             ),
           ),
         ),
-        bottomNavigationBar: ReusableBottomButton(
-          buttonText: 'Next',
-          padding: 16.0,
-          fontSize: 18.0,
-          onPressed: () {
-            TextToSpeech.speak("Next button");
-          },
-          onDoubleTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const Register4Widget(id: '',)),
-            );
-          },
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ReusableBottomButton(
+              buttonText: 'Next',
+              padding: 16.0,
+              fontSize: 18.0,
+              onPressed: () {
+                TextToSpeech.speak("Next button");
+              },
+              onDoubleTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const Register4ProviderWidget(id: ''),
+                  ),
+                );
+              },
+            ),
+            CustomNavbar(
+              selectedIndex: _selectedIndex,
+              onItemTapped: _onItemTapped,
+            ),
+          ],
         ),
       ),
     );

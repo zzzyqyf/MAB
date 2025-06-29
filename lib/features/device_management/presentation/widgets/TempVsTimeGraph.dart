@@ -7,8 +7,8 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 // Project imports
-import '../../../../shared/utils/DateSelectionPage.dart';
 import '../../../../shared/services/TextToSpeech.dart';
+import '../../../../shared/widgets/graph_components/graph_components.dart';
 import '../viewmodels/deviceManager.dart';
 
 class TempVsTimeGraph extends StatefulWidget {
@@ -242,6 +242,7 @@ void testingConnection(){
     }
   }
 }
+
 void announceRange(double minX, double maxX, DateTime cycleStartTime) {
   DateTime startTime = cycleStartTime.add(Duration(minutes: minX.toInt()));
   DateTime endTime = cycleStartTime.add(Duration(minutes: maxX.toInt()));
@@ -264,168 +265,126 @@ void announceRange(double minX, double maxX, DateTime cycleStartTime) {
         }).toList();
 
         return Scaffold(
-          appBar: AppBar(
-          title: Text('${isActive ? "Device Active" : "Device Inactive"} - ${widget.deviceId}'),
+          appBar: GraphAppBar(
+            deviceId: widget.deviceId,
+            isDeviceActive: isActive,
           ),
           body: Padding(
             padding: const EdgeInsets.only(
-              top: 50.0,
-              left: 5.0,
-              right: 15.0,
-              bottom: 150.0,
+              top: 12.0,
+              left: 8.0, // More space for y-axis labels
+              right: 8.0, // More space for right side
+              bottom: 8.0, // Less bottom padding to avoid overflow
             ),
             child: Column(
               children: [
                 Expanded(
-                child: LineChart(
-                  LineChartData(
-                    gridData: const FlGridData(show: true),
-                    titlesData: FlTitlesData(
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 32,
-                          interval: 1,
-                          getTitlesWidget: (value, titleMeta) {
-                            // Use the start time of the historical cycle if available
-                            DateTime cycleStartTime = deviceStartTimes[widget.deviceId] ?? DateTime.now();
-
-                            // Add the elapsed time (value in minutes) to the cycle start time
-                            DateTime xTime = cycleStartTime.add(Duration(minutes: value.toInt()));
-
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Text(
-                                DateFormat('HH:mm').format(xTime), // Format time as HH:mm
-                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                              ),
-                            );
-                          },
+                  child: GraphContainer(
+                    child: LineChart(
+                      LineChartData(
+                        gridData: const FlGridData(show: true),
+                        titlesData: FlTitlesData(
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 32,
+                              interval: 1,
+                              getTitlesWidget: (value, titleMeta) {
+                                DateTime cycleStartTime = deviceStartTimes[widget.deviceId] ?? DateTime.now();
+                                DateTime xTime = cycleStartTime.add(Duration(minutes: value.toInt()));
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    DateFormat('HH:mm').format(xTime),
+                                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 48, // More space for y-axis
+                              interval: 5,
+                              getTitlesWidget: (value, titleMeta) {
+                                return Container(
+                                  alignment: Alignment.centerRight,
+                                  width: 40,
+                                  child: Text(
+                                    '${value.toInt()}%',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                    textAlign: TextAlign.right,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
                         ),
-                      ),
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 32,
-                          interval: 5,
-                          getTitlesWidget: (value, titleMeta) {
-                            return Padding(
-                              padding: const EdgeInsets.only(left: 8.0),
-                              child: Text(
-                                '${value.toInt()}%',
-                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                    ),
-                    borderData: FlBorderData(show: true),
-                    minX: minX,
-                    maxX: maxX,
-                    minY: 0,
-                    maxY: 95,
-                    lineBarsData: [
-                      LineChartBarData(
-                        spots: visibleSpots,
-                        isCurved: true,
-                        color: Colors.blue,                        belowBarData: BarAreaData(
-                          show: true,
-                          color: Colors.blue.withValues(alpha: 0.3),
-                        ),
-                      ),
-                    ],
-                    lineTouchData: LineTouchData(
-                      touchCallback: (FlTouchEvent event, LineTouchResponse? response) {
-                        if (event is FlTapUpEvent && response != null && response.lineBarSpots != null) {
-                          final touchedSpot = response.lineBarSpots!.first;
-                          final DateTime spotTime = deviceStartTimes[widget.deviceId]!
-                              .add(Duration(minutes: touchedSpot.x.toInt()));
-                          final String message =
-                              "${touchedSpot.y.toStringAsFixed(1)}% at ${DateFormat('hh:mm a').format(spotTime)}.";
-                          TextToSpeech.speak(message); // Call the TextToSpeech method to announce data
-                        }
-                      },
-                      touchTooltipData: const LineTouchTooltipData(tooltipPadding: EdgeInsets.zero), // Disable visual tooltips
-                    ),
-                  ),
-                ),
-              ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                    IconButton(
-  icon: const Icon(Icons.arrow_back),
-  onPressed: () {
-    setState(() {
-      if (minX > 0) {
-        minX -= 1;
-        maxX -= 1;
-      }
-      // Always announce the range, regardless of conditions
-      announceRange(minX, maxX, deviceStartTimes[widget.deviceId]!);
-    });
-  },
-),
-
-                      Text('Scroll Time Range: $minX - $maxX minutes'),
-                      IconButton(
-                        icon: const Icon(Icons.arrow_forward),
-                        onPressed: () {
-                          setState(() {
-                            if (maxX < 12) {
-                              minX += 1;
-                              maxX += 1;
-
+                        borderData: FlBorderData(show: true),
+                        minX: minX,
+                        maxX: maxX,
+                        minY: 0,
+                        maxY: 95,
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: visibleSpots,
+                            isCurved: true,
+                            color: Colors.blue,
+                            belowBarData: BarAreaData(
+                              show: true,
+                              color: Colors.blue.withOpacity(0.3),
+                            ),
+                          ),
+                        ],
+                        lineTouchData: LineTouchData(
+                          touchCallback: (FlTouchEvent event, LineTouchResponse? response) {
+                            if (event is FlTapUpEvent && response != null && response.lineBarSpots != null) {
+                              final touchedSpot = response.lineBarSpots!.first;
+                              final DateTime spotTime = deviceStartTimes[widget.deviceId]!
+                                  .add(Duration(minutes: touchedSpot.x.toInt()));
+                              final String message =
+                                  "${touchedSpot.y.toStringAsFixed(1)}% at ${DateFormat('hh:mm a').format(spotTime)}.";
+                              TextToSpeech.speak(message);
                             }
-                                      announceRange(minX, maxX, deviceStartTimes[widget.deviceId]!);
-
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-  padding: const EdgeInsets.symmetric(vertical: 10.0),
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DateSelectionPage(
-                          onDateSelected: (selectedDate) {
-                            loadHistoricalCycles(selectedDate, widget.deviceId);
-                            TextToSpeech.speak(
-                              "Selected date: ${selectedDate.month}-${selectedDate.day}-${selectedDate.year}",
-                            );
                           },
+                          touchTooltipData: const LineTouchTooltipData(tooltipPadding: EdgeInsets.zero),
                         ),
                       ),
-                    );
-                  },
-                  child: const Text("Load Historical Cycles for Date"),
+                    ),
+                  ),
                 ),
-    ],
-  ),
-),
+                TimeRangeNavigator(
+                  minX: minX,
+                  maxX: maxX,
+                  onPrevious: () {
+                    setState(() {
+                      if (minX > 0) {
+                        minX -= 1;
+                        maxX -= 1;
+                      }
+                    });
+                  },
+                  onNext: () {
+                    setState(() {
+                      if (maxX < 12) {
+                        minX += 1;
+                        maxX += 1;
+                      }
+                    });
+                  },
+                  cycleStartTime: deviceStartTimes[widget.deviceId],
+                ),
+                HistoricalDataButton(
+                  deviceId: widget.deviceId,
+                  onDateSelected: loadHistoricalCycles,
+                ),
 
               ],
             ),

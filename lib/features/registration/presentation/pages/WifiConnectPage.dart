@@ -3,7 +3,10 @@ import 'package:wifi_iot/wifi_iot.dart';
 
 // Project imports
 import 'registerFour.dart';
-// Replace with the actual path to your dashboard page
+import '../../../../shared/widgets/basePage.dart';
+import '../../../../shared/widgets/Navbar.dart';
+import '../../../profile/presentation/pages/ProfilePage.dart';
+import '../../../notifications/presentation/pages/notification.dart';
 
 class WifiConnectPage extends StatefulWidget {
   final String ssid;
@@ -16,6 +19,33 @@ class WifiConnectPage extends StatefulWidget {
 
 class _WifiConnectPageState extends State<WifiConnectPage> {
   bool _isLoading = true;
+  int _selectedIndex = 1; // WiFi Connect page is index 1
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0:
+        // Navigate to Profile page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfilePage()),
+        );
+        break;
+      case 1:
+        // Already on WiFi Connect page, do nothing
+        break;
+      case 2:
+        // Navigate to Notifications page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const NotificationPage()),
+        );
+        break;
+    }
+  }
 
   Future<void> _connectToWifi() async {
     try {
@@ -99,15 +129,29 @@ class _WifiConnectPageState extends State<WifiConnectPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Connecting to Wi-Fi")),
+      appBar: const BasePage(
+        title: "WiFi Connect",
+        showBackButton: true,
+      ),
       body: SafeArea(
         child: Center(
           child: _isLoading
-              ? const CircularProgressIndicator()  // Show a loading spinner while connecting
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Connecting to ${widget.ssid.isEmpty ? "WiFi" : widget.ssid}...',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
+                )
               : Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text('Failed to connect, try again!'),
+                    const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context);  // Go back to the previous page
@@ -117,6 +161,10 @@ class _WifiConnectPageState extends State<WifiConnectPage> {
                   ],
                 ),
         ),
+      ),
+      bottomNavigationBar: CustomNavbar(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
       ),
     );
   }

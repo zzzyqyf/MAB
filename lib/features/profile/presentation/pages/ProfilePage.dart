@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 import '../../../../shared/services/TextToSpeech.dart';
 import '../../../authentication/presentation/pages/signIn.dart';
 import '../../../../shared/widgets/basePage.dart';
+import '../../../../shared/widgets/Navbar.dart';
+import '../../../notifications/presentation/pages/notification.dart';
+import '../../../registration/presentation/pages/registerOne.dart';
+import '../../../../main.dart';
 //import 'test.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -15,6 +19,7 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfileWidgetState extends State<ProfilePage> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  int _selectedIndex = 0; // Profile page is index 0
 
   @override
   void initState() {
@@ -24,6 +29,32 @@ class _ProfileWidgetState extends State<ProfilePage> {
   @override
   void dispose() {
     super.dispose();
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    switch (index) {
+      case 0:
+        // Already on Profile page, do nothing
+        break;
+      case 1:
+        // Navigate to Add Device page (Registration)
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const Register2Widget()),
+        );
+        break;
+      case 2:
+        // Navigate to Notifications page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const NotificationPage()),
+        );
+        break;
+    }
   }
 
   @override
@@ -44,9 +75,16 @@ class _ProfileWidgetState extends State<ProfilePage> {
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: const BasePage(
+      appBar: BasePage(
         title: 'Profile',
         showBackButton: true,
+        onBackPressed: () {
+          // Navigate back to main Dashboard page
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MyHomePage(title: 'PlantCare Hubs')),
+          );
+        },
       ),
       body: SafeArea(
         child: ListView(
@@ -73,7 +111,7 @@ class _ProfileWidgetState extends State<ProfilePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Fatima Mohammed',
+          'zhang yifei',
           style: TextStyle(
             fontSize: fontSizeTitle,
             fontWeight: FontWeight.bold,
@@ -81,7 +119,7 @@ class _ProfileWidgetState extends State<ProfilePage> {
         ),
         const SizedBox(height: 2),
         Text(
-          'fatimasalaysia@gmail.com',
+          'masalaysia@gmail.com',
           style: TextStyle(
             fontSize: fontSizeTitle,
           ),
@@ -162,6 +200,10 @@ class _ProfileWidgetState extends State<ProfilePage> {
 
           ],
         ),
+      ),
+      bottomNavigationBar: CustomNavbar(
+        selectedIndex: _selectedIndex,
+        onItemTapped: _onItemTapped,
       ),
     );
   }

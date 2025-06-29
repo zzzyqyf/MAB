@@ -55,21 +55,39 @@ class CustomNavbar extends StatelessWidget {
         BottomNavigationBarItem(
           icon: GestureDetector(
             onTap: () {
-                      tapTimer?.cancel();
-
-              // Announce the tap action for Notifications
-              TextToSpeech.speak('Notifications tap');
-              //onItemTapped(1);
-               tapTimer = Timer(const Duration(milliseconds: 300), () {
-          // Do something if no double-tap is detected within 300ms
-          // This prevents navigation on single tap
-        });
+              tapTimer?.cancel();
+              // Announce the tap action for Add Device
+              TextToSpeech.speak('Add Device tap');
+              tapTimer = Timer(const Duration(milliseconds: 300), () {
+                // Prevents navigation on single tap
+              });
             },
             onDoubleTap: () {
-                                    tapTimer?.cancel();
-
+              tapTimer?.cancel();
+              TextToSpeech.speak('Add Device screen');
+              onItemTapped(1); // Add Device is index 1
+            },
+            child: Icon(
+              Icons.add,
+              size: iconSize,
+            ),
+          ),
+          label: 'Add Device',
+        ),
+        BottomNavigationBarItem(
+          icon: GestureDetector(
+            onTap: () {
+              tapTimer?.cancel();
+              // Announce the tap action for Notifications
+              TextToSpeech.speak('Notifications tap');
+              tapTimer = Timer(const Duration(milliseconds: 300), () {
+                // Prevents navigation on single tap
+              });
+            },
+            onDoubleTap: () {
+              tapTimer?.cancel();
               TextToSpeech.speak('Notifications screen');
-              onItemTapped(1);
+              onItemTapped(2); // Notifications is index 2
             },
             child: Icon(
               Icons.notifications_none,
@@ -77,34 +95,6 @@ class CustomNavbar extends StatelessWidget {
             ),
           ),
           label: 'Notifications',
-        ),
-        BottomNavigationBarItem(
-          icon: GestureDetector(
-           onTap: () {
-        // If a double-tap happens, cancel the single tap action
-        tapTimer?.cancel();
-        
-        // Announce the single tap action for Add
-        TextToSpeech.speak('Add tapped');
-        
-        // Add a delay before executing any action
-        tapTimer = Timer(const Duration(milliseconds: 300), () {
-          // Do something if no double-tap is detected within 300ms
-          // This prevents navigation on single tap
-        });
-      },
-            onDoubleTap: () {
-                      tapTimer?.cancel();
-
-              TextToSpeech.speak('Add screen');
-              onItemTapped(2);
-            },
-            child: Icon(
-              Icons.add,
-              size: iconSize,
-            ),
-          ),
-          label: 'Add',
         ),
       ],
       currentIndex: selectedIndex,
