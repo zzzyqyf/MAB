@@ -117,7 +117,7 @@ class _ProfileWidgetState extends State<ProfilePage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 3),
         Text(
           'masalaysia@gmail.com',
           style: TextStyle(

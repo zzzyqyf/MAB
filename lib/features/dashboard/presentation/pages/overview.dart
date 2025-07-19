@@ -18,11 +18,10 @@ import '../../../device_management/presentation/widgets/TempVsTimeGraph.dart';
 import '../../../device_management/presentation/widgets/HumVsTimeGraph.dart';
 import '../../../device_management/presentation/widgets/LightVsTimeGraph.dart';
 import '../../../device_management/presentation/viewmodels/deviceManager.dart';
+import '../../../../main.dart';
 import '../../../profile/presentation/pages/ProfilePage.dart';
 import '../../../notifications/presentation/pages/notification.dart';
-import '../../../registration/presentation/pages/registerOne.dart';
 import '../../../profile/presentation/pages/setting.dart';
-import '../../../../main.dart';
 
 class TentPage extends StatefulWidget {
   final String id; // Unique device ID
@@ -38,16 +37,16 @@ class _TentPageState extends State<TentPage> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    const ProfilePage(),      // Index 0: Profile
-    const Register2Widget(),  // Index 1: Add Device (Registration)
-    const NotificationPage(), // Index 2: Notifications
+    const ProfilePage(),
+    const NotificationPage(),
+    const MyApp(),
   ];
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
-    Navigator.pushReplacement(
+    Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => _pages[index]),
     );
@@ -64,13 +63,6 @@ class _TentPageState extends State<TentPage> {
         appBar: BasePage(
           title: 'Overview',
           showBackButton: true,
-          onBackPressed: () {
-            // Navigate back to main Dashboard page
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const MyHomePage(title: 'PlantCare Hubs')),
-            );
-          },
         ),
         body: const Center(
           child: Text('Device not found'),
@@ -81,20 +73,12 @@ class _TentPageState extends State<TentPage> {
     return Consumer<DeviceManager>(
       builder: (context, deviceManager, child) {
         final sensorData = deviceManager.sensorData;
-        var device = deviceManager.devices[deviceIndex];
         
         return Scaffold(
           backgroundColor: AppColors.background,
           appBar: BasePage(
             title: 'Overview',
             showBackButton: true,
-            onBackPressed: () {
-              // Navigate back to main Dashboard page
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const MyHomePage(title: 'PlantCare Hubs')),
-              );
-            },
           ),
           body: SafeArea(
             child: SingleChildScrollView(
@@ -134,13 +118,13 @@ class _TentPageState extends State<TentPage> {
                   SizedBox(height: AppDimensions.spacing32),
                   
                   // Sensor data section - Compact layout
-                  Text(
-                    'Sensor Readings',
-                    style: AppTextStyles.textTheme.titleLarge?.copyWith(
-                      color: AppColors.onBackground,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  // Text(
+                  //   'Sensor Readings',
+                  //   style: AppTextStyles.textTheme.titleLarge?.copyWith(
+                  //     color: AppColors.onBackground,
+                  //     fontWeight: FontWeight.w600,
+                  //   ),
+                  // ),
                   
                   SizedBox(height: AppDimensions.spacing16),
                   
@@ -154,7 +138,8 @@ class _TentPageState extends State<TentPage> {
                         unit: '%',
                         icon: Icons.water_drop,
                         iconColor: AppColors.humidity,
-                        status: device['sensorStatus'] == 'low Humidity' ? 'Low' : 'Normal',
+                        status: _getSensorStatusText('humidity', sensorData['humidity']),
+                        statusColor: _getSensorStatusColor('humidity', sensorData['humidity']),
                         onDoubleTap: () {
                           TextToSpeech.speak('Opening Humidity details');
                           Navigator.push(
@@ -173,7 +158,8 @@ class _TentPageState extends State<TentPage> {
                         unit: '%',
                         icon: Icons.lightbulb_outline,
                         iconColor: AppColors.lightIntensity,
-                        status: device['sensorStatus'] == 'high lightIntensity' ? 'High' : 'Normal',
+                        status: _getSensorStatusText('light', sensorData['lightState']),
+                        statusColor: _getSensorStatusColor('light', sensorData['lightState']),
                         onDoubleTap: () {
                           TextToSpeech.speak('Opening Light Intensity details');
                           Navigator.push(
@@ -192,7 +178,8 @@ class _TentPageState extends State<TentPage> {
                         unit: '°C',
                         icon: FontAwesomeIcons.temperatureFull,
                         iconColor: _getTemperatureColor(sensorData['temperature']),
-                        status: device['sensorStatus'] == 'High Temperture' ? 'High' : 'Normal',
+                        status: _getSensorStatusText('temperature', sensorData['temperature']),
+                        statusColor: _getSensorStatusColor('temperature', sensorData['temperature']),
                         onDoubleTap: () {
                           TextToSpeech.speak('Opening Temperature details');
                           Navigator.push(
@@ -207,11 +194,12 @@ class _TentPageState extends State<TentPage> {
                       _buildCompactSensorRow(
                         context,
                         title: 'Water Level',
-                        value: '50',
+                        value: '${sensorData['moisture'] ?? '50'}',
                         unit: '%',
                         icon: Icons.water_sharp,
                         iconColor: AppColors.waterLevel,
-                        status: device['sensorStatus'] == 'low waterLevel' ? 'Low' : 'Normal',
+                        status: _getSensorStatusText('water', sensorData['moisture']),
+                        statusColor: _getSensorStatusColor('water', sensorData['moisture']),
                         onDoubleTap: () {
                           TextToSpeech.speak('Opening Water Level details');
                           _showWaterLevelDialog(context);
@@ -240,22 +228,16 @@ class _TentPageState extends State<TentPage> {
     required IconData icon,
     required Color iconColor,
     required String status,
+    Color? statusColor, // Add optional statusColor parameter
     VoidCallback? onDoubleTap,
   }) {
-    // Determine status color
-    Color statusColor;
-    switch (status.toLowerCase()) {
-      case 'low':
-        statusColor = AppColors.warning;
-        break;
-      case 'high':
-        statusColor = AppColors.error;
-        break;
-      case 'normal':
-      default:
-        statusColor = AppColors.success;
-        break;
-    }
+    // Use provided statusColor or determine from status text (fallback)
+    final Color currentStatusColor = statusColor ?? (
+      status.toLowerCase() == 'urgent' ? Colors.red :
+      status.toLowerCase() == 'concern' ? Colors.orange :
+      status.toLowerCase() == 'normal' ? Colors.green :
+      Colors.grey
+    );
 
     return Semantics(
       label: '$title: $value $unit, Status: $status. Double tap for details.',
@@ -276,7 +258,7 @@ class _TentPageState extends State<TentPage> {
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
             border: Border.all(
-              color: statusColor.withOpacity(0.2),
+              color: currentStatusColor.withOpacity(0.2),
               width: 2,
             ),
             boxShadow: [
@@ -355,7 +337,7 @@ class _TentPageState extends State<TentPage> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: statusColor,
+                        color: currentStatusColor,
                         borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
                       ),
                       child: Text(
@@ -388,6 +370,69 @@ class _TentPageState extends State<TentPage> {
       return AppColors.hot;
     } else {
       return AppColors.temperature;
+    }
+  }
+
+  // Simple 3-color status system for sensor readings
+  Color _getSensorStatusColor(String sensorType, dynamic value) {
+    if (value == null) return Colors.grey; // No data
+    
+    final numValue = double.tryParse(value.toString()) ?? 0.0;
+    
+    switch (sensorType.toLowerCase()) {
+      case 'temperature':
+        if (numValue < 10 || numValue > 32) return Colors.red;    // Urgent
+        if (numValue < 15 || numValue > 28) return Colors.orange; // Concern
+        return Colors.green; // Normal
+        
+      case 'humidity':
+        if (numValue < 20 || numValue > 90) return Colors.red;    // Urgent
+        if (numValue < 30 || numValue > 80) return Colors.orange; // Concern
+        return Colors.green; // Normal
+        
+      case 'light':
+        if (numValue < 100) return Colors.red;     // Urgent - too dark
+        if (numValue < 200) return Colors.orange;  // Concern - low light
+        return Colors.green; // Normal
+        
+      case 'water':
+        if (numValue < 30) return Colors.red;      // Urgent - too dry
+        if (numValue < 40) return Colors.orange;   // Concern - low
+        return Colors.green; // Normal
+        
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getSensorStatusText(String sensorType, dynamic value) {
+    if (value == null) return 'No Data';
+    
+    final numValue = double.tryParse(value.toString()) ?? 0.0;
+    
+    switch (sensorType.toLowerCase()) {
+      case 'temperature':
+        if (numValue < 10 || numValue > 32) return 'Urgent';
+        if (numValue < 15 || numValue > 28) return 'Concern';
+        return 'Normal';
+        
+      case 'humidity':
+        if (numValue < 20 || numValue > 90) return 'Urgent';
+        if (numValue < 30 || numValue > 80) return 'Concern';
+        return 'Normal';
+        
+      case 'light':
+        if (numValue < 100) return 'Urgent';
+        if (numValue < 200) return 'Concern';
+        return 'Normal';
+        
+      case 'water':
+        if (numValue < 30) return 'Urgent';
+        if (numValue < 40) return 'Concern';
+        return 'Normal';
+        
+      default:
+        return 'Unknown';
     }
   }
 

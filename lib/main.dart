@@ -134,6 +134,113 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  // Function to report device issues via TTS
+  void _reportDeviceIssues(DeviceManager deviceManager) async {
+    if (deviceManager.devices.isEmpty) {
+      await TextToSpeech.speak('No devices connected. Please add a device first.');
+      return;
+    }
+
+    List<String> issues = [];
+    Map<String, dynamic> sensorData = deviceManager.sensorData;
+    
+    for (var device in deviceManager.devices) {
+      String deviceName = device['name'] ?? 'Unknown Device';
+      String deviceId = device['id'] ?? '';
+      String status = device['status'] ?? 'unknown';
+      
+      // Check device connectivity status
+      if (status.toLowerCase() == 'offline') {
+        issues.add('$deviceName is offline and not responding');
+      } else if (status.toLowerCase() == 'error') {
+        issues.add('$deviceName has a connection error');
+      }
+      
+      // Check sensor data for this device if available
+      if (sensorData.containsKey(deviceId)) {
+        var deviceSensorData = sensorData[deviceId];
+        
+        // Check temperature (threshold is 32.0°C)
+        if (deviceSensorData['temperature'] != null) {
+          double temp = deviceSensorData['temperature'].toDouble();
+          if (temp > 32.0) {
+            issues.add('$deviceName has high temperature at ${temp.toStringAsFixed(1)} degrees Celsius');
+          } else if (temp < 10.0) {
+            issues.add('$deviceName has low temperature at ${temp.toStringAsFixed(1)} degrees Celsius');
+          }
+        }
+        
+        // Check humidity (threshold is 20.0%)
+        if (deviceSensorData['humidity'] != null) {
+          double humidity = deviceSensorData['humidity'].toDouble();
+          if (humidity < 20.0) {
+            issues.add('$deviceName has low humidity at ${humidity.toStringAsFixed(1)} percent');
+          } else if (humidity > 90.0) {
+            issues.add('$deviceName has very high humidity at ${humidity.toStringAsFixed(1)} percent');
+          }
+        }
+        
+        // Check light intensity (assuming threshold around 100-1000 lux)
+        if (deviceSensorData['light'] != null) {
+          double light = deviceSensorData['light'].toDouble();
+          if (light < 100.0) {
+            issues.add('$deviceName has insufficient light intensity at ${light.toStringAsFixed(0)} lux');
+          }
+        }
+        
+        // Check soil moisture or water level (assuming 0-100% range)
+        if (deviceSensorData['moisture'] != null) {
+          double moisture = deviceSensorData['moisture'].toDouble();
+          if (moisture < 30.0) {
+            issues.add('$deviceName has low soil moisture at ${moisture.toStringAsFixed(1)} percent');
+          }
+        }
+        
+        // Check for any sensor that hasn't been updated recently
+        if (deviceSensorData['lastUpdate'] != null) {
+          DateTime lastUpdate = DateTime.parse(deviceSensorData['lastUpdate']);
+          Duration timeSinceUpdate = DateTime.now().difference(lastUpdate);
+          if (timeSinceUpdate.inMinutes > 30) {
+            issues.add('$deviceName has not sent sensor data for ${timeSinceUpdate.inMinutes} minutes');
+          }
+        }
+      } else if (status.toLowerCase() == 'online') {
+        // Device is online but no sensor data available
+        issues.add('$deviceName is online but not sending sensor data');
+      }
+    }
+    
+    // Report the issues
+    if (issues.isEmpty) {
+      await TextToSpeech.speak('All devices are working normally. No issues detected.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ All devices are working normally!'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      String report = 'Device issues report: ';
+      report += issues.join('. ');
+      await TextToSpeech.speak(report);
+      
+      // Also show a snackbar with the issues
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Found ${issues.length} issue${issues.length != 1 ? 's' : ''}. Check TTS for details.'),
+          duration: const Duration(seconds: 4),
+          backgroundColor: Colors.orange,
+          action: SnackBarAction(
+            label: 'Repeat',
+            onPressed: () => TextToSpeech.speak(report),
+            textColor: Colors.white,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context); // Get screen dimensions
@@ -200,29 +307,48 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),              ElevatedButton.icon(
-                onPressed: () {
-                  print('Add Device button pressed'); // Debug print
-                  try {
-                    // Navigate to device registration page without waiting for TextToSpeech
-                    TextToSpeech.speak('Opening device registration'); // Don't await
-                    print('Starting navigation'); // Debug print
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const Register2Widget(),
-                      ),
-                    );
-                    print('Navigation completed'); // Debug print
-                  } catch (e) {
-                    print('Error in Add Device button: $e'); // Debug print
-                  }
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Add Device'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      print('Add Device button pressed'); // Debug print
+                      try {
+                        // Navigate to device registration page without waiting for TextToSpeech
+                        TextToSpeech.speak('Opening device registration'); // Don't await
+                        print('Starting navigation'); // Debug print
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const Register2Widget(),
+                          ),
+                        );
+                        print('Navigation completed'); // Debug print
+                      } catch (e) {
+                        print('Error in Add Device button: $e'); // Debug print
+                      }
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Device'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      _reportDeviceIssues(deviceManager);
+                    },
+                    icon: const Icon(Icons.report_problem_outlined),
+                    label: const Text('Report'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      backgroundColor: Theme.of(context).colorScheme.secondary,
+                      foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -260,6 +386,23 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     ),
                   ],
+                ),
+                // Report Issues Button
+                ElevatedButton.icon(
+                  onPressed: () {
+                    _reportDeviceIssues(deviceManager);
+                  },
+                  icon: Icon(
+                    Icons.report_problem_outlined,
+                    size: 18,
+                  ),
+                  label: const Text('Report'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                    textStyle: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ),
               ],
             ),
