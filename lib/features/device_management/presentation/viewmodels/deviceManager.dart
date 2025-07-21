@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../../../shared/services/mqttservice.dart';
+import '../../../../shared/services/mqtt_manager.dart';
+import '../../../../shared/services/device_discovery_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -19,15 +21,66 @@ class DeviceManager extends ChangeNotifier {
   DateTime? tempThresholdStartTime;
   DateTime? humidityThresholdStartTime;
   Map<String, dynamic> _sensorData = {};
+  
+  // Device discovery service
+  DeviceDiscoveryService? _discoveryService;
+  
   Map<String, dynamic> get sensorData => _sensorData;
   bool get isDeviceActive => _isDeviceActive;
+  DeviceDiscoveryService? get discoveryService => _discoveryService;
+
+  /// Get sensor data for a specific device
+  Map<String, dynamic> getSensorDataForDeviceId(String deviceId) {
+    // First try with device ID (UUID)
+    if (_sensorData.containsKey(deviceId)) {
+      return _sensorData[deviceId] ?? {};
+    }
+    
+    // Then try with MQTT ID (device name) by finding the device in the stored devices
+    final deviceList = devices; // This returns List<Map<String, dynamic>>
+    final device = deviceList.firstWhere(
+      (d) => d['id'] == deviceId,
+      orElse: () => <String, dynamic>{},
+    );
+    
+    if (device.isNotEmpty && device['mqttId'] != null && _sensorData.containsKey(device['mqttId'])) {
+      return _sensorData[device['mqttId']] ?? {};
+    }
+    
+    return {};
+  }
   
   // For notifications
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
   
   DeviceManager() {
     initHive();
+    _initializeServices();
     _initializeNotifications();
+  }
+
+  Future<void> _initializeServices() async {
+    // Initialize MQTT Manager
+    await MqttManager.instance.initialize();
+    
+    // Initialize Device Discovery Service
+    _discoveryService = DeviceDiscoveryService();
+    
+    // Listen to device discovery events
+    _discoveryService?.deviceRegistered.listen(_onDeviceDiscovered);
+    _discoveryService?.deviceUnregistered.listen(_onDeviceUnregistered);
+  }
+
+  void _onDeviceDiscovered(DeviceInfo deviceInfo) {
+    debugPrint('DeviceManager: New device discovered: ${deviceInfo.deviceId}');
+    // Optionally auto-add discovered devices or notify UI
+    notifyListeners();
+  }
+
+  void _onDeviceUnregistered(String deviceId) {
+    debugPrint('DeviceManager: Device unregistered: $deviceId');
+    // Handle device removal
+    notifyListeners();
   }
 
   Future<void> _initializeNotifications() async {
@@ -80,8 +133,10 @@ class DeviceManager extends ChangeNotifier {
     if (_deviceBox != null) {
       for (var device in _deviceBox!.values) {
         final deviceId = device['id'];
-        _initMqtt(deviceId);
-        _startPeriodicStatusCheck(deviceId);
+        // Use MQTT ID if available, otherwise fall back to device name or ID
+        final mqttId = device['mqttId'] ?? device['name'] ?? deviceId;
+        _initMqtt(mqttId);
+        _startPeriodicStatusCheck(mqttId);
       }
     }
     await Hive.deleteBoxFromDisk('sensorData');
@@ -106,21 +161,23 @@ class DeviceManager extends ChangeNotifier {
   }
 
   void _initMqtt(String deviceId) {
-    print("Initializing MqttService for $deviceId");
+    if (kDebugMode) {
+      debugPrint("🔌 Initializing MqttService for $deviceId");
+    }
 
     final mqttService = MqttService(
-      id: deviceId,
-      onDataReceived: (temperature, humidity, lightState, moisture) { // Add moisture parameter
-        storeSensorData(deviceId, temperature!, DateTime.now());
-        print("Data received: Temp=$temperature, Humidity=$humidity, Light=$lightState, Moisture=$moisture");
-        _sensorData = {
-          'deviceId': deviceId,
-          'temperature': temperature,
-          'humidity': humidity,
-          'lightState': lightState,
-          'moisture': moisture, // Add moisture to sensor data
-        };
-        notifyListeners();
+      deviceId: deviceId,
+      onDataReceived: (temperature, humidity, lightState, moisture) {
+        if (temperature != null) storeSensorData(deviceId, temperature, DateTime.now());
+        
+        debugPrint("🔄 DeviceManager: Updating sensor data for $deviceId");
+        debugPrint("   🌡️ Temperature: $temperature°C");
+        debugPrint("   💧 Humidity: $humidity%");
+        debugPrint("   💡 Light: ${lightState == 1 ? 'ON' : lightState == 0 ? 'OFF' : '--'}");
+        debugPrint("   🌱 Moisture: $moisture%");
+        
+        // Update the sensor data map properly
+        _updateSensorData(deviceId, temperature, humidity, lightState, moisture);
         
         _markDeviceOnline(deviceId);
         _updateDisconnectionTime(deviceId, DateTime.now(), 'online');
@@ -135,8 +192,72 @@ class DeviceManager extends ChangeNotifier {
     mqttService.setupMqttClient();
   }
 
+  void _updateSensorData(String deviceId, double? temp, double? humidity, int? lightState, double? moisture) {
+    debugPrint('🔄 DeviceManager: Updating sensor data for $deviceId');
+    
+    // Initialize sensor data map if needed
+    if (_sensorData[deviceId] == null) {
+      _sensorData[deviceId] = <String, dynamic>{};
+    }
+
+    bool hasUpdates = false;
+
+    // Update only if values have changed
+    if (temp != null && _sensorData[deviceId]!['temperature'] != temp) {
+      _sensorData[deviceId]!['temperature'] = temp;
+      hasUpdates = true;
+      debugPrint('   🌡️ Temperature: $temp°C');
+    }
+    
+    if (humidity != null && _sensorData[deviceId]!['humidity'] != humidity) {
+      _sensorData[deviceId]!['humidity'] = humidity;
+      hasUpdates = true;
+      debugPrint('   💧 Humidity: $humidity%');
+    }
+    
+    if (lightState != null && _sensorData[deviceId]!['lightState'] != lightState) {
+      _sensorData[deviceId]!['lightState'] = lightState;
+      hasUpdates = true;
+      debugPrint('   💡 Light: ${lightState == 1 ? 'ON' : 'OFF'}');
+    }
+    
+    if (moisture != null && _sensorData[deviceId]!['moisture'] != moisture) {
+      _sensorData[deviceId]!['moisture'] = moisture;
+      hasUpdates = true;
+      debugPrint('   🌱 Moisture: $moisture%');
+    }
+
+    if (hasUpdates) {
+      _sensorData[deviceId]!['lastUpdate'] = DateTime.now().millisecondsSinceEpoch;
+      
+      // ✅ CRITICAL FIX: Update the device's sensorStatus in Hive storage
+      _updateDeviceSensorStatus(deviceId, 'online');
+      
+      debugPrint('✅ DeviceManager: Sensor data updated, notifying listeners...');
+      notifyListeners(); // CRITICAL: Trigger UI rebuild
+    }
+  }
+  
+  // ✅ New method to update device sensorStatus in Hive
+  void _updateDeviceSensorStatus(String deviceId, String sensorStatus) {
+    if (_deviceBox != null && _deviceBox!.isOpen) {
+      // Find device by MQTT ID (deviceId) or UUID
+      for (int i = 0; i < _deviceBox!.length; i++) {
+        final device = Map<String, dynamic>.from(_deviceBox!.getAt(i) as Map);
+        
+        // Check both mqttId and id fields
+        if (device['mqttId'] == deviceId || device['id'] == deviceId || device['name'] == deviceId) {
+          device['sensorStatus'] = sensorStatus;
+          _deviceBox!.putAt(i, device);
+          debugPrint('✅ DeviceManager: Updated sensorStatus to "$sensorStatus" for device ${device['name']}');
+          break;
+        }
+      }
+    }
+  }
+
   void _startPeriodicStatusCheck(String deviceId) {
-    _inactivityTimers[deviceId] = Timer.periodic(const Duration(seconds: 5), (timer) {
+    _inactivityTimers[deviceId] = Timer.periodic(const Duration(seconds: 30), (timer) {
       final mqttService = _mqttServices[deviceId];
       if (mqttService == null) {
         timer.cancel();
@@ -144,12 +265,15 @@ class DeviceManager extends ChangeNotifier {
       }
       
       final isDataReceived = mqttService.isDataReceived(deviceId);
-      print("Periodic check for device $deviceId: isDataReceived=$isDataReceived");
-
+      // Only log when status changes to reduce spam
       if (!isDataReceived) {
-        updateDeviceStatus(deviceId, 'offline');
-        displayCriticalStatus("no data", deviceId);
-        _updateDisconnectionTime(deviceId, DateTime.now(), 'offline');
+        final device = _deviceBox?.get(deviceId);
+        if (device != null && device['status'] != 'offline') {
+          debugPrint("Device $deviceId went offline - no data received");
+          updateDeviceStatus(deviceId, 'offline');
+          displayCriticalStatus("no data", deviceId);
+          _updateDisconnectionTime(deviceId, DateTime.now(), 'offline');
+        }
       }
     });
   }
@@ -409,11 +533,20 @@ class DeviceManager extends ChangeNotifier {
   }
 
   void addDevice(String name) {
+    // Use the device name as the MQTT identifier instead of UUID
+    // This ensures MQTT topics match the ESP32 device naming
+    final deviceMqttId = name.isEmpty ? 'ESP32_${DateTime.now().millisecondsSinceEpoch}' : name;
     final uuid = Uuid();
-    final deviceId = uuid.v4();
+    final deviceId = uuid.v4(); // Keep UUID for internal storage key
+    addDeviceWithId(deviceId, name, deviceMqttId);
+  }
+
+  void addDeviceWithId(String deviceId, String name, [String? mqttId]) {
+    final deviceMqttId = mqttId ?? name; // Use provided MQTT ID or fallback to name
     final device = {
       'id': deviceId,
       'name': name.isEmpty ? 'Unnamed' : name,
+      'mqttId': deviceMqttId, // Store the MQTT identifier
       'status': 'connecting',
       'sensorStatus': '',
       'cultivationPhase': 'Spawn Run', // Default cultivation phase
@@ -422,7 +555,8 @@ class DeviceManager extends ChangeNotifier {
     _deviceBox?.put(deviceId, device);
     notifyListeners();
 
-    _initMqtt(deviceId);
+    // Use MQTT ID for MQTT communication, but keep deviceId for internal management
+    _initMqtt(deviceMqttId);
 
     Timer(Duration(seconds: 5), () {
       if (_deviceBox?.get(deviceId)?['status'] == 'connecting') {
@@ -431,7 +565,7 @@ class DeviceManager extends ChangeNotifier {
       if (_deviceBox?.get(deviceId)?['status'] == 'offline') {
         displayCriticalStatus("no data", deviceId);
       }
-      _startPeriodicStatusCheck(deviceId);
+      _startPeriodicStatusCheck(deviceMqttId);
     });
   }
 

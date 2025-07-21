@@ -123,7 +123,8 @@ class _TentPageState extends State<TentPage> {
 
     return Consumer<DeviceManager>(
       builder: (context, deviceManager, child) {
-        final sensorData = deviceManager.sensorData;
+        // ✅ Get sensor data for this specific device
+        final sensorData = deviceManager.getSensorDataForDeviceId(widget.id);
         
         return Scaffold(
           backgroundColor: AppColors.background,
