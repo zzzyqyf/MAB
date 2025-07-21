@@ -426,13 +426,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 return GestureDetector(
                   onTap: () async {
                     // Trigger text-to-speech on tap
-                    await TextToSpeech.speak("Device ${device['name']} is ${device['status']}${device['sensorStatus'].isNotEmpty ? ' with ${device['sensorStatus']}' : ''}");
+                    await TextToSpeech.speak("Device ${device['name']} is ${device['status']} in ${device['cultivationPhase'] ?? 'unknown'} phase");
                   },
                   child: TentCard(
                     icon: Icons.eco,
                     status: device['status'],
                     name: device['name'],
-                    sensorStatus: device['sensorStatus'],
+                    cultivationPhase: device['cultivationPhase'] ?? 'Spawn Run',
                     onDoubleTap: () {
                       Navigator.push(
                         context,
@@ -467,7 +467,7 @@ class TentCard extends StatelessWidget {
   final String status;
   final String name;
   final VoidCallback onDoubleTap;
-  final String sensorStatus;
+  final String cultivationPhase;
 
   const TentCard({
     Key? key,
@@ -475,7 +475,7 @@ class TentCard extends StatelessWidget {
     required this.status,
     required this.name,
     required this.onDoubleTap,
-    required this.sensorStatus
+    required this.cultivationPhase
   }) : super(key: key);
 
   @override
@@ -508,7 +508,7 @@ class TentCard extends StatelessWidget {
     }
 
     return Semantics(
-      label: 'Device $name is $status with $sensorStatus',
+      label: 'Device $name is $status in $cultivationPhase phase',
       hint: 'Double tap to view device details',
       child: GestureDetector(
         onDoubleTap: onDoubleTap,
@@ -596,8 +596,8 @@ class TentCard extends StatelessWidget {
                 ),
               ),
               
-              // Sensor status indicator
-              if (sensorStatus.isNotEmpty)
+              // Cultivation phase indicator
+              if (cultivationPhase.isNotEmpty)
                 Positioned(
                   bottom: 12,
                   left: 12,
@@ -609,11 +609,11 @@ class TentCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      sensorStatus,
+                      cultivationPhase,
                       style: TextStyle(
                         fontSize: mediaQuery.size.width * 0.03,
                         fontWeight: FontWeight.w500,
-                        color: statusIconColor,
+                        color: Colors.blueGrey[700],
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 1,

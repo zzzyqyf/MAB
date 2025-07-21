@@ -4,7 +4,7 @@ import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 
 class MqttService extends ChangeNotifier {
-  final String mqttBroker = 'broker.mqtt.cool';
+  final String mqttBroker = 'localhost'; // Changed from 'broker.mqtt.cool'
   final int mqttPort = 1883;
   late MqttServerClient client;
 
@@ -12,11 +12,12 @@ class MqttService extends ChangeNotifier {
   double? temperature;
   double? humidity;
   int? lightState;
+  double? moisture; // Add moisture support
 
   final Map<String, DateTime> _lastReceivedTimestamps = {};
   final Map<String, bool> _dataReceivedMap = {};
 
-  final Function(double?, double?, int?) onDataReceived;
+  final Function(double?, double?, int?, double?) onDataReceived; // Updated signature
   final Function(String id, String newStatus) onDeviceConnectionStatusChange;
 
   Timer? _dataCheckTimer;
@@ -51,10 +52,10 @@ class MqttService extends ChangeNotifier {
     }
 
     if (client.connectionStatus!.state == MqttConnectionState.connected) {
-      print('Connected to MQTT broker');
+      print('Connected to local MQTT broker');
       subscribeToTopics();
     } else {
-      print('Failed to connect to MQTT broker');
+      print('Failed to connect to local MQTT broker');
     }
   }
 
@@ -62,10 +63,13 @@ class MqttService extends ChangeNotifier {
     client.subscribe('esp32/temperature', MqttQos.atLeastOnce);
     client.subscribe('esp32/humidity', MqttQos.atLeastOnce);
     client.subscribe('esp32/lights', MqttQos.atLeastOnce);
+    client.subscribe('esp32/moisture', MqttQos.atLeastOnce); // Add moisture
 
     client.updates!.listen((List<MqttReceivedMessage<MqttMessage>> c) {
       final recMess = c[0].payload as MqttPublishMessage;
       final message = MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+
+      print('Received on topic ${c[0].topic}: $message'); // Add debug logging
 
       if (c[0].topic == 'esp32/temperature') {
         temperature = double.tryParse(message);
@@ -73,11 +77,13 @@ class MqttService extends ChangeNotifier {
         humidity = double.tryParse(message);
       } else if (c[0].topic == 'esp32/lights') {
         lightState = int.tryParse(message);
+      } else if (c[0].topic == 'esp32/moisture') { // Add moisture handling
+        moisture = double.tryParse(message);
       }
 
       _lastReceivedTimestamps[id] = DateTime.now();
       _dataReceivedMap[id] = true;
-      onDataReceived(temperature, humidity, lightState);
+      onDataReceived(temperature, humidity, lightState, moisture); // Include moisture
 
       notifyListeners(); // Notify listeners when data is updated
     });
@@ -102,11 +108,11 @@ class MqttService extends ChangeNotifier {
   }
 
   void onConnected() {
-    print('Connected to MQTT broker.');
+    print('Connected to local MQTT broker.');
   }
 
   void onDisconnected() {
-    print('Disconnected from MQTT broker.');
+    print('Disconnected from local MQTT broker.');
   }
 
   @override

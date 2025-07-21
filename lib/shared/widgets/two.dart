@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 // Project imports
-import '../../features/device_management/presentation/viewmodels/deviceMnanger.dart';
+import '../../features/device_management/presentation/viewmodels/deviceManager.dart';
 
 class DisplayDevicesPage extends StatelessWidget {
   const DisplayDevicesPage({Key? key}) : super(key: key);

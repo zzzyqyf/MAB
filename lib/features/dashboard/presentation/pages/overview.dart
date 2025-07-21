@@ -1,27 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 
 // Core imports
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimensions.dart';
-import '../../../../core/theme/app_text_styles.dart';
 
 // Shared imports
-import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/basePage.dart';
 import '../../../../shared/services/TextToSpeech.dart';
 import '../../../../shared/widgets/Navbar.dart';
 
 // Project imports
-import '../../../device_management/presentation/widgets/TempVsTimeGraph.dart';
-import '../../../device_management/presentation/widgets/HumVsTimeGraph.dart';
-import '../../../device_management/presentation/widgets/LightVsTimeGraph.dart';
 import '../../../device_management/presentation/viewmodels/deviceManager.dart';
 import '../../../../main.dart';
 import '../../../profile/presentation/pages/ProfilePage.dart';
 import '../../../notifications/presentation/pages/notification.dart';
-import '../../../profile/presentation/pages/setting.dart';
+
+// Widget imports
+import '../widgets/device_header.dart';
+import '../widgets/phase_selector.dart';
+import '../widgets/sensor_readings_list.dart';
+
+// Model imports
+import '../models/mushroom_phase.dart';
 
 class TentPage extends StatefulWidget {
   final String id; // Unique device ID
@@ -35,12 +36,49 @@ class TentPage extends StatefulWidget {
 
 class _TentPageState extends State<TentPage> {
   int _selectedIndex = 0;
+  MushroomPhase _currentPhase = MushroomPhase.spawnRun; // Default phase
 
   final List<Widget> _pages = [
     const ProfilePage(),
     const NotificationPage(),
     const MyApp(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentPhase();
+  }
+
+  void _loadCurrentPhase() {
+    final deviceManager = Provider.of<DeviceManager>(context, listen: false);
+    final device = deviceManager.devices.firstWhere(
+      (d) => d['id'] == widget.id,
+      orElse: () => <String, dynamic>{},
+    );
+    
+    if (device.isNotEmpty && device['cultivationPhase'] != null) {
+      // Convert string back to enum
+      final phaseString = device['cultivationPhase'] as String;
+      switch (phaseString) {
+        case 'Spawn Run':
+          _currentPhase = MushroomPhase.spawnRun;
+          break;
+        case 'Primordia Initiation':
+          _currentPhase = MushroomPhase.primordia;
+          break;
+        case 'Fruiting':
+          _currentPhase = MushroomPhase.fruiting;
+          break;
+        case 'Post-Harvest Recovery':
+          _currentPhase = MushroomPhase.postHarvest;
+          break;
+        default:
+          _currentPhase = MushroomPhase.spawnRun;
+      }
+      setState(() {});
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -50,6 +88,19 @@ class _TentPageState extends State<TentPage> {
       context,
       MaterialPageRoute(builder: (context) => _pages[index]),
     );
+  }
+
+  void _updatePhase(MushroomPhase newPhase) {
+    setState(() {
+      _currentPhase = newPhase;
+    });
+    
+    // Save to DeviceManager/local storage
+    final deviceManager = Provider.of<DeviceManager>(context, listen: false);
+    final phaseName = phaseThresholds[newPhase]!.name;
+    deviceManager.updateDeviceCultivationPhase(widget.id, phaseName);
+    
+    TextToSpeech.speak('Phase changed to $phaseName');
   }
 
   @override
@@ -86,126 +137,29 @@ class _TentPageState extends State<TentPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header with device name and settings button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.name,
-                          style: AppTextStyles.textTheme.headlineMedium?.copyWith(
-                            color: AppColors.onBackground,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      AppIconButton(
-                        icon: Icons.settings_sharp,
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TentSettingsWidget(deviceId: widget.id),
-                            ),
-                          );
-                        },
-                        tooltip: 'Device Settings',
-                        semanticLabel: 'Open device settings',
-                      ),
-                    ],
+                  // Header with device name and settings
+                  DeviceHeader(
+                    deviceName: widget.name,
+                    deviceId: widget.id,
+                  ),
+                  
+                  SizedBox(height: AppDimensions.spacing16),
+                  
+                  // Sensor readings list
+                  SensorReadingsList(
+                    deviceId: widget.id,
+                    sensorData: sensorData,
+                    currentPhase: _currentPhase,
                   ),
                   
                   SizedBox(height: AppDimensions.spacing32),
                   
-                  // Sensor data section - Compact layout
-                  // Text(
-                  //   'Sensor Readings',
-                  //   style: AppTextStyles.textTheme.titleLarge?.copyWith(
-                  //     color: AppColors.onBackground,
-                  //     fontWeight: FontWeight.w600,
-                  //   ),
-                  // ),
-                  
                   SizedBox(height: AppDimensions.spacing16),
                   
-                  // Compact sensor readings list
-                  Column(
-                    children: [
-                      _buildCompactSensorRow(
-                        context,
-                        title: 'Humidity',
-                        value: '${sensorData['humidity'] ?? '--'}',
-                        unit: '%',
-                        icon: Icons.water_drop,
-                        iconColor: AppColors.humidity,
-                        status: _getSensorStatusText('humidity', sensorData['humidity']),
-                        statusColor: _getSensorStatusColor('humidity', sensorData['humidity']),
-                        onDoubleTap: () {
-                          TextToSpeech.speak('Opening Humidity details');
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => HumVsTimeGraph(deviceId: widget.id),
-                            ),
-                          );
-                        },
-                      ),
-                      SizedBox(height: AppDimensions.spacing12),
-                      _buildCompactSensorRow(
-                        context,
-                        title: 'Light Intensity',
-                        value: '${sensorData['lightState'] ?? '--'}',
-                        unit: '%',
-                        icon: Icons.lightbulb_outline,
-                        iconColor: AppColors.lightIntensity,
-                        status: _getSensorStatusText('light', sensorData['lightState']),
-                        statusColor: _getSensorStatusColor('light', sensorData['lightState']),
-                        onDoubleTap: () {
-                          TextToSpeech.speak('Opening Light Intensity details');
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => LightVsTimeGraph(deviceId: widget.id),
-                            ),
-                          );
-                        },
-                      ),
-                      SizedBox(height: AppDimensions.spacing12),
-                      _buildCompactSensorRow(
-                        context,
-                        title: 'Temperature',
-                        value: '${sensorData['temperature'] ?? '--'}',
-                        unit: '°C',
-                        icon: FontAwesomeIcons.temperatureFull,
-                        iconColor: _getTemperatureColor(sensorData['temperature']),
-                        status: _getSensorStatusText('temperature', sensorData['temperature']),
-                        statusColor: _getSensorStatusColor('temperature', sensorData['temperature']),
-                        onDoubleTap: () {
-                          TextToSpeech.speak('Opening Temperature details');
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TempVsTimeGraph(deviceId: widget.id),
-                            ),
-                          );
-                        },
-                      ),
-                      SizedBox(height: AppDimensions.spacing12),
-                      _buildCompactSensorRow(
-                        context,
-                        title: 'Water Level',
-                        value: '${sensorData['moisture'] ?? '50'}',
-                        unit: '%',
-                        icon: Icons.water_sharp,
-                        iconColor: AppColors.waterLevel,
-                        status: _getSensorStatusText('water', sensorData['moisture']),
-                        statusColor: _getSensorStatusColor('water', sensorData['moisture']),
-                        onDoubleTap: () {
-                          TextToSpeech.speak('Opening Water Level details');
-                          _showWaterLevelDialog(context);
-                        },
-                      ),
-                    ],
+                  // Phase selector
+                  PhaseSelector(
+                    currentPhase: _currentPhase,
+                    onPhaseChanged: _updatePhase,
                   ),
                 ],
               ),
@@ -215,268 +169,6 @@ class _TentPageState extends State<TentPage> {
             selectedIndex: _selectedIndex,
             onItemTapped: _onItemTapped,
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildCompactSensorRow(
-    BuildContext context, {
-    required String title,
-    required String value,
-    required String unit,
-    required IconData icon,
-    required Color iconColor,
-    required String status,
-    Color? statusColor, // Add optional statusColor parameter
-    VoidCallback? onDoubleTap,
-  }) {
-    // Use provided statusColor or determine from status text (fallback)
-    final Color currentStatusColor = statusColor ?? (
-      status.toLowerCase() == 'urgent' ? Colors.red :
-      status.toLowerCase() == 'concern' ? Colors.orange :
-      status.toLowerCase() == 'normal' ? Colors.green :
-      Colors.grey
-    );
-
-    return Semantics(
-      label: '$title: $value $unit, Status: $status. Double tap for details.',
-      child: GestureDetector(
-        onTap: () {
-          // Single tap triggers TTS
-          TextToSpeech.speak('$title: $value $unit, Status: $status');
-        },
-        onDoubleTap: onDoubleTap,
-        child: Container(
-          height: 110, // Increased height to prevent overflow
-          padding: EdgeInsets.symmetric(
-            horizontal: AppDimensions.paddingSmall, // Reduced horizontal padding to give more space
-            vertical: AppDimensions.paddingSmall, // Less vertical padding
-          ),
-          margin: EdgeInsets.symmetric(vertical: AppDimensions.spacing8),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
-            border: Border.all(
-              color: currentStatusColor.withOpacity(0.2),
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.shadow.withOpacity(0.05),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // First row: Icon + Sensor Name
-              Row(
-                children: [
-                  // Icon - compact and clean
-                  Container(
-                    width: 36,
-                    height: 36,
-                    padding: EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: iconColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
-                    ),
-                    child: Icon(
-                      icon,
-                      color: iconColor,
-                      size: 24,
-                    ),
-                  ),
-                  
-                  SizedBox(width: AppDimensions.spacing12),
-                  
-                  // Sensor name - full width available
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: AppTextStyles.textTheme.titleMedium?.copyWith(
-                        color: AppColors.onSurface,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              
-              // Second row: Value + Status Badge with optimized spacing
-              Padding(
-                padding: EdgeInsets.only(top: 4), // Small padding to prevent overflow
-                child: Row(
-                  children: [
-                    // Empty space to push elements to the right
-                    Spacer(),
-                    
-                    // Value with unit - right next to status badge
-                    Text(
-                      '$value$unit',
-                      style: AppTextStyles.textTheme.titleLarge?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18, // Reduced font size to prevent overflow
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis, // Prevent text overflow
-                    ),
-                    
-                    // Minimal space between value and status badge
-                    SizedBox(width: 4), // Reduced spacing
-                    
-                    // Status badge - right next to value with constrained width
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 8, // Reduced horizontal padding
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: currentStatusColor,
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
-                      ),
-                      child: Text(
-                        status,
-                        style: AppTextStyles.textTheme.labelMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                        maxLines: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Color _getTemperatureColor(dynamic temperature) {
-    if (temperature == null) return AppColors.onSurfaceVariant;
-    
-    final temp = double.tryParse(temperature.toString()) ?? 0.0;
-    if (temp < 15) {
-      return AppColors.cold;
-    } else if (temp > 30) {
-      return AppColors.hot;
-    } else {
-      return AppColors.temperature;
-    }
-  }
-
-  // Simple 3-color status system for sensor readings
-  Color _getSensorStatusColor(String sensorType, dynamic value) {
-    if (value == null) return Colors.grey; // No data
-    
-    final numValue = double.tryParse(value.toString()) ?? 0.0;
-    
-    switch (sensorType.toLowerCase()) {
-      case 'temperature':
-        if (numValue < 10 || numValue > 32) return Colors.red;    // Urgent
-        if (numValue < 15 || numValue > 28) return Colors.orange; // Concern
-        return Colors.green; // Normal
-        
-      case 'humidity':
-        if (numValue < 20 || numValue > 90) return Colors.red;    // Urgent
-        if (numValue < 30 || numValue > 80) return Colors.orange; // Concern
-        return Colors.green; // Normal
-        
-      case 'light':
-        if (numValue < 100) return Colors.red;     // Urgent - too dark
-        if (numValue < 200) return Colors.orange;  // Concern - low light
-        return Colors.green; // Normal
-        
-      case 'water':
-        if (numValue < 30) return Colors.red;      // Urgent - too dry
-        if (numValue < 40) return Colors.orange;   // Concern - low
-        return Colors.green; // Normal
-        
-      default:
-        return Colors.grey;
-    }
-  }
-
-  String _getSensorStatusText(String sensorType, dynamic value) {
-    if (value == null) return 'No Data';
-    
-    final numValue = double.tryParse(value.toString()) ?? 0.0;
-    
-    switch (sensorType.toLowerCase()) {
-      case 'temperature':
-        if (numValue < 10 || numValue > 32) return 'Urgent';
-        if (numValue < 15 || numValue > 28) return 'Concern';
-        return 'Normal';
-        
-      case 'humidity':
-        if (numValue < 20 || numValue > 90) return 'Urgent';
-        if (numValue < 30 || numValue > 80) return 'Concern';
-        return 'Normal';
-        
-      case 'light':
-        if (numValue < 100) return 'Urgent';
-        if (numValue < 200) return 'Concern';
-        return 'Normal';
-        
-      case 'water':
-        if (numValue < 30) return 'Urgent';
-        if (numValue < 40) return 'Concern';
-        return 'Normal';
-        
-      default:
-        return 'Unknown';
-    }
-  }
-
-  void _showWaterLevelDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            'Water Level Details',
-            style: AppTextStyles.textTheme.titleLarge,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Current Level: 50%',
-                style: AppTextStyles.textTheme.bodyLarge,
-              ),
-              SizedBox(height: AppDimensions.spacing8),
-              Text(
-                'Status: Normal',
-                style: AppTextStyles.textTheme.bodyMedium?.copyWith(
-                  color: AppColors.success,
-                ),
-              ),
-              SizedBox(height: AppDimensions.spacing8),
-              Text(
-                'Last refilled: 2 days ago',
-                style: AppTextStyles.textTheme.bodyMedium?.copyWith(
-                  color: AppColors.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            AppButton(
-              text: 'Close',
-              onPressed: () => Navigator.of(context).pop(),
-              type: AppButtonType.secondary,
-              size: AppButtonSize.small,
-            ),
-          ],
         );
       },
     );

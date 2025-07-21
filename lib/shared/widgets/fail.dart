@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 
 // Project imports
-import '../../features/device_management/presentation/viewmodels/deviceMnanger.dart';
+import '../../features/device_management/presentation/viewmodels/deviceManager.dart';
 
 class TemperatureDataService {
   final DeviceManager deviceManager;

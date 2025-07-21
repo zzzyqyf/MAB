@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 // Project imports
-import '../../presentation/viewmodels/deviceMnanger.dart';
+import '../../presentation/viewmodels/deviceManager.dart';
 
 class SensorDataWidget extends StatelessWidget {
   const SensorDataWidget({super.key});

@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 
 // Project imports
 import 'GraphDataManager.dart';
-import '../viewmodels/deviceMnanger.dart';
+import '../viewmodels/deviceManager.dart';
 import '../../../../shared/services/TextToSpeech.dart';
 
 class GraphManager extends StatefulWidget {

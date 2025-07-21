@@ -12,7 +12,7 @@ import 'package:intl/intl.dart';
 import '../../../../shared/utils/DateSelectionPage.dart';
 import '../../../../shared/services/TextToSpeech.dart';
 import '../../../../shared/widgets/basePage.dart';
-import '../viewmodels/deviceMnanger.dart';
+import '../viewmodels/deviceManager.dart';
 
 class TempVsTimeGraph extends StatefulWidget {
   final String deviceId; // The deviceId will be passed dynamically

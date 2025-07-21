@@ -110,14 +110,15 @@ class DeviceManager extends ChangeNotifier {
 
     final mqttService = MqttService(
       id: deviceId,
-      onDataReceived: (temperature, humidity, lightState) {
+      onDataReceived: (temperature, humidity, lightState, moisture) { // Add moisture parameter
         storeSensorData(deviceId, temperature!, DateTime.now());
-        print("Data received: Temp=$temperature, Humidity=$humidity, Light=$lightState");
+        print("Data received: Temp=$temperature, Humidity=$humidity, Light=$lightState, Moisture=$moisture");
         _sensorData = {
           'deviceId': deviceId,
           'temperature': temperature,
           'humidity': humidity,
           'lightState': lightState,
+          'moisture': moisture, // Add moisture to sensor data
         };
         notifyListeners();
         
@@ -162,6 +163,15 @@ class DeviceManager extends ChangeNotifier {
       }
       _deviceBox?.put(deviceId, device);
       deviceIsActive(deviceId);
+    }
+  }
+
+  void updateDeviceCultivationPhase(String deviceId, String phase) {
+    final device = _deviceBox?.get(deviceId);
+    if (device != null) {
+      device['cultivationPhase'] = phase;
+      _deviceBox?.put(deviceId, device);
+      notifyListeners();
     }
   }
 
@@ -406,6 +416,7 @@ class DeviceManager extends ChangeNotifier {
       'name': name.isEmpty ? 'Unnamed' : name,
       'status': 'connecting',
       'sensorStatus': '',
+      'cultivationPhase': 'Spawn Run', // Default cultivation phase
       'disconnectionTimeResult': 'not connected yet!',
     };
     _deviceBox?.put(deviceId, device);
