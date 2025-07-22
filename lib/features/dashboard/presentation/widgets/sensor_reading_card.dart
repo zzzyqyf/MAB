@@ -32,6 +32,31 @@ class SensorReadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Helper function to format title with line breaks at 15 characters max
+    String formatTitle(String title) {
+      if (title.length <= 15) {
+        return title;
+      }
+      
+      // Find the last space before or at position 15
+      int breakPoint = -1;
+      
+      // Look for the last space within the first 15 characters
+      for (int i = 14; i >= 0; i--) {
+        if (title[i] == ' ') {
+          breakPoint = i;
+          break;
+        }
+      }
+      
+      // If no space found within 15 chars, force break at 15
+      if (breakPoint == -1) {
+        breakPoint = 15;
+      }
+      
+      return title.substring(0, breakPoint) + '\n' + title.substring(breakPoint + 1);
+    }
+
     return Semantics(
       label: '$title: $value $unit, Status: $status. Double tap for details.',
       child: GestureDetector(
@@ -41,12 +66,12 @@ class SensorReadingCard extends StatelessWidget {
         },
         onDoubleTap: onDoubleTap,
         child: Container(
-          height: 110, // Increased height to prevent overflow
+          height: 80,
           padding: EdgeInsets.symmetric(
-            horizontal: AppDimensions.paddingSmall, // Reduced horizontal padding to give more space
-            vertical: AppDimensions.paddingSmall, // Less vertical padding
+            horizontal: AppDimensions.paddingSmall,
+            vertical: AppDimensions.paddingSmall,
           ),
-          margin: EdgeInsets.symmetric(vertical: AppDimensions.spacing8),
+          margin: EdgeInsets.symmetric(vertical: AppDimensions.spacing4),
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
@@ -62,89 +87,85 @@ class SensorReadingCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start, // Align everything to top
             children: [
-              // First row: Icon + Sensor Name
-              Row(
+              // Left side: Icon
+              Container(
+                width: 36,
+                height: 36,
+                padding: EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                ),
+                child: Icon(
+                  icon,
+                  color: iconColor,
+                  size: 24,
+                ),
+              ),
+              
+              SizedBox(width: AppDimensions.spacing12),
+              
+              // Middle: Title (with word wrap support)
+              Expanded(
+                child: Text(
+                  formatTitle(title),
+                  style: AppTextStyles.textTheme.titleMedium?.copyWith(
+                    color: AppColors.onSurface,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 20,
+                    height: 1.2, // Control line height for better spacing
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              
+              SizedBox(width: AppDimensions.spacing8),
+              
+              // Right side: Value, Unit, and Status (aligned to top)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.start, // Align to top
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Icon - compact and clean
-                  Container(
-                    width: 36,
-                    height: 36,
-                    padding: EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: iconColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(AppDimensions.radiusSmall),
+                  // Value with unit on first line
+                  Text(
+                    '$value$unit',
+                    style: AppTextStyles.textTheme.titleLarge?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
                     ),
-                    child: Icon(
-                      icon,
-                      color: iconColor,
-                      size: 24,
-                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   
-                  SizedBox(width: AppDimensions.spacing12),
+                  SizedBox(height: 4),
                   
-                  // Sensor name - full width available
-                  Expanded(
+                  // Status badge on second line
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
+                    ),
                     child: Text(
-                      title,
-                      style: AppTextStyles.textTheme.titleMedium?.copyWith(
-                        color: AppColors.onSurface,
+                      status,
+                      style: AppTextStyles.textTheme.labelMedium?.copyWith(
+                        color: Colors.white,
                         fontWeight: FontWeight.w600,
-                        fontSize: 20,
+                        fontSize: 12,
                       ),
+                      maxLines: 1,
                     ),
                   ),
                 ],
-              ),
-              
-              // Second row: Value + Status Badge with optimized spacing
-              Padding(
-                padding: EdgeInsets.only(top: 4), // Small padding to prevent overflow
-                child: Row(
-                  children: [
-                    // Empty space to push elements to the right
-                    Spacer(),
-                    
-                    // Value with unit - right next to status badge
-                    Text(
-                      '$value$unit',
-                      style: AppTextStyles.textTheme.titleLarge?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18, // Reduced font size to prevent overflow
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis, // Prevent text overflow
-                    ),
-                    
-                    // Minimal space between value and status badge
-                    SizedBox(width: 4), // Reduced spacing
-                    
-                    // Status badge - right next to value with constrained width
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 8, // Reduced horizontal padding
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        borderRadius: BorderRadius.circular(AppDimensions.radiusRound),
-                      ),
-                      child: Text(
-                        status,
-                        style: AppTextStyles.textTheme.labelMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                        maxLines: 1,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),

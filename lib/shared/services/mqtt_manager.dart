@@ -329,6 +329,8 @@ class MqttManager extends ChangeNotifier {
       'devices/$deviceId/sensors/temperature',
       'devices/$deviceId/sensors/humidity',
       'devices/$deviceId/sensors/lights',
+      'devices/$deviceId/sensors/bluelight',
+      'devices/$deviceId/sensors/co2',
       'devices/$deviceId/sensors/moisture',
       'devices/$deviceId/status',
       'devices/$deviceId/info',

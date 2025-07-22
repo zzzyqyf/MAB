@@ -167,17 +167,19 @@ class DeviceManager extends ChangeNotifier {
 
     final mqttService = MqttService(
       deviceId: deviceId,
-      onDataReceived: (temperature, humidity, lightState, moisture) {
+      onDataReceived: (temperature, humidity, lightState, blueLightState, co2Level, moisture) {
         if (temperature != null) storeSensorData(deviceId, temperature, DateTime.now());
         
         debugPrint("🔄 DeviceManager: Updating sensor data for $deviceId");
         debugPrint("   🌡️ Temperature: $temperature°C");
         debugPrint("   💧 Humidity: $humidity%");
         debugPrint("   💡 Light: ${lightState == 1 ? 'ON' : lightState == 0 ? 'OFF' : '--'}");
+        debugPrint("   🔵 Blue Light: $blueLightState lux");
+        debugPrint("   🌫️ CO2: $co2Level ppm");
         debugPrint("   🌱 Moisture: $moisture%");
         
         // Update the sensor data map properly
-        _updateSensorData(deviceId, temperature, humidity, lightState, moisture);
+        _updateSensorData(deviceId, temperature, humidity, lightState, blueLightState, co2Level, moisture);
         
         _markDeviceOnline(deviceId);
         _updateDisconnectionTime(deviceId, DateTime.now(), 'online');
@@ -192,7 +194,7 @@ class DeviceManager extends ChangeNotifier {
     mqttService.setupMqttClient();
   }
 
-  void _updateSensorData(String deviceId, double? temp, double? humidity, int? lightState, double? moisture) {
+  void _updateSensorData(String deviceId, double? temp, double? humidity, int? lightState, int? blueLightState, double? co2Level, double? moisture) {
     debugPrint('🔄 DeviceManager: Updating sensor data for $deviceId');
     
     // Initialize sensor data map if needed
@@ -218,7 +220,19 @@ class DeviceManager extends ChangeNotifier {
     if (lightState != null && _sensorData[deviceId]!['lightState'] != lightState) {
       _sensorData[deviceId]!['lightState'] = lightState;
       hasUpdates = true;
-      debugPrint('   💡 Light: ${lightState == 1 ? 'ON' : 'OFF'}');
+      debugPrint('   💡 Light: $lightState lux');
+    }
+    
+    if (blueLightState != null && _sensorData[deviceId]!['blueLightState'] != blueLightState) {
+      _sensorData[deviceId]!['blueLightState'] = blueLightState;
+      hasUpdates = true;
+      debugPrint('   🔵 Blue Light: $blueLightState lux');
+    }
+    
+    if (co2Level != null && _sensorData[deviceId]!['co2Level'] != co2Level) {
+      _sensorData[deviceId]!['co2Level'] = co2Level;
+      hasUpdates = true;
+      debugPrint('   🌫️ CO2: $co2Level ppm');
     }
     
     if (moisture != null && _sensorData[deviceId]!['moisture'] != moisture) {

@@ -6,13 +6,15 @@ import 'mqtt_manager.dart';
 /// Device-specific MQTT service that handles sensor data for a single device
 class MqttService extends ChangeNotifier {
   final String deviceId;
-  final Function(double?, double?, int?, double?) onDataReceived;
+  final Function(double?, double?, int?, int?, double?, double?) onDataReceived;
   final Function(String id, String newStatus) onDeviceConnectionStatusChange;
 
   // Sensor data
   double? temperature;
   double? humidity;
   int? lightState;
+  int? blueLightState;
+  double? co2Level;
   double? moisture;
   String? deviceStatus;
 
@@ -80,6 +82,20 @@ class MqttService extends ChangeNotifier {
           dataUpdated = true;
           debugPrint('💡 Light state updated: $lightState');
         }
+      } else if (topic == 'devices/$deviceId/sensors/bluelight') {
+        final newBlueLightState = int.tryParse(message);
+        if (newBlueLightState != null && newBlueLightState != blueLightState) {
+          blueLightState = newBlueLightState;
+          dataUpdated = true;
+          debugPrint('🔵 Blue light updated: $blueLightState');
+        }
+      } else if (topic == 'devices/$deviceId/sensors/co2') {
+        final newCo2Level = double.tryParse(message);
+        if (newCo2Level != null && newCo2Level != co2Level) {
+          co2Level = newCo2Level;
+          dataUpdated = true;
+          debugPrint('🌫️ CO2 level updated: $co2Level ppm');
+        }
       } else if (topic == 'devices/$deviceId/sensors/moisture') {
         final newMoisture = double.tryParse(message);
         if (newMoisture != null && newMoisture != moisture) {
@@ -102,8 +118,8 @@ class MqttService extends ChangeNotifier {
       if (dataUpdated) {
         _lastReceivedTimestamps[deviceId] = DateTime.now();
         
-        debugPrint('📊 Triggering callback with: temp=$temperature, humidity=$humidity, light=$lightState, moisture=$moisture');
-        onDataReceived(temperature, humidity, lightState, moisture);
+        debugPrint('📊 Triggering callback with: temp=$temperature, humidity=$humidity, light=$lightState, bluelight=$blueLightState, co2=$co2Level, moisture=$moisture');
+        onDataReceived(temperature, humidity, lightState, blueLightState, co2Level, moisture);
         
         if (!_isDisposed) {
           notifyListeners();

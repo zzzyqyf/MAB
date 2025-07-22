@@ -63,8 +63,8 @@ class SensorReadingsList extends StatelessWidget {
         SizedBox(height: AppDimensions.spacing12),
         SensorReadingCard(
           title: 'Light Intensity',
-          value: sensorData['lightState'] == 1 ? 'ON' : sensorData['lightState'] == 0 ? 'OFF' : '--',
-          unit: '',
+          value: _formatValue(sensorData['lightState'], 0),
+          unit: 'lux',
           icon: Icons.lightbulb_outline,
           iconColor: AppColors.lightIntensity,
           status: sensorStatusService.getSensorStatusText('light', sensorData['lightState']),
@@ -75,6 +75,45 @@ class SensorReadingsList extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (context) => LightVsTimeGraph(deviceId: deviceId),
+              ),
+            );
+          },
+        ),
+        SizedBox(height: AppDimensions.spacing12),
+        SensorReadingCard(
+          title: 'Blue Light Intensity',
+          value: _formatValue(sensorData['blueLightState'], 0),
+          unit: 'lux',
+          icon: Icons.wb_sunny,
+          iconColor: Colors.blue,
+          status: sensorStatusService.getSensorStatusText('bluelight', sensorData['blueLightState']),
+          statusColor: sensorStatusService.getSensorStatusColor('bluelight', sensorData['blueLightState']),
+          onDoubleTap: () {
+            TextToSpeech.speak('Opening Blue Light Intensity details');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => LightVsTimeGraph(deviceId: deviceId),
+              ),
+            );
+          },
+        ),
+        SizedBox(height: AppDimensions.spacing12),
+        SensorReadingCard(
+          title: 'CO2 Level',
+          value: _formatValue(sensorData['co2Level'], 0),
+          unit: 'ppm',
+          icon: FontAwesomeIcons.smog,
+          iconColor: Colors.grey[600]!,
+          status: sensorStatusService.getSensorStatusText('co2', sensorData['co2Level']),
+          statusColor: sensorStatusService.getSensorStatusColor('co2', sensorData['co2Level']),
+          onDoubleTap: () {
+            TextToSpeech.speak('Opening CO2 Level details');
+            // TODO: Create CO2VsTimeGraph when needed
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => LightVsTimeGraph(deviceId: deviceId), // Temporary placeholder
               ),
             );
           },

@@ -46,6 +46,8 @@ Future<void> subscribeToESP32Messages() async {
         'devices/ESP32_001/sensors/temperature',
         'devices/ESP32_001/sensors/humidity',
         'devices/ESP32_001/sensors/lights',
+        'devices/ESP32_001/sensors/bluelight',
+        'devices/ESP32_001/sensors/co2',
         'devices/ESP32_001/sensors/moisture',
       ];
       
