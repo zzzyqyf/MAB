@@ -170,11 +170,8 @@ This project represents a comprehensive final year capstone demonstrating:
 
 ## 👥 Contributors
 
-- **Student**: [Your Name]
-- **Supervisor**: [Supervisor Name]
-- **Institution**: [University Name]
-- **Program**: [Degree Program]
-- **Academic Year**: [Year]
+- **Student**: [ZHANG YIFEI]
+- **Supervisor**: [DR.NG KENG YAP]
 
 ## 📄 License
 
@@ -182,10 +179,8 @@ This project is submitted as part of academic requirements. All rights reserved.
 
 ## 📞 Contact
 
-For technical inquiries or project demonstration:
-- **Email**: [your.email@university.edu]
-- **Student ID**: [Your Student ID]
-- **Project Code**: [Project Code if applicable]
+- **Email**: [213853@student.upm.edu.my]
+- **Student ID**: [213853/ZHANG YIFEI]
 
 ---
 
