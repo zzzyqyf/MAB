@@ -167,7 +167,8 @@ class DeviceManager extends ChangeNotifier {
 
     final mqttService = MqttService(
       deviceId: deviceId,
-      onDataReceived: (temperature, humidity, lightState, blueLightState, co2Level, moisture) {
+      onDataReceived: (temperature, humidity, lightState, blueLightState, co2Level, moisture,
+                      temperatureTimestamp, humidityTimestamp, lightTimestamp, blueLightTimestamp, co2Timestamp, moistureTimestamp) {
         if (temperature != null) storeSensorData(deviceId, temperature, DateTime.now());
         
         debugPrint("🔄 DeviceManager: Updating sensor data for $deviceId");
@@ -179,7 +180,10 @@ class DeviceManager extends ChangeNotifier {
         debugPrint("   🌱 Moisture: $moisture%");
         
         // Update the sensor data map properly
-        _updateSensorData(deviceId, temperature, humidity, lightState, blueLightState, co2Level, moisture);
+        _updateSensorData(
+          deviceId, temperature, humidity, lightState, blueLightState, co2Level, moisture,
+          temperatureTimestamp, humidityTimestamp, lightTimestamp, blueLightTimestamp, co2Timestamp, moistureTimestamp
+        );
         
         _markDeviceOnline(deviceId);
         _updateDisconnectionTime(deviceId, DateTime.now(), 'online');
@@ -194,7 +198,8 @@ class DeviceManager extends ChangeNotifier {
     mqttService.setupMqttClient();
   }
 
-  void _updateSensorData(String deviceId, double? temp, double? humidity, int? lightState, int? blueLightState, double? co2Level, double? moisture) {
+  void _updateSensorData(String deviceId, double? temp, double? humidity, int? lightState, int? blueLightState, double? co2Level, double? moisture,
+                         int? tempTimestamp, int? humidityTimestamp, int? lightTimestamp, int? blueLightTimestamp, int? co2Timestamp, int? moistureTimestamp) {
     debugPrint('🔄 DeviceManager: Updating sensor data for $deviceId');
     
     // Initialize sensor data map if needed
@@ -207,36 +212,42 @@ class DeviceManager extends ChangeNotifier {
     // Update only if values have changed
     if (temp != null && _sensorData[deviceId]!['temperature'] != temp) {
       _sensorData[deviceId]!['temperature'] = temp;
+      if (tempTimestamp != null) _sensorData[deviceId]!['temperatureTimestamp'] = tempTimestamp;
       hasUpdates = true;
       debugPrint('   🌡️ Temperature: $temp°C');
     }
     
     if (humidity != null && _sensorData[deviceId]!['humidity'] != humidity) {
       _sensorData[deviceId]!['humidity'] = humidity;
+      if (humidityTimestamp != null) _sensorData[deviceId]!['humidityTimestamp'] = humidityTimestamp;
       hasUpdates = true;
       debugPrint('   💧 Humidity: $humidity%');
     }
     
     if (lightState != null && _sensorData[deviceId]!['lightState'] != lightState) {
       _sensorData[deviceId]!['lightState'] = lightState;
+      if (lightTimestamp != null) _sensorData[deviceId]!['lightTimestamp'] = lightTimestamp;
       hasUpdates = true;
       debugPrint('   💡 Light: $lightState lux');
     }
     
     if (blueLightState != null && _sensorData[deviceId]!['blueLightState'] != blueLightState) {
       _sensorData[deviceId]!['blueLightState'] = blueLightState;
+      if (blueLightTimestamp != null) _sensorData[deviceId]!['blueLightTimestamp'] = blueLightTimestamp;
       hasUpdates = true;
       debugPrint('   🔵 Blue Light: $blueLightState lux');
     }
     
     if (co2Level != null && _sensorData[deviceId]!['co2Level'] != co2Level) {
       _sensorData[deviceId]!['co2Level'] = co2Level;
+      if (co2Timestamp != null) _sensorData[deviceId]!['co2Timestamp'] = co2Timestamp;
       hasUpdates = true;
       debugPrint('   🌫️ CO2: $co2Level ppm');
     }
     
     if (moisture != null && _sensorData[deviceId]!['moisture'] != moisture) {
       _sensorData[deviceId]!['moisture'] = moisture;
+      if (moistureTimestamp != null) _sensorData[deviceId]!['moistureTimestamp'] = moistureTimestamp;
       hasUpdates = true;
       debugPrint('   🌱 Moisture: $moisture%');
     }
