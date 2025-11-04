@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 // Project imports
 import '../../../../shared/services/TextToSpeech.dart';
 import '../../../../shared/widgets/buttom.dart';
-import '../../../../main.dart';
 import 'sinUp.dart';
 
 class LoginWidget extends StatefulWidget {
@@ -33,30 +32,76 @@ class _LoginWidgetState extends State<LoginWidget> {
   Future<void> _login() async {
     if (_formKey.currentState?.validate() ?? false) {
       try {
+        // Show loading indicator
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(child: CircularProgressIndicator()),
+        );
+
         // Authenticate user with email and password
         await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text,
+          email: _emailController.text.trim(),
           password: _passwordController.text,
         );
 
-        // Navigate to the home screen after successful login
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MyApp()),
-          );
-        }
-      } catch (e) {
-        // Handle login errors
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('')),
-                     // SnackBar(content: Text('Login failed: $e')),
-          );
-        }
-        TextToSpeech.speak('Login failed Check email or password');
+        // Close loading dialog
+        if (!mounted) return;
+        Navigator.of(context).pop();
 
+        TextToSpeech.speak('Login successful. Welcome back!');
+
+        // Navigate to the home screen - Firebase auth state will handle the redirect
+        // No need to manually navigate, AuthWrapper will detect the logged-in user
         
+      } on FirebaseAuthException catch (e) {
+        // Close loading dialog if it's open
+        if (mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+
+        String errorMessage = 'Login failed';
+
+        // Handle only specific Firebase Auth errors as requested
+        switch (e.code) {
+          case 'invalid-email':
+            errorMessage = 'Invalid email address format.';
+            break;
+          case 'user-not-found':
+          case 'wrong-password':
+          case 'invalid-credential':
+            errorMessage = 'Invalid email or password. Please try again.';
+            break;
+          default:
+            errorMessage = 'Login failed. Please try again.';
+        }
+
+        TextToSpeech.speak(errorMessage);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } catch (e) {
+        // Close loading dialog if it's open
+        if (mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+
+        TextToSpeech.speak('Login failed. Please try again.');
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login failed. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }

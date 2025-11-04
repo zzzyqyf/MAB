@@ -5,9 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 // Project imports
 import '../../../../shared/services/TextToSpeech.dart';
+import '../../../../shared/services/email_service.dart';
 import '../../../../shared/widgets/buttom.dart';
-import '../../../../main.dart';
 import 'signIn.dart';
+import 'otp_verification_page.dart';
 //import 'home_screen.dart'; // Home screen widget, you can replace this with your actual home screen
 
 class SignUpWidget extends StatefulWidget {
@@ -35,37 +36,275 @@ class _SignUpWidgetState extends State<SignUpWidget> {
     super.dispose();
   }
 
-  // Sign up method
+  // Sign up method with OTP verification
   Future<void> _signUp() async {
-  if (_formKey.currentState?.validate() ?? false) {
-    try {
-      // Create the user with email and password
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text,
-        password: _passwordController.text,
+    print('🚀 _signUp() called');
+    print('📧 Current Firebase Auth user: ${FirebaseAuth.instance.currentUser?.email}');
+    
+    // Check if user is already logged in
+    if (FirebaseAuth.instance.currentUser != null) {
+      print('⚠️ User already logged in! Email: ${FirebaseAuth.instance.currentUser!.email}');
+      TextToSpeech.speak('You are already logged in. Please logout first to create a new account.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You are already logged in. Please logout from the profile page to create a new account.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 4),
+        ),
       );
+      return;
+    }
+    
+    if (_formKey.currentState?.validate() ?? false) {
+      try {
+        print('✅ Form validated, starting signup process...');
+        
+        // Show loading indicator
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(child: CircularProgressIndicator()),
+        );
 
-      // Add additional user data (e.g., role) to Firestore
-      await FirebaseFirestore.instance.collection('users').doc(userCredential.user?.uid).set({
-        'email': userCredential.user?.email,
-        'role': 'member', // Default to member, you can add admin logic later
-      });
+        final email = _emailController.text.trim();
+        final password = _passwordController.text;
+        
+        print('📧 Signup email: $email');
 
-      // Send an invitation email
-     
-      // Navigate to home screen after successful sign-up
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MyApp()),
-      );
-    } catch (e) {
-                  TextToSpeech.speak('Sign up failed');
+        // Step 1: Generate and send OTP
+        final otp = EmailService.generateOTP();
+        
+        TextToSpeech.speak('Sending verification code to your email');
+        
+        final emailSent = await EmailService.sendOTP(
+          email: email,
+          otp: otp,
+        );
 
-      // Handle sign up errors (e.g., weak password, invalid email)
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign up failed: $e')));
+        if (!emailSent) {
+          // Close loading dialog
+          if (!mounted) return;
+          Navigator.of(context).pop();
+          
+          TextToSpeech.speak('Failed to send verification code. Please check your email and try again.');
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to send verification code. Please check your email and try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
+        // Step 2: Store OTP in Firestore
+        print('📝 About to store OTP in Firestore...');
+        try {
+          await EmailService.storeOTP(
+            email: email,
+            otp: otp,
+          );
+          print('✅ OTP stored successfully, navigating to verification page...');
+        } catch (firestoreError) {
+          // Close loading dialog
+          if (!mounted) return;
+          Navigator.of(context).pop();
+          
+          print('❌ Firestore error: $firestoreError');
+          
+          TextToSpeech.speak('Failed to store verification code. Please check your internet connection and try again.');
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Firestore error: ${firestoreError.toString()}. Please check Firebase configuration.'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+          return;
+        }
+
+        // Close loading dialog
+        if (!mounted) return;
+        Navigator.of(context).pop();
+
+        // Step 3: Navigate to OTP verification page
+        TextToSpeech.speak('Verification code sent. Please check your email.');
+        
+        print('🚀 Navigating to OTP verification page...');
+        final verified = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OTPVerificationPage(
+              email: email,
+              password: password,
+            ),
+          ),
+        );
+        
+        print('✅ Returned from OTP verification page. Verified: $verified');
+        print('📋 Verified type: ${verified.runtimeType}');
+        print('🔍 Verified == true: ${verified == true}');
+        print('🔍 Verified is bool: ${verified is bool}');
+
+        // Step 4: If OTP verified, create Firebase account
+        if (verified == true) {
+          print('✅ OTP verified successfully, creating Firebase account...');
+          if (!mounted) return;
+          
+          // Show loading indicator again
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const Center(child: CircularProgressIndicator()),
+          );
+
+          try {
+            print('🔐 Creating Firebase Auth user for: $email');
+            
+            // Create the user with email and password
+            UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+              email: email,
+              password: password,
+            );
+
+            print('✅ Firebase Auth user created: ${userCredential.user?.uid}');
+            print('📝 Storing user data in Firestore...');
+
+            // Add additional user data to Firestore
+            await FirebaseFirestore.instance.collection('users').doc(userCredential.user?.uid).set({
+              'email': userCredential.user?.email,
+              'role': 'member',
+              'createdAt': FieldValue.serverTimestamp(),
+              'emailVerified': true,
+            });
+
+            print('✅ User data stored in Firestore');
+            print('🗑️ Deleting OTP document...');
+
+            // Delete OTP document
+            await EmailService.deleteOTP(email);
+
+            print('✅ OTP document deleted');
+            print('🎉 Account creation complete!');
+
+            // Close loading dialog
+            if (!mounted) return;
+            Navigator.of(context).pop();
+
+            print('✅ Loading dialog closed');
+
+            // Show success message
+            TextToSpeech.speak('Account created successfully. Welcome!');
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Account created successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+
+            print('🏠 AuthWrapper will now redirect to dashboard...');
+            // Navigate to home screen - Firebase auth state will handle the redirect
+          } catch (e) {
+            // Close loading dialog
+            if (mounted && Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+
+            // Delete OTP on account creation failure
+            await EmailService.deleteOTP(email);
+
+            if (e is FirebaseAuthException) {
+              String errorMessage = 'Sign up failed';
+              
+              switch (e.code) {
+                case 'email-already-in-use':
+                  errorMessage = 'This email is already registered. Please login instead.';
+                  break;
+                case 'invalid-email':
+                  errorMessage = 'Invalid email address format.';
+                  break;
+                default:
+                  errorMessage = 'Sign up failed. Please try again.';
+              }
+
+              TextToSpeech.speak(errorMessage);
+
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(errorMessage),
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 4),
+                ),
+              );
+            } else {
+              TextToSpeech.speak('Sign up failed. Please try again.');
+              
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Sign up failed. Please try again.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        } else {
+          // OTP verification cancelled or failed
+          TextToSpeech.speak('Verification cancelled');
+        }
+        
+      } on FirebaseAuthException catch (e) {
+        // Close loading dialog if it's open
+        if (mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+
+        String errorMessage = 'Sign up failed';
+        
+        // Handle only specific Firebase Auth errors as requested
+        switch (e.code) {
+          case 'email-already-in-use':
+            errorMessage = 'This email is already registered. Please login instead.';
+            break;
+          case 'invalid-email':
+            errorMessage = 'Invalid email address format.';
+            break;
+          default:
+            errorMessage = 'Sign up failed. Please try again.';
+        }
+
+        TextToSpeech.speak(errorMessage);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } catch (e) {
+        // Close loading dialog if it's open
+        if (mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+
+        TextToSpeech.speak('Sign up failed. Please try again.');
+        
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sign up failed. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
-}
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 // Project imports
 import '../../../../shared/services/TextToSpeech.dart';
@@ -8,7 +9,6 @@ import '../../../../shared/widgets/Navbar.dart';
 import '../../../notifications/presentation/pages/notification.dart';
 import '../../../registration/presentation/pages/registerOne.dart';
 import '../../../../main.dart';
-//import 'test.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -20,10 +20,90 @@ class ProfilePage extends StatefulWidget {
 class _ProfileWidgetState extends State<ProfilePage> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0; // Profile page is index 0
+  User? currentUser;
+  String userEmail = '';
+  String userName = 'User';
 
   @override
   void initState() {
     super.initState();
+    _loadUserData();
+  }
+
+  void _loadUserData() {
+    currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      setState(() {
+        userEmail = currentUser!.email ?? 'No email';
+        // Extract username from email (part before @)
+        userName = userEmail.split('@').first;
+      });
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    try {
+      // Show confirmation dialog
+      final shouldLogout = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to logout?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Logout'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldLogout == true) {
+        // Show loading indicator
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(child: CircularProgressIndicator()),
+        );
+
+        // Sign out from Firebase
+        await FirebaseAuth.instance.signOut();
+
+        // Close loading dialog
+        if (!mounted) return;
+        Navigator.of(context).pop();
+
+        TextToSpeech.speak('Logged out successfully');
+
+        // The AuthWrapper will automatically redirect to login page
+        // Navigate to login screen
+        if (!mounted) return;
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginWidget()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      // Close loading dialog if it's open
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+
+      TextToSpeech.speak('Logout failed');
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Logout failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -111,7 +191,7 @@ class _ProfileWidgetState extends State<ProfilePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'zhang yifei',
+          userName,
           style: TextStyle(
             fontSize: fontSizeTitle,
             fontWeight: FontWeight.bold,
@@ -119,9 +199,9 @@ class _ProfileWidgetState extends State<ProfilePage> {
         ),
         const SizedBox(height: 3),
         Text(
-          'masalaysia@gmail.com',
+          userEmail,
           style: TextStyle(
-            fontSize: fontSizeTitle,
+            fontSize: fontSizeTitle * 0.8,
           ),
         ),
       ],
@@ -185,13 +265,8 @@ class _ProfileWidgetState extends State<ProfilePage> {
     TextToSpeech.speak('Logout button');
   },
   onDoubleTap: () {
-    // Navigate to Login screen on double-tap
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginWidget()),
-    );
-        TextToSpeech.speak('Logged Out');
-
+    // Trigger logout on double-tap
+    _handleLogout();
   },
   screenWidth: screenWidth,
 ),

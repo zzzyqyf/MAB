@@ -27,6 +27,7 @@ import 'features/dashboard/presentation/pages/overview.dart';
 import 'features/dashboard/presentation/services/mode_controller_service.dart';
 import 'features/dashboard/presentation/models/mushroom_phase.dart';
 import 'features/registration/presentation/pages/registerOne.dart';
+import 'features/authentication/presentation/widgets/auth_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -99,7 +100,7 @@ class MyApp extends StatelessWidget {
       title: 'PlantCare Hubs',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
-      home: const MyHomePage(title: 'PlantCare Hubs'),
+      home: const AuthWrapper(), // Use AuthWrapper to handle authentication state
     );
   }
 }
