@@ -7,8 +7,8 @@ import '../../../../core/theme/app_dimensions.dart';
 
 // Shared imports
 import '../../../../shared/widgets/basePage.dart';
-import '../../../../shared/services/TextToSpeech.dart';
 import '../../../../shared/widgets/Navbar.dart';
+import '../../../../shared/services/alarm_service.dart';
 
 // Project imports
 import '../../../device_management/presentation/viewmodels/deviceManager.dart';
@@ -18,11 +18,10 @@ import '../../../notifications/presentation/pages/notification.dart';
 
 // Widget imports
 import '../widgets/device_header.dart';
-import '../widgets/phase_selector.dart';
 import '../widgets/sensor_readings_list.dart';
-
-// Model imports
-import '../models/mushroom_phase.dart';
+import '../services/mode_controller_service.dart';
+import '../services/sensor_status_service.dart';
+import 'package:flutter_application_final/features/dashboard/presentation/widgets/mode_selector_widget.dart';
 
 class TentPage extends StatefulWidget {
   final String id; // Unique device ID
@@ -36,7 +35,8 @@ class TentPage extends StatefulWidget {
 
 class _TentPageState extends State<TentPage> {
   int _selectedIndex = 0;
-  MushroomPhase _currentPhase = MushroomPhase.spawnRun; // Default phase
+  final AlarmService _alarmService = AlarmService();
+  late ModeControllerService _modeController;
 
   final List<Widget> _pages = [
     const ProfilePage(),
@@ -47,35 +47,20 @@ class _TentPageState extends State<TentPage> {
   @override
   void initState() {
     super.initState();
-    _loadCurrentPhase();
+    _modeController = ModeControllerService(deviceId: widget.id);
+    _modeController.addListener(_checkAlarmConditions);
   }
 
-  void _loadCurrentPhase() {
-    final deviceManager = Provider.of<DeviceManager>(context, listen: false);
-    final device = deviceManager.devices.firstWhere(
-      (d) => d['id'] == widget.id,
-      orElse: () => <String, dynamic>{},
-    );
-    
-    if (device.isNotEmpty && device['cultivationPhase'] != null) {
-      // Convert string back to enum
-      final phaseString = device['cultivationPhase'] as String;
-      switch (phaseString) {
-        case 'Spawn Run':
-          _currentPhase = MushroomPhase.spawnRun;
-          break;
-        case 'Primordia Initiation':
-          _currentPhase = MushroomPhase.primordia;
-          break;
-        case 'Fruiting':
-          _currentPhase = MushroomPhase.fruiting;
-          break;
-        case 'Post-Harvest Recovery':
-          _currentPhase = MushroomPhase.postHarvest;
-          break;
-        default:
-          _currentPhase = MushroomPhase.spawnRun;
-      }
+  @override
+  void dispose() {
+    _modeController.removeListener(_checkAlarmConditions);
+    _alarmService.stopAlarm();
+    super.dispose();
+  }
+
+  void _checkAlarmConditions() {
+    // Will be called when mode changes or sensor data updates
+    if (mounted) {
       setState(() {});
     }
   }
@@ -88,19 +73,6 @@ class _TentPageState extends State<TentPage> {
       context,
       MaterialPageRoute(builder: (context) => _pages[index]),
     );
-  }
-
-  void _updatePhase(MushroomPhase newPhase) {
-    setState(() {
-      _currentPhase = newPhase;
-    });
-    
-    // Save to DeviceManager/local storage
-    final deviceManager = Provider.of<DeviceManager>(context, listen: false);
-    final phaseName = phaseThresholds[newPhase]!.name;
-    deviceManager.updateDeviceCultivationPhase(widget.id, phaseName);
-    
-    TextToSpeech.speak('Phase changed to $phaseName');
   }
 
   @override
@@ -126,6 +98,23 @@ class _TentPageState extends State<TentPage> {
         // ✅ Get sensor data for this specific device
         final sensorData = deviceManager.getSensorDataForDeviceId(widget.id);
         
+        // Check sensor status for alarm
+        final sensorStatusService = SensorStatusService(_modeController.currentMode);
+        final humidityStatus = sensorStatusService.getSensorStatusColor('humidity', sensorData['humidity']);
+        final temperatureStatus = sensorStatusService.getSensorStatusColor('temperature', sensorData['temperature']);
+        final waterStatus = sensorStatusService.getSensorStatusColor('water', sensorData['moisture']);
+        
+        // Trigger alarm check
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _alarmService.checkSensorAlarm(
+            sensorData: sensorData,
+            deviceName: widget.name,
+            humidityStatus: humidityStatus,
+            temperatureStatus: temperatureStatus,
+            waterStatus: waterStatus,
+          );
+        });
+        
         return Scaffold(
           backgroundColor: AppColors.background,
           appBar: BasePage(
@@ -138,6 +127,69 @@ class _TentPageState extends State<TentPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Alarm indicator banner (shown when alarm is active)
+                  if (_alarmService.isAlarmActive)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(AppDimensions.radiusMedium),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.red.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  '🚨 URGENT ALERT',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _alarmService.currentAlarmReason ?? 'Critical condition detected',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.volume_off,
+                              color: Colors.white,
+                            ),
+                            onPressed: () async {
+                              await _alarmService.stopAlarm();
+                              setState(() {});
+                            },
+                            tooltip: 'Mute alarm',
+                          ),
+                        ],
+                      ),
+                    ),
+                  
                   // Header with device name and settings
                   DeviceHeader(
                     deviceName: widget.name,
@@ -150,18 +202,14 @@ class _TentPageState extends State<TentPage> {
                   SensorReadingsList(
                     deviceId: widget.id,
                     sensorData: sensorData,
-                    currentPhase: _currentPhase,
                   ),
                   
                   SizedBox(height: AppDimensions.spacing32),
                   
-                  SizedBox(height: AppDimensions.spacing16),
+                  // Mode selector with timer control
+                  ModeSelectorWidget(deviceId: widget.id),
                   
-                  // Phase selector
-                  PhaseSelector(
-                    currentPhase: _currentPhase,
-                    onPhaseChanged: _updatePhase,
-                  ),
+                  SizedBox(height: AppDimensions.spacing16),
                 ],
               ),
             ),

@@ -6,6 +6,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../../../../shared/services/mqttservice.dart';
 import '../../../../shared/services/mqtt_manager.dart';
 import '../../../../shared/services/device_discovery_service.dart';
+import '../../../dashboard/presentation/services/mode_controller_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -315,15 +316,6 @@ class DeviceManager extends ChangeNotifier {
     }
   }
 
-  void updateDeviceCultivationPhase(String deviceId, String phase) {
-    final device = _deviceBox?.get(deviceId);
-    if (device != null) {
-      device['cultivationPhase'] = phase;
-      _deviceBox?.put(deviceId, device);
-      notifyListeners();
-    }
-  }
-
   void _markDeviceOnline(String deviceId) {
     updateDeviceStatus(deviceId, 'online');
   }
@@ -574,7 +566,6 @@ class DeviceManager extends ChangeNotifier {
       'mqttId': deviceMqttId, // Store the MQTT identifier
       'status': 'connecting',
       'sensorStatus': '',
-      'cultivationPhase': 'Spawn Run', // Default cultivation phase
       'disconnectionTimeResult': 'not connected yet!',
     };
     _deviceBox?.put(deviceId, device);
@@ -602,6 +593,10 @@ class DeviceManager extends ChangeNotifier {
     lastNotificationTime.remove(deviceId);
     _deviceBox?.delete(deviceId);
     deleteNotificationsByDeviceId(deviceId);
+    
+    // Cleanup ModeControllerService singleton for this device
+    ModeControllerService.removeInstance(deviceId);
+    
     notifyListeners();
   }
 

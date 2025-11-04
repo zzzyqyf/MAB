@@ -4,51 +4,62 @@ import 'package:flutter/material.dart';
 import '../models/mushroom_phase.dart';
 
 class SensorStatusService {
-  final MushroomPhase currentPhase;
+  final CultivationMode currentMode;
 
-  const SensorStatusService(this.currentPhase);
+  const SensorStatusService(this.currentMode);
 
-  // Phase-aware sensor status system
+  // Mode-aware sensor status system
   Color getSensorStatusColor(String sensorType, dynamic value) {
     if (value == null) return Colors.grey; // No data
     
     final numValue = double.tryParse(value.toString()) ?? 0.0;
-    final thresholds = phaseThresholds[currentPhase]!;
     
     switch (sensorType.toLowerCase()) {
       case 'temperature':
-        if (numValue < thresholds.minTemp || numValue > thresholds.maxTemp) {
-          return Colors.red; // Urgent - outside phase range
+        // Only show Urgent when above 30°C, otherwise Good
+        if (numValue > 30.0) {
+          return Colors.red; // Urgent - too hot
         }
-        if (numValue < thresholds.minTemp + 2 || numValue > thresholds.maxTemp - 2) {
-          return Colors.orange; // Concern - close to limits
-        }
-        return Colors.green; // Normal - within phase range
+        return Colors.green; // Good
         
       case 'humidity':
-        if (numValue < thresholds.minHumidity || numValue > thresholds.maxHumidity) {
-          return Colors.red; // Urgent - outside phase range
+        // Good if within range, Urgent if outside
+        // Pinning mode: 90-95%, Normal mode: 80-85%
+        debugPrint('🔍 Humidity Status Check:');
+        debugPrint('   Current Mode: $currentMode');
+        debugPrint('   Sensor Value: $numValue%');
+        if (currentMode == CultivationMode.pinning) {
+          debugPrint('   Min Threshold: 90.0%');
+          debugPrint('   Max Threshold: 95.0%');
+          debugPrint('   Within Range: ${numValue >= 90.0 && numValue <= 95.0}');
+          if (numValue >= 90.0 && numValue <= 95.0) {
+            return Colors.green; // Good - within Pinning range
+          }
+        } else {
+          // Normal mode
+          debugPrint('   Min Threshold: 80.0%');
+          debugPrint('   Max Threshold: 85.0%');
+          debugPrint('   Within Range: ${numValue >= 80.0 && numValue <= 85.0}');
+          if (numValue >= 80.0 && numValue <= 85.0) {
+            return Colors.green; // Good - within Normal range
+          }
         }
-        if (numValue < thresholds.minHumidity + 3 || numValue > thresholds.maxHumidity - 3) {
-          return Colors.orange; // Concern - close to limits
-        }
-        return Colors.green; // Normal - within phase range
+        return Colors.red; // Urgent - outside mode range
         
       case 'light':
+        // Light status is not mode-dependent in the new system
         final lightValue = numValue; // Assuming light is in lux
-        if (lightValue < thresholds.minLight || lightValue > thresholds.maxLight) {
-          return Colors.red; // Urgent - outside phase range
+        if (lightValue >= 100) {
+          return Colors.green; // Good
         }
-        if (lightValue < thresholds.minLight + 50 || lightValue > thresholds.maxLight - 50) {
-          return Colors.orange; // Concern - close to limits
-        }
-        return Colors.green; // Normal - within phase range
+        return Colors.red; // Urgent - too dark
         
       case 'water':
-        // For water/moisture, we use humidity thresholds as a proxy
-        if (numValue < 30) return Colors.red;      // Urgent - too dry
-        if (numValue < 40) return Colors.orange;   // Concern - low
-        return Colors.green; // Normal
+        // For water/moisture
+        if (numValue >= 30) {
+          return Colors.green; // Good
+        }
+        return Colors.red; // Urgent - too dry
         
       default:
         return Colors.grey;
@@ -59,41 +70,50 @@ class SensorStatusService {
     if (value == null) return 'No Data';
     
     final numValue = double.tryParse(value.toString()) ?? 0.0;
-    final thresholds = phaseThresholds[currentPhase]!;
     
     switch (sensorType.toLowerCase()) {
       case 'temperature':
-        if (numValue < thresholds.minTemp || numValue > thresholds.maxTemp) {
+        // Only show Urgent when above 30°C, otherwise Good
+        if (numValue > 30.0) {
           return 'Urgent';
         }
-        if (numValue < thresholds.minTemp + 2 || numValue > thresholds.maxTemp - 2) {
-          return 'Concern';
-        }
-        return 'Optimal';
+        return 'Good';
         
       case 'humidity':
-        if (numValue < thresholds.minHumidity || numValue > thresholds.maxHumidity) {
-          return 'Urgent';
+        // Good if within range, Urgent if outside
+        // Pinning mode: 90-95%, Normal mode: 80-85%
+        debugPrint('📊 Humidity Status Text Check:');
+        debugPrint('   Current Mode: $currentMode');
+        debugPrint('   Sensor Value: $numValue%');
+        if (currentMode == CultivationMode.pinning) {
+          debugPrint('   Expected Range: 90-95%');
+          if (numValue >= 90.0 && numValue <= 95.0) {
+            debugPrint('   Result: Good ✅');
+            return 'Good';
+          }
+        } else {
+          // Normal mode
+          debugPrint('   Expected Range: 80-85%');
+          if (numValue >= 80.0 && numValue <= 85.0) {
+            debugPrint('   Result: Good ✅');
+            return 'Good';
+          }
         }
-        if (numValue < thresholds.minHumidity + 3 || numValue > thresholds.maxHumidity - 3) {
-          return 'Concern';
-        }
-        return 'Optimal';
+        debugPrint('   Result: Urgent ⚠️');
+        return 'Urgent';
         
       case 'light':
         final lightValue = numValue;
-        if (lightValue < thresholds.minLight || lightValue > thresholds.maxLight) {
-          return 'Urgent';
+        if (lightValue >= 100) {
+          return 'Good';
         }
-        if (lightValue < thresholds.minLight + 50 || lightValue > thresholds.maxLight - 50) {
-          return 'Concern';
-        }
-        return 'Optimal';
+        return 'Urgent';
         
       case 'water':
-        if (numValue < 30) return 'Urgent';
-        if (numValue < 40) return 'Concern';
-        return 'Good';
+        if (numValue >= 30) {
+          return 'Good';
+        }
+        return 'Urgent';
         
       default:
         return 'Unknown';

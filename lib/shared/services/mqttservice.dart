@@ -151,14 +151,14 @@ class MqttService extends ChangeNotifier {
           dataUpdated = true;
           debugPrint('🌫️ CO2 level updated: $co2Level ppm');
         }
-      } else if (topic == 'devices/$deviceId/sensors/moisture') {
+      } else if (topic == 'devices/$deviceId/sensors/moisture' || topic == 'devices/$deviceId/sensors/water_level') {
         final result = _parseJsonPayload(message);
         final newMoisture = result['value'];
         if (newMoisture != null && newMoisture != moisture) {
           moisture = newMoisture;
           moistureTimestamp = result['timestamp'];
           dataUpdated = true;
-          debugPrint('🌱 Moisture updated: $moisture%');
+          debugPrint('💧 Water Level/Moisture updated: $moisture%');
         }
       } else if (topic == 'devices/$deviceId/status') {
         if (message != deviceStatus) {
@@ -245,7 +245,7 @@ class MqttService extends ChangeNotifier {
       'deviceId': deviceId,
       'deviceName': 'ESP32 Device $deviceId',
       'location': 'Unknown',
-      'capabilities': ['temperature', 'humidity', 'lights', 'moisture'],
+      'capabilities': ['temperature', 'humidity', 'lights', 'moisture', 'water_level'],
       'firmware': 'v1.0.0',
       'lastSeen': DateTime.now().toIso8601String(),
       'metadata': {

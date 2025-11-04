@@ -24,6 +24,8 @@ import 'features/device_management/presentation/viewmodels/deviceManager.dart';
 import 'features/device_management/presentation/viewmodels/device_view_model.dart';
 import 'features/notifications/presentation/pages/notification.dart';
 import 'features/dashboard/presentation/pages/overview.dart';
+import 'features/dashboard/presentation/services/mode_controller_service.dart';
+import 'features/dashboard/presentation/models/mushroom_phase.dart';
 import 'features/registration/presentation/pages/registerOne.dart';
 
 void main() async {
@@ -426,13 +428,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 return GestureDetector(
                   onTap: () async {
                     // Trigger text-to-speech on tap
-                    await TextToSpeech.speak("Device ${device['name']} is ${device['status']} in ${device['cultivationPhase'] ?? 'unknown'} phase");
+                    await TextToSpeech.speak("Device ${device['name']} is ${device['status']}");
                   },
                   child: TentCard(
                     icon: Icons.eco,
                     status: device['status'],
                     name: device['name'],
-                    cultivationPhase: device['cultivationPhase'] ?? 'Spawn Run',
+                    deviceId: device['id'],
                     onDoubleTap: () {
                       Navigator.push(
                         context,
@@ -462,33 +464,63 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class TentCard extends StatelessWidget {
+class TentCard extends StatefulWidget {
   final IconData icon;
   final String status;
   final String name;
+  final String deviceId;
   final VoidCallback onDoubleTap;
-  final String cultivationPhase;
 
   const TentCard({
     Key? key,
     required this.icon,
     required this.status,
     required this.name,
+    required this.deviceId,
     required this.onDoubleTap,
-    required this.cultivationPhase
   }) : super(key: key);
+
+  @override
+  State<TentCard> createState() => _TentCardState();
+}
+
+class _TentCardState extends State<TentCard> {
+  late ModeControllerService _modeController;
+
+  @override
+  void initState() {
+    super.initState();
+    _modeController = ModeControllerService(deviceId: widget.deviceId);
+    _modeController.addListener(_onModeChanged);
+  }
+
+  void _onModeChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    _modeController.removeListener(_onModeChanged);
+    // Don't dispose singleton
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     var mediaQuery = MediaQuery.of(context);
     final theme = Theme.of(context);
+    final currentMode = _modeController.currentMode;
+    final modeName = currentMode == CultivationMode.pinning ? 'Pinning' : 'Normal';
+    final modeIcon = currentMode == CultivationMode.pinning ? '🍄' : '🌱';
 
     // Define icon and color based on the status
     IconData statusIcon;
     Color statusIconColor;
     Color cardColor;
 
-    switch (status) {
+    switch (widget.status) {
       case 'online':
         statusIcon = Icons.wifi;
         statusIconColor = Colors.green;
@@ -508,10 +540,10 @@ class TentCard extends StatelessWidget {
     }
 
     return Semantics(
-      label: 'Device $name is $status in $cultivationPhase phase',
+      label: 'Device ${widget.name} is ${widget.status}, Mode: $modeName',
       hint: 'Double tap to view device details',
       child: GestureDetector(
-        onDoubleTap: onDoubleTap,
+        onDoubleTap: widget.onDoubleTap,
         child: Container(
           width: mediaQuery.size.width * 0.46,
           height: mediaQuery.size.width * 0.46,
@@ -559,7 +591,7 @@ class TentCard extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
-                    name,
+                    widget.name,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
@@ -596,31 +628,32 @@ class TentCard extends StatelessWidget {
                 ),
               ),
               
-              // Cultivation phase indicator
-              if (cultivationPhase.isNotEmpty)
-                Positioned(
-                  bottom: 12,
-                  left: 12,
-                  right: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(12),
+              // Mode indicator at bottom
+              Positioned(
+                bottom: 12,
+                left: 12,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '$modeIcon $modeName',
+                    style: TextStyle(
+                      fontSize: mediaQuery.size.width * 0.03,
+                      fontWeight: FontWeight.w600,
+                      color: currentMode == CultivationMode.pinning 
+                          ? Colors.orange[700] 
+                          : Colors.green[700],
                     ),
-                    child: Text(
-                      cultivationPhase,
-                      style: TextStyle(
-                        fontSize: mediaQuery.size.width * 0.03,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.blueGrey[700],
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+              ),
             ],
           ),
         ),

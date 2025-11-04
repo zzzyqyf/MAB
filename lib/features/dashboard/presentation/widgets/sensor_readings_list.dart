@@ -11,109 +11,77 @@ import '../../../../shared/services/TextToSpeech.dart';
 // Project imports
 import '../../../device_management/presentation/widgets/TempVsTimeGraph.dart';
 import '../../../device_management/presentation/widgets/HumVsTimeGraph.dart';
-import '../../../device_management/presentation/widgets/LightVsTimeGraph.dart';
 import '../../../device_management/presentation/widgets/MoistureVsTimeGraph.dart';
 
 // Widget imports
 import 'sensor_reading_card.dart';
 
-// Model imports
-import '../models/mushroom_phase.dart';
+// Service imports
 import '../services/sensor_status_service.dart';
+import '../services/mode_controller_service.dart';
 
-class SensorReadingsList extends StatelessWidget {
+class SensorReadingsList extends StatefulWidget {
   final String deviceId;
   final Map<String, dynamic> sensorData;
-  final MushroomPhase currentPhase;
 
   const SensorReadingsList({
     Key? key,
     required this.deviceId,
     required this.sensorData,
-    required this.currentPhase,
   }) : super(key: key);
 
   @override
+  State<SensorReadingsList> createState() => _SensorReadingsListState();
+}
+
+class _SensorReadingsListState extends State<SensorReadingsList> {
+  late ModeControllerService _modeController;
+
+  @override
+  void initState() {
+    super.initState();
+    _modeController = ModeControllerService(deviceId: widget.deviceId);
+    _modeController.addListener(_onModeChanged);
+  }
+
+  void _onModeChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    _modeController.removeListener(_onModeChanged);
+    // Don't dispose singleton - it's shared across widgets
+    // _modeController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    debugPrint('🎨 UI: Building SensorReadingsList for $deviceId');
-    debugPrint('📊 UI: Current sensor data: $sensorData');
+    debugPrint('🎨 UI: Building SensorReadingsList for ${widget.deviceId}');
+    debugPrint('📊 UI: Current sensor data: ${widget.sensorData}');
+    debugPrint('🔧 UI: Current mode: ${_modeController.currentMode}');
     
-    final sensorStatusService = SensorStatusService(currentPhase);
+    final sensorStatusService = SensorStatusService(_modeController.currentMode);
 
     return Column(
       children: [
         SensorReadingCard(
           title: 'Humidity',
-          value: _formatValue(sensorData['humidity'], 1),
+          value: _formatValue(widget.sensorData['humidity'], 1),
           unit: '%',
           icon: Icons.water_drop,
           iconColor: AppColors.humidity,
-          status: sensorStatusService.getSensorStatusText('humidity', sensorData['humidity']),
-          statusColor: sensorStatusService.getSensorStatusColor('humidity', sensorData['humidity']),
+          status: sensorStatusService.getSensorStatusText('humidity', widget.sensorData['humidity']),
+          statusColor: sensorStatusService.getSensorStatusColor('humidity', widget.sensorData['humidity']),
           onDoubleTap: () {
             TextToSpeech.speak('Opening Humidity details');
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => HumVsTimeGraph(deviceId: deviceId),
-              ),
-            );
-          },
-        ),
-        SizedBox(height: AppDimensions.spacing12),
-        SensorReadingCard(
-          title: 'Light Intensity',
-          value: _formatValue(sensorData['lightState'], 0),
-          unit: 'lux',
-          icon: Icons.lightbulb_outline,
-          iconColor: AppColors.lightIntensity,
-          status: sensorStatusService.getSensorStatusText('light', sensorData['lightState']),
-          statusColor: sensorStatusService.getSensorStatusColor('light', sensorData['lightState']),
-          onDoubleTap: () {
-            TextToSpeech.speak('Opening Light Intensity details');
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LightVsTimeGraph(deviceId: deviceId),
-              ),
-            );
-          },
-        ),
-        SizedBox(height: AppDimensions.spacing12),
-        SensorReadingCard(
-          title: 'Blue Light Intensity',
-          value: _formatValue(sensorData['blueLightState'], 0),
-          unit: 'lux',
-          icon: Icons.wb_sunny,
-          iconColor: Colors.blue,
-          status: sensorStatusService.getSensorStatusText('bluelight', sensorData['blueLightState']),
-          statusColor: sensorStatusService.getSensorStatusColor('bluelight', sensorData['blueLightState']),
-          onDoubleTap: () {
-            TextToSpeech.speak('Opening Blue Light Intensity details');
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LightVsTimeGraph(deviceId: deviceId),
-              ),
-            );
-          },
-        ),
-        SizedBox(height: AppDimensions.spacing12),
-        SensorReadingCard(
-          title: 'CO2 Level',
-          value: _formatValue(sensorData['co2Level'], 0),
-          unit: 'ppm',
-          icon: FontAwesomeIcons.smog,
-          iconColor: Colors.grey[600]!,
-          status: sensorStatusService.getSensorStatusText('co2', sensorData['co2Level']),
-          statusColor: sensorStatusService.getSensorStatusColor('co2', sensorData['co2Level']),
-          onDoubleTap: () {
-            TextToSpeech.speak('Opening CO2 Level details');
-            // TODO: Create CO2VsTimeGraph when needed
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => LightVsTimeGraph(deviceId: deviceId), // Temporary placeholder
+                builder: (context) => HumVsTimeGraph(deviceId: widget.deviceId),
               ),
             );
           },
@@ -121,18 +89,18 @@ class SensorReadingsList extends StatelessWidget {
         SizedBox(height: AppDimensions.spacing12),
         SensorReadingCard(
           title: 'Temperature',
-          value: _formatValue(sensorData['temperature'], 1),
+          value: _formatValue(widget.sensorData['temperature'], 1),
           unit: '°C',
           icon: FontAwesomeIcons.temperatureFull,
-          iconColor: _getTemperatureColor(sensorData['temperature']),
-          status: sensorStatusService.getSensorStatusText('temperature', sensorData['temperature']),
-          statusColor: sensorStatusService.getSensorStatusColor('temperature', sensorData['temperature']),
+          iconColor: _getTemperatureColor(widget.sensorData['temperature']),
+          status: sensorStatusService.getSensorStatusText('temperature', widget.sensorData['temperature']),
+          statusColor: sensorStatusService.getSensorStatusColor('temperature', widget.sensorData['temperature']),
           onDoubleTap: () {
             TextToSpeech.speak('Opening Temperature details');
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => TempVsTimeGraph(deviceId: deviceId),
+                builder: (context) => TempVsTimeGraph(deviceId: widget.deviceId),
               ),
             );
           },
@@ -140,18 +108,18 @@ class SensorReadingsList extends StatelessWidget {
         SizedBox(height: AppDimensions.spacing12),
         SensorReadingCard(
           title: 'Water Level',
-          value: _formatValue(sensorData['moisture'], 1),
+          value: _formatValue(widget.sensorData['moisture'], 1),
           unit: '%',
           icon: Icons.water_sharp,
           iconColor: AppColors.waterLevel,
-          status: sensorStatusService.getSensorStatusText('water', sensorData['moisture']),
-          statusColor: sensorStatusService.getSensorStatusColor('water', sensorData['moisture']),
+          status: sensorStatusService.getSensorStatusText('water', widget.sensorData['moisture']),
+          statusColor: sensorStatusService.getSensorStatusColor('water', widget.sensorData['moisture']),
           onDoubleTap: () {
             TextToSpeech.speak('Opening Water Level details');
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => MoistureVsTimeGraph(deviceId: deviceId),
+                builder: (context) => MoistureVsTimeGraph(deviceId: widget.deviceId),
               ),
             );
           },
