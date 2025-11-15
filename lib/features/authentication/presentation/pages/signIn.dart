@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 // Project imports
 import '../../../../shared/services/TextToSpeech.dart';
 import '../../../../shared/widgets/buttom.dart';
+import '../../../../main.dart';
 import 'sinUp.dart';
 
 class LoginWidget extends StatefulWidget {
@@ -52,8 +53,12 @@ class _LoginWidgetState extends State<LoginWidget> {
 
         TextToSpeech.speak('Login successful. Welcome back!');
 
-        // Navigate to the home screen - Firebase auth state will handle the redirect
-        // No need to manually navigate, AuthWrapper will detect the logged-in user
+        // Navigate to the home screen explicitly
+        if (!mounted) return;
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const MyHomePage(title: 'PlantCare Hubs')),
+          (route) => false, // Remove all previous routes
+        );
         
       } on FirebaseAuthException catch (e) {
         // Close loading dialog if it's open

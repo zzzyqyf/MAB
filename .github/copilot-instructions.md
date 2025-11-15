@@ -102,7 +102,11 @@ flutter build apk --release
 Use an MQTT client to publish test data:
 ```bash
 # Install mosquitto clients
-mosquitto_pub -h broker.mqtt.cool -t "devices/ESP32_001/sensors/temperature" \
+# For the secure broker with authentication:
+mosquitto_pub -h api.milloserver.uk -p 8883 \
+  -u zhangyifei -P 123456 \
+  --capath /etc/ssl/certs \
+  -t "devices/ESP32_001/sensors/temperature" \
   -m '{"value": 25.5, "timestamp": 1234567890}'
 ```
 
@@ -170,7 +174,7 @@ Two cultivation modes with automatic environmental control:
 
 **Hardware**: ESP32 DevKit v1 with DHT22 (GPIO 4), LDR (GPIO 32), moisture sensor (GPIO 33)  
 **WiFi**: 2.4GHz only, credentials in Arduino code  
-**Broker**: broker.mqtt.cool:1883 (public, no auth)  
+**Broker**: api.milloserver.uk:8883 (private, TLS, auth: zhangyifei/123456)  
 **Data Rate**: Publishes every 5 seconds  
 **Code Location**: Expected in `hardware/esp32_sensor_code/` (currently empty - Arduino .ino files)
 

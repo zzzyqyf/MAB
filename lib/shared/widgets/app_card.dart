@@ -218,11 +218,8 @@ class DeviceCard extends StatelessWidget {
       case 'online':
         return AppColors.online;
       case 'offline':
-        return AppColors.offline;
-      case 'connecting':
-        return AppColors.connecting;
       default:
-        return AppColors.errorStatus;
+        return AppColors.offline;
     }
   }
 

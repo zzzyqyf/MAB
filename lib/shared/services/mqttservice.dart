@@ -20,6 +20,8 @@ class MqttService extends ChangeNotifier {
   double? co2Level;
   double? moisture;
   String? deviceStatus;
+  String? mode; // Current mode: 'n' (normal) or 'p' (pinning)
+  int? countdownSeconds; // Remaining time in pinning mode
 
   // Sensor timestamps (ESP32 timestamps when available)
   int? temperatureTimestamp;
@@ -34,6 +36,7 @@ class MqttService extends ChangeNotifier {
   final Map<String, DateTime> _lastReceivedTimestamps = {};
   Timer? _dataCheckTimer;
   bool _isDisposed = false;
+  String? _lastReportedStatus; // Track last reported status to avoid spam
 
   MqttService({
     required this.deviceId,
@@ -105,15 +108,82 @@ class MqttService extends ChangeNotifier {
     try {
       bool dataUpdated = false;
       
-      // Parse device-specific sensor topics with JSON timestamp support
-      if (topic == 'devices/$deviceId/sensors/temperature') {
+      // Handle new unified sensor topic: topic/{deviceId} with payload [humidity,light,temp,water,mode]
+      if (topic == 'topic/$deviceId') {
+        final parsed = _parseUnifiedSensorData(message);
+        if (parsed != null) {
+          // Update all sensor values from unified payload
+          if (parsed['humidity'] != null && parsed['humidity'] != humidity) {
+            humidity = parsed['humidity'];
+            humidityTimestamp = DateTime.now().millisecondsSinceEpoch;
+            dataUpdated = true;
+            debugPrint('💧 Humidity updated: $humidity%');
+          }
+          if (parsed['light'] != null && parsed['light']?.toInt() != lightState) {
+            lightState = parsed['light']?.toInt();
+            lightTimestamp = DateTime.now().millisecondsSinceEpoch;
+            dataUpdated = true;
+            debugPrint('💡 Light updated: $lightState');
+          }
+          if (parsed['temperature'] != null && parsed['temperature'] != temperature) {
+            temperature = parsed['temperature'];
+            temperatureTimestamp = DateTime.now().millisecondsSinceEpoch;
+            dataUpdated = true;
+            debugPrint('🌡️ Temperature updated: $temperature°C');
+          }
+          if (parsed['water'] != null && parsed['water'] != moisture) {
+            moisture = parsed['water'];
+            moistureTimestamp = DateTime.now().millisecondsSinceEpoch;
+            dataUpdated = true;
+            debugPrint('💧 Water Level updated: $moisture%');
+          }
+          if (parsed['mode'] != null && parsed['mode'] != mode) {
+            mode = parsed['mode'] as String?;
+            dataUpdated = true;
+            debugPrint('🌿 Mode updated: ${mode == "p" ? "PINNING" : "NORMAL"}');
+          }
+        }
+      }
+      // Handle alarm topic: topic/{deviceId}/alarm
+      else if (topic == 'topic/$deviceId/alarm') {
+        debugPrint('🚨 ALARM received for device $deviceId: $message');
+        // Alarm will be handled by Cloud Function -> FCM
+        // This is just for logging/debugging
+      }
+      // Handle countdown topic: topic/{deviceId}/countdown
+      else if (topic == 'topic/$deviceId/countdown') {
+        final newCountdown = int.tryParse(message);
+        if (newCountdown != null && newCountdown != countdownSeconds) {
+          countdownSeconds = newCountdown;
+          dataUpdated = true;
+          debugPrint('⏱️ Countdown updated: $countdownSeconds seconds (${(countdownSeconds! / 3600).toStringAsFixed(1)}h)');
+        }
+      }
+      // Handle mode status: topic/{deviceId}/mode/status
+      else if (topic == 'topic/$deviceId/mode/status') {
+        if (message != mode) {
+          mode = message;
+          dataUpdated = true;
+          debugPrint('🌿 Mode status updated: ${mode == "p" ? "PINNING" : "NORMAL"}');
+        }
+      }
+      // Handle device status: topic/{deviceId}/status
+      else if (topic == 'topic/$deviceId/status') {
+        if (message != deviceStatus) {
+          deviceStatus = message;
+          debugPrint('� Device status updated: $deviceStatus');
+          onDeviceConnectionStatusChange(deviceId, message);
+        }
+      }
+      // Legacy topics for backward compatibility (will be removed)
+      else if (topic == 'devices/$deviceId/sensors/temperature') {
         final result = _parseJsonPayload(message);
         final newTemp = result['value'];
         if (newTemp != null && newTemp != temperature) {
           temperature = newTemp;
           temperatureTimestamp = result['timestamp'];
           dataUpdated = true;
-          debugPrint('🌡️ Temperature updated: $temperature°C');
+          debugPrint('🌡️ Temperature updated (legacy): $temperature°C');
         }
       } else if (topic == 'devices/$deviceId/sensors/humidity') {
         final result = _parseJsonPayload(message);
@@ -122,34 +192,7 @@ class MqttService extends ChangeNotifier {
           humidity = newHumidity;
           humidityTimestamp = result['timestamp'];
           dataUpdated = true;
-          debugPrint('💧 Humidity updated: $humidity%');
-        }
-      } else if (topic == 'devices/$deviceId/sensors/lights') {
-        final result = _parseJsonPayload(message);
-        final newLightState = result['value']?.toInt();
-        if (newLightState != null && newLightState != lightState) {
-          lightState = newLightState;
-          lightTimestamp = result['timestamp'];
-          dataUpdated = true;
-          debugPrint('💡 Light state updated: $lightState');
-        }
-      } else if (topic == 'devices/$deviceId/sensors/bluelight') {
-        final result = _parseJsonPayload(message);
-        final newBlueLightState = result['value']?.toInt();
-        if (newBlueLightState != null && newBlueLightState != blueLightState) {
-          blueLightState = newBlueLightState;
-          blueLightTimestamp = result['timestamp'];
-          dataUpdated = true;
-          debugPrint('🔵 Blue light updated: $blueLightState');
-        }
-      } else if (topic == 'devices/$deviceId/sensors/co2') {
-        final result = _parseJsonPayload(message);
-        final newCo2Level = result['value'];
-        if (newCo2Level != null && newCo2Level != co2Level) {
-          co2Level = newCo2Level;
-          co2Timestamp = result['timestamp'];
-          dataUpdated = true;
-          debugPrint('🌫️ CO2 level updated: $co2Level ppm');
+          debugPrint('💧 Humidity updated (legacy): $humidity%');
         }
       } else if (topic == 'devices/$deviceId/sensors/moisture' || topic == 'devices/$deviceId/sensors/water_level') {
         final result = _parseJsonPayload(message);
@@ -158,24 +201,20 @@ class MqttService extends ChangeNotifier {
           moisture = newMoisture;
           moistureTimestamp = result['timestamp'];
           dataUpdated = true;
-          debugPrint('💧 Water Level/Moisture updated: $moisture%');
+          debugPrint('💧 Water Level/Moisture updated (legacy): $moisture%');
         }
       } else if (topic == 'devices/$deviceId/status') {
         if (message != deviceStatus) {
           deviceStatus = message;
-          debugPrint('📶 Device status updated: $deviceStatus');
+          debugPrint('📶 Device status updated (legacy): $deviceStatus');
           onDeviceConnectionStatusChange(deviceId, message);
         }
-      } else if (topic == 'devices/$deviceId/info') {
-        _handleDeviceInfo(message);
-      } else if (topic == 'devices/$deviceId/config/response') {
-        _handleConfigResponse(message);
       }
 
       if (dataUpdated) {
         _lastReceivedTimestamps[deviceId] = DateTime.now();
         
-        debugPrint('📊 Triggering callback with: temp=$temperature, humidity=$humidity, light=$lightState, bluelight=$blueLightState, co2=$co2Level, moisture=$moisture');
+        debugPrint('📊 Triggering callback with: temp=$temperature, humidity=$humidity, light=$lightState, moisture=$moisture, mode=$mode');
         onDataReceived(
           temperature, humidity, lightState, blueLightState, co2Level, moisture,
           temperatureTimestamp, humidityTimestamp, lightTimestamp, blueLightTimestamp, co2Timestamp, moistureTimestamp
@@ -191,23 +230,34 @@ class MqttService extends ChangeNotifier {
     }
   }
 
-  void _handleDeviceInfo(String message) {
+  /// Parse unified sensor data format: [humidity,light,temp,water,mode]
+  /// Example: "[72.2,47.0,28.8,60.5,n]" or "[72,47,28,60]" (defaults mode to 'n')
+  Map<String, dynamic>? _parseUnifiedSensorData(String payload) {
     try {
-      final info = jsonDecode(message) as Map<String, dynamic>;
-      debugPrint('MqttService: Device $deviceId info updated: $info');
-      // Handle device info updates (firmware version, capabilities, etc.)
+      // Remove brackets and split by comma
+      String cleaned = payload.trim();
+      if (cleaned.startsWith('[')) cleaned = cleaned.substring(1);
+      if (cleaned.endsWith(']')) cleaned = cleaned.substring(0, cleaned.length - 1);
+      
+      List<String> parts = cleaned.split(',');
+      if (parts.length < 4) {
+        debugPrint('⚠️ Invalid unified sensor data format: expected at least 4 values, got ${parts.length}');
+        return null;
+      }
+      
+      // If only 4 values provided, default mode to 'n' (normal mode)
+      String mode = parts.length >= 5 ? parts[4].trim() : 'n';
+      
+      return {
+        'humidity': double.tryParse(parts[0].trim()),
+        'light': double.tryParse(parts[1].trim()),
+        'temperature': double.tryParse(parts[2].trim()),
+        'water': double.tryParse(parts[3].trim()),
+        'mode': mode, // 'n' or 'p' as String, defaults to 'n' if not provided
+      };
     } catch (e) {
-      debugPrint('MqttService: Error parsing device info: $e');
-    }
-  }
-
-  void _handleConfigResponse(String message) {
-    try {
-      final config = jsonDecode(message) as Map<String, dynamic>;
-      debugPrint('MqttService: Device $deviceId config response: $config');
-      // Handle configuration responses
-    } catch (e) {
-      debugPrint('MqttService: Error parsing config response: $e');
+      debugPrint('❌ Error parsing unified sensor data: $e');
+      return null;
     }
   }
 
@@ -224,11 +274,17 @@ class MqttService extends ChangeNotifier {
 
   void _checkDataReception() {
     final isDataReceivedFlag = isDataReceived(deviceId);
-    final status = isDataReceivedFlag ? 'online' : 'offline';
-    onDeviceConnectionStatusChange(deviceId, status);
+    final newStatus = isDataReceivedFlag ? 'online' : 'offline';
     
-    if (!_isDisposed) {
-      notifyListeners();
+    // Only update and notify if status actually changed
+    if (_lastReportedStatus != newStatus) {
+      debugPrint('🔍 MqttService: Device $deviceId status changed: $_lastReportedStatus → $newStatus (last data: ${_getTimeSinceLastData()}s ago)');
+      _lastReportedStatus = newStatus;
+      onDeviceConnectionStatusChange(deviceId, newStatus);
+      
+      if (!_isDisposed) {
+        notifyListeners();
+      }
     }
   }
 
@@ -237,6 +293,13 @@ class MqttService extends ChangeNotifier {
     final lastDataTime = _lastReceivedTimestamps[deviceId];
     if (lastDataTime == null) return false;
     return DateTime.now().difference(lastDataTime).inSeconds <= 60; // 1 minute timeout
+  }
+  
+  /// Helper to get time since last data for debugging
+  int _getTimeSinceLastData() {
+    final lastDataTime = _lastReceivedTimestamps[deviceId];
+    if (lastDataTime == null) return -1;
+    return DateTime.now().difference(lastDataTime).inSeconds;
   }
 
   /// Announce this device to the system

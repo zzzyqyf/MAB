@@ -1,11 +1,16 @@
 import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // Import for kReleaseMode
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+import 'package:audio_session/audio_session.dart'; // For audio session management
 
 // Core imports
 import 'core/constants/firebase_options.dart';
@@ -17,6 +22,10 @@ import 'injection_container.dart' as di;
 // Shared imports
 import 'shared/widgets/Navbar.dart';
 import 'shared/services/TextToSpeech.dart';
+import 'shared/services/mqtt_manager.dart';
+import 'shared/services/fcm_service.dart';
+import 'shared/services/alarm_service.dart';
+import 'shared/widgets/alarm_snooze_dialog.dart';
 
 // Feature imports
 import 'features/profile/presentation/pages/ProfilePage.dart';
@@ -28,75 +37,204 @@ import 'features/dashboard/presentation/services/mode_controller_service.dart';
 import 'features/dashboard/presentation/models/mushroom_phase.dart';
 import 'features/registration/presentation/pages/registerOne.dart';
 import 'features/authentication/presentation/widgets/auth_wrapper.dart';
+import 'debug_page.dart'; // Debug Firebase page
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  debugPrint('🚀 App starting... Release mode: $kReleaseMode');
   
-  // Initialize notifications
-  await initNotifications();
-  
-  // Initialize Hive
-  await Hive.initFlutter();
-  
-  // Initialize dependency injection
-  await di.init();
-  await di.initializeHive();
+  try {
+    // 🔊 Force audio session activation for alarm sounds
+    // This fixes audio issues on MIUI, Huawei, Vivo, and other Android variants
+    debugPrint('🔊 Configuring audio session...');
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.music());
+      await session.setActive(true);
+      debugPrint('✅ Audio session activated successfully');
+    } catch (e) {
+      debugPrint('⚠️ Audio session configuration failed: $e');
+      // Continue even if audio session fails - it's not critical for app startup
+    }
+    
+    // Initialize Firebase
+    debugPrint('📱 Initializing Firebase...');
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    debugPrint('✅ Firebase initialized');
+    
+    // Initialize notifications
+    debugPrint('🔔 Initializing notifications...');
+    await initNotifications();
+    debugPrint('✅ Notifications initialized');
+    
+    // Initialize timezone for scheduled notifications
+    debugPrint('🌍 Initializing timezone...');
+    tz.initializeTimeZones();
+    tz.setLocalLocation(tz.getLocation('Asia/Hong_Kong')); // Adjust to your timezone
+    debugPrint('✅ Timezone initialized');
+    
+    // Initialize Hive
+    debugPrint('💾 Initializing Hive...');
+    await Hive.initFlutter();
+    debugPrint('✅ Hive initialized');
+    
+    // Initialize dependency injection
+    debugPrint('🔧 Initializing dependency injection...');
+    await di.init();
+    await di.initializeHive();
+    debugPrint('✅ Dependency injection initialized');
+    
+    // Initialize MQTT Manager
+    debugPrint('📡 Initializing MQTT Manager...');
+    await MqttManager.instance.initialize();
+    debugPrint('✅ MQTT Manager initialized');
+    
+    // Initialize FCM Service
+    debugPrint('🔔 Initializing FCM Service...');
+    await FcmService().initialize();
+    debugPrint('✅ FCM Service initialized');
+    
+    // Initialize TTS with audio configuration
+    debugPrint('🗣️ Initializing Text-to-Speech...');
+    await TextToSpeech.initialize();
+    debugPrint('✅ TTS initialized');
+    
+    debugPrint('🎉 All initialization complete, launching app...');
 
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => DeviceManager()),
-        ChangeNotifierProvider(create: (_) => di.sl<DeviceViewModel>()),
-      ],
-      child: MaterialApp(
-        // Enhanced accessibility configuration
-        home: const MyApp(),
-        debugShowCheckedModeBanner: false,
-        builder: (context, child) {
-          // Apply accessibility scaling and high contrast
-          return MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              textScaleFactor: 1.2, // Larger text for better readability
-              boldText: true, // Bolder text for high contrast
-            ),
-            child: DevicePreview.appBuilder(context, child),
-          );
-        },
+    runApp(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => DeviceManager()),
+          ChangeNotifierProvider(create: (_) => di.sl<DeviceViewModel>()),
+        ],
+        child: const MyApp(),
       ),
-    ),
-  );
+    );
+  } catch (e, stackTrace) {
+    debugPrint('❌ CRITICAL ERROR during initialization: $e');
+    debugPrint('📚 Stack trace: $stackTrace');
+    // Show error screen
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          backgroundColor: Colors.red,
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error, color: Colors.white, size: 80),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Initialization Error',
+                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    e.toString(),
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 
+
+// Global navigator key for accessing context from anywhere
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 Future<void> initNotifications() async {
- const AndroidInitializationSettings initializationSettingsAndroid =
-    AndroidInitializationSettings('app_icon'); // match your custom icon name  // App icon
+  debugPrint('🔔 Setting up local notifications with action handlers...');
+  
+  // Use '@mipmap/ic_launcher' instead of 'app_icon' - this always exists
+  const AndroidInitializationSettings initializationSettingsAndroid =
+    AndroidInitializationSettings('@mipmap/ic_launcher'); // Default launcher icon
 
   const InitializationSettings initializationSettings =
       InitializationSettings(android: initializationSettingsAndroid);
 
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    onDidReceiveNotificationResponse: (NotificationResponse response) async {
+      debugPrint('📲 Notification action received: ${response.actionId}');
+      
+      if (response.actionId == 'dismiss') {
+        // User clicked "Dismiss" button
+        await AlarmService().dismissAlarm();
+      } else if (response.actionId == 'snooze') {
+        // User clicked "Snooze" button
+        final context = navigatorKey.currentContext;
+        if (context != null && context.mounted) {
+          // App is in foreground - show picker dialog
+          showDialog(
+            context: context,
+            builder: (context) => const AlarmSnoozeDialog(),
+          );
+        } else {
+          // App is in background - use default 5 minutes
+          await AlarmService().snoozeAlarm(const Duration(minutes: 5));
+        }
+      }
+    },
+  );
+  
+  debugPrint('✅ Notification action handlers set up');
 }
 
 
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
+  
   @override
   Widget build(BuildContext context) {
+    // Set context for FCM service to show dialogs
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        FcmService().setContext(context);
+      }
+    });
+    
     return MaterialApp(
+      navigatorKey: navigatorKey, // Add global navigator key
       useInheritedMediaQuery: true, // Enable media query for responsiveness
-      builder: DevicePreview.appBuilder, // Wraps the app with DevicePreview
-      locale: DevicePreview.locale(context), // Supports locale changes in DevicePreview
+      builder: (context, child) {
+        // Apply accessibility scaling
+        final mediaQueryData = MediaQuery.of(context).copyWith(
+          textScaleFactor: 1.2, // Larger text for better readability
+          boldText: true, // Bolder text for high contrast
+        );
+        
+        // Only use DevicePreview in debug mode
+        if (kReleaseMode) {
+          // Release mode: no DevicePreview
+          return MediaQuery(
+            data: mediaQueryData,
+            child: child!,
+          );
+        } else {
+          // Debug mode: with DevicePreview
+          return MediaQuery(
+            data: mediaQueryData,
+            child: DevicePreview.appBuilder(context, child),
+          );
+        }
+      },
+      locale: kReleaseMode ? null : DevicePreview.locale(context), // Only in debug mode
       title: 'PlantCare Hubs',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
@@ -116,132 +254,101 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
 
+  bool _devicesLoaded = false; // Track if devices have been loaded
+  String? _lastLoadedUserId; // Track which user's devices were loaded
+
+  @override
+  void initState() {
+    super.initState();
+    print('🚀🚀🚀 MyHomePage initState called!');
+    // Load user's devices from Firestore when home page initializes
+    _loadUserDevices();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Check if user changed and reload devices if needed
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId != null && currentUserId != _lastLoadedUserId) {
+      print('🔄🔄🔄 User changed, reloading devices for new user: $currentUserId');
+      _devicesLoaded = false; // Reset flag to allow reload
+      _loadUserDevices();
+    }
+  }
+  
+  /// Force reload devices from Firestore (useful after adding/removing devices)
+  Future<void> _reloadDevices() async {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) return;
+    
+    try {
+      print('🔄 MyHomePage: Force reloading devices from Firestore...');
+      final deviceManager = Provider.of<DeviceManager>(context, listen: false);
+      await deviceManager.loadUserDevicesFromFirestore();
+      print('✅ MyHomePage: Devices reloaded successfully');
+    } catch (e) {
+      print('❌ MyHomePage: Error reloading devices: $e');
+    }
+  }
+
+  /// Load devices for the logged-in user from Firestore
+  Future<void> _loadUserDevices() async {
+    if (_devicesLoaded) return; // Prevent multiple loads for same user
+    
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) {
+      print('❌❌❌ No user logged in');
+      return;
+    }
+    
+    try {
+      print('🔄🔄🔄 MyHomePage: Starting to load user devices from Firestore...');
+      final deviceManager = Provider.of<DeviceManager>(context, listen: false);
+      await deviceManager.loadUserDevicesFromFirestore();
+      print('✅✅✅ MyHomePage: Devices loaded successfully');
+      
+      setState(() {
+        _devicesLoaded = true;
+        _lastLoadedUserId = currentUserId; // Remember which user's devices we loaded
+      });
+    } catch (e) {
+      print('❌❌❌ MyHomePage: Error loading user devices: $e');
+      setState(() {
+        _devicesLoaded = true; // Still mark as loaded to avoid infinite retry
+        _lastLoadedUserId = currentUserId;
+      });
+    }
+  }
 
   
   int _selectedIndex = 0; // Track the selected index
-
-  // Define pages to navigate to
-  final List<Widget> _pages = [
-    const ProfilePage(),      // Index 0: Profile
-    const Register2Widget(),  // Index 1: Add Device (Registration)
-    const NotificationPage(), // Index 2: Notifications
-  ];
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index; // Update selected index
     });
+    
+    // Create fresh widget instances on navigation
+    Widget destination;
+    switch (index) {
+      case 0:
+        destination = const ProfilePage();
+        break;
+      case 1:
+        destination = const Register2Widget();
+        break;
+      case 2:
+        destination = const NotificationPage(); // Fresh instance!
+        break;
+      default:
+        return; // Invalid index
+    }
+    
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => _pages[index]),
+      MaterialPageRoute(builder: (context) => destination),
     );
-  }
-
-  // Function to report device issues via TTS
-  void _reportDeviceIssues(DeviceManager deviceManager) async {
-    if (deviceManager.devices.isEmpty) {
-      await TextToSpeech.speak('No devices connected. Please add a device first.');
-      return;
-    }
-
-    List<String> issues = [];
-    Map<String, dynamic> sensorData = deviceManager.sensorData;
-    
-    for (var device in deviceManager.devices) {
-      String deviceName = device['name'] ?? 'Unknown Device';
-      String deviceId = device['id'] ?? '';
-      String status = device['status'] ?? 'unknown';
-      
-      // Check device connectivity status
-      if (status.toLowerCase() == 'offline') {
-        issues.add('$deviceName is offline and not responding');
-      } else if (status.toLowerCase() == 'error') {
-        issues.add('$deviceName has a connection error');
-      }
-      
-      // Check sensor data for this device if available
-      if (sensorData.containsKey(deviceId)) {
-        var deviceSensorData = sensorData[deviceId];
-        
-        // Check temperature (threshold is 32.0°C)
-        if (deviceSensorData['temperature'] != null) {
-          double temp = deviceSensorData['temperature'].toDouble();
-          if (temp > 32.0) {
-            issues.add('$deviceName has high temperature at ${temp.toStringAsFixed(1)} degrees Celsius');
-          } else if (temp < 10.0) {
-            issues.add('$deviceName has low temperature at ${temp.toStringAsFixed(1)} degrees Celsius');
-          }
-        }
-        
-        // Check humidity (threshold is 20.0%)
-        if (deviceSensorData['humidity'] != null) {
-          double humidity = deviceSensorData['humidity'].toDouble();
-          if (humidity < 20.0) {
-            issues.add('$deviceName has low humidity at ${humidity.toStringAsFixed(1)} percent');
-          } else if (humidity > 90.0) {
-            issues.add('$deviceName has very high humidity at ${humidity.toStringAsFixed(1)} percent');
-          }
-        }
-        
-        // Check light intensity (assuming threshold around 100-1000 lux)
-        if (deviceSensorData['light'] != null) {
-          double light = deviceSensorData['light'].toDouble();
-          if (light < 100.0) {
-            issues.add('$deviceName has insufficient light intensity at ${light.toStringAsFixed(0)} lux');
-          }
-        }
-        
-        // Check soil moisture or water level (assuming 0-100% range)
-        if (deviceSensorData['moisture'] != null) {
-          double moisture = deviceSensorData['moisture'].toDouble();
-          if (moisture < 30.0) {
-            issues.add('$deviceName has low soil moisture at ${moisture.toStringAsFixed(1)} percent');
-          }
-        }
-        
-        // Check for any sensor that hasn't been updated recently
-        if (deviceSensorData['lastUpdate'] != null) {
-          DateTime lastUpdate = DateTime.parse(deviceSensorData['lastUpdate']);
-          Duration timeSinceUpdate = DateTime.now().difference(lastUpdate);
-          if (timeSinceUpdate.inMinutes > 30) {
-            issues.add('$deviceName has not sent sensor data for ${timeSinceUpdate.inMinutes} minutes');
-          }
-        }
-      } else if (status.toLowerCase() == 'online') {
-        // Device is online but no sensor data available
-        issues.add('$deviceName is online but not sending sensor data');
-      }
-    }
-    
-    // Report the issues
-    if (issues.isEmpty) {
-      await TextToSpeech.speak('All devices are working normally. No issues detected.');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ All devices are working normally!'),
-          duration: Duration(seconds: 2),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      String report = 'Device issues report: ';
-      report += issues.join('. ');
-      await TextToSpeech.speak(report);
-      
-      // Also show a snackbar with the issues
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Found ${issues.length} issue${issues.length != 1 ? 's' : ''}. Check TTS for details.'),
-          duration: const Duration(seconds: 4),
-          backgroundColor: Colors.orange,
-          action: SnackBarAction(
-            label: 'Repeat',
-            onPressed: () => TextToSpeech.speak(report),
-            textColor: Colors.white,
-          ),
-        ),
-      );
-    }
   }
 
   @override
@@ -249,8 +356,36 @@ class _MyHomePageState extends State<MyHomePage> {
     final mediaQuery = MediaQuery.of(context); // Get screen dimensions
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const DebugFirebasePage()),
+          );
+        },
+        backgroundColor: Colors.orange,
+        child: const Icon(Icons.bug_report, color: Colors.white),
+        tooltip: 'Firebase Debug',
+      ),
       body: Stack(
         children: [
+          // Show loading indicator while devices are being loaded from Firestore
+          if (!_devicesLoaded)
+            const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    'Loading your devices...',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
+          // Show main content after devices are loaded
+          if (_devicesLoaded) ...[
           Align(
             alignment: const AlignmentDirectional(0, -0.9),
             child: Padding(
@@ -338,19 +473,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      _reportDeviceIssues(deviceManager);
-                    },
-                    icon: const Icon(Icons.report_problem_outlined),
-                    label: const Text('Report'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      backgroundColor: Theme.of(context).colorScheme.secondary,
-                      foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                    ),
-                  ),
                 ],
               ),
             ],
@@ -390,71 +512,64 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ],
                 ),
-                // Report Issues Button
-                ElevatedButton.icon(
-                  onPressed: () {
-                    _reportDeviceIssues(deviceManager);
-                  },
-                  icon: Icon(
-                    Icons.report_problem_outlined,
-                    size: 18,
-                  ),
-                  label: const Text('Report'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    backgroundColor: Theme.of(context).colorScheme.secondary,
-                    foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                    textStyle: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
               ],
             ),
           ),
           
-          // Devices grid
+          // Devices grid with pull-to-refresh
           Expanded(
-            child: GridView.builder(
-              padding: EdgeInsets.zero,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: spacing,
-                mainAxisSpacing: spacing,
-                childAspectRatio: 1.0,
-              ),
-              itemCount: deviceManager.devices.length,
-              itemBuilder: (context, index) {
-                var device = deviceManager.devices[index];
-                print("Device ${device['name']} - Sensor Status: ${device['sensorStatus']}");
+            child: RefreshIndicator(
+              onRefresh: _reloadDevices,
+              child: GridView.builder(
+                padding: EdgeInsets.zero,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: spacing,
+                  mainAxisSpacing: spacing,
+                  childAspectRatio: 1.0,
+                ),
+                itemCount: deviceManager.devices.length,
+                itemBuilder: (context, index) {
+                  var device = deviceManager.devices[index];
+                  final mqttId = device['mqttId'] ?? device['name'] ?? device['id'];
+                  // Use sensorStatus to determine online/offline - simpler and more accurate
+                  final sensorStatus = device['sensorStatus'] ?? 'no data';
+                  final isOnline = sensorStatus == 'online';
+                  final displayStatus = isOnline ? 'online' : 'offline';
+                  
+                  print("Device ${device['name']} - Sensor Status: $sensorStatus -> Display: $displayStatus");
 
-                return GestureDetector(
-                  onTap: () async {
-                    // Trigger text-to-speech on tap
-                    await TextToSpeech.speak("Device ${device['name']} is ${device['status']}");
-                  },
-                  child: TentCard(
-                    icon: Icons.eco,
-                    status: device['status'],
-                    name: device['name'],
-                    deviceId: device['id'],
-                    onDoubleTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => TentPage(id: device['id'], name: device['name']),
-                        ),
-                      );
+                  return GestureDetector(
+                    onTap: () async {
+                      // Trigger text-to-speech on tap
+                      await TextToSpeech.speak("Device ${device['name']} is $displayStatus");
                     },
-                  ),
-                );
-              },
+                    child: TentCard(
+                      icon: Icons.eco,
+                      status: displayStatus,
+                      name: device['name'],
+                      deviceId: device['id'],
+                      mqttId: mqttId,
+                      onDoubleTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TentPage(id: device['id'], name: device['name']),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],
       );
     },
   ),
-),
-
+), // Close Padding widget
+], // Close the if (_devicesLoaded) list
         ],
       ),
       bottomNavigationBar: CustomNavbar(
@@ -470,6 +585,7 @@ class TentCard extends StatefulWidget {
   final String status;
   final String name;
   final String deviceId;
+  final String mqttId;
   final VoidCallback onDoubleTap;
 
   const TentCard({
@@ -478,6 +594,7 @@ class TentCard extends StatefulWidget {
     required this.status,
     required this.name,
     required this.deviceId,
+    required this.mqttId,
     required this.onDoubleTap,
   }) : super(key: key);
 
@@ -491,7 +608,8 @@ class _TentCardState extends State<TentCard> {
   @override
   void initState() {
     super.initState();
-    _modeController = ModeControllerService(deviceId: widget.deviceId);
+    // Use mqttId for ModeController instead of Firebase deviceId
+    _modeController = ModeControllerService(deviceId: widget.mqttId);
     _modeController.addListener(_onModeChanged);
   }
 
@@ -516,28 +634,20 @@ class _TentCardState extends State<TentCard> {
     final modeName = currentMode == CultivationMode.pinning ? 'Pinning' : 'Normal';
     final modeIcon = currentMode == CultivationMode.pinning ? '🍄' : '🌱';
 
-    // Define icon and color based on the status
+    // Define icon and color based on the status (only online/offline)
     IconData statusIcon;
     Color statusIconColor;
     Color cardColor;
 
-    switch (widget.status) {
-      case 'online':
-        statusIcon = Icons.wifi;
-        statusIconColor = Colors.green;
-        cardColor = theme.colorScheme.primary;
-        break;
-      case 'offline':
-        statusIcon = Icons.signal_wifi_off;
-        statusIconColor = Colors.red;
-        cardColor = theme.colorScheme.error;
-        break;
-      case 'connecting':
-      default:
-        statusIcon = Icons.sync;
-        statusIconColor = Colors.orange;
-        cardColor = theme.colorScheme.tertiary;
-        break;
+    if (widget.status == 'online') {
+      statusIcon = Icons.wifi;
+      statusIconColor = Colors.green;
+      cardColor = theme.colorScheme.primary;
+    } else {
+      // Default to offline for any non-online status
+      statusIcon = Icons.signal_wifi_off;
+      statusIconColor = Colors.red;
+      cardColor = theme.colorScheme.error;
     }
 
     return Semantics(

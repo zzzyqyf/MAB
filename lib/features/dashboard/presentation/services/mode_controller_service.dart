@@ -65,7 +65,35 @@ class ModeControllerService extends ChangeNotifier {
   
   /// Handle incoming MQTT messages
   void _handleActuatorStatus(String topic, String message) {
-    if (topic == 'devices/$deviceId/actuators/status') {
+    // Handle new countdown topic: topic/{deviceId}/countdown
+    if (topic == 'topic/$deviceId/countdown') {
+      try {
+        final remainingSecs = int.tryParse(message);
+        if (remainingSecs != null) {
+          _pinningEndTime = DateTime.now().add(Duration(seconds: remainingSecs));
+          debugPrint('⏱️ Countdown received from ESP32: $remainingSecs seconds (${formattedRemainingTime})');
+          notifyListeners();
+        }
+      } catch (e) {
+        debugPrint('Error parsing countdown: $e');
+      }
+    }
+    // Handle new mode status topic: topic/{deviceId}/mode/status
+    else if (topic == 'topic/$deviceId/mode/status') {
+      if (message == 'p') {
+        _currentMode = CultivationMode.pinning;
+        _isPinningActive = true;
+        debugPrint('🌿 Mode updated to PINNING from ESP32');
+      } else if (message == 'n') {
+        _currentMode = CultivationMode.normal;
+        _isPinningActive = false;
+        _pinningEndTime = null;
+        debugPrint('🌿 Mode updated to NORMAL from ESP32');
+      }
+      notifyListeners();
+    }
+    // Legacy topic support (will be removed)
+    else if (topic == 'devices/$deviceId/actuators/status') {
       try {
         final data = jsonDecode(message) as Map<String, dynamic>;
         
@@ -110,12 +138,15 @@ class ModeControllerService extends ChangeNotifier {
   
   /// Set cultivation mode to Normal
   Future<void> setNormalMode() async {
-    final payload = jsonEncode({
-      'mode': 'normal',
-    });
+    debugPrint('🚀 ModeController: setNormalMode() called for $deviceId');
+    
+    // New topic format: topic/{deviceId}/mode/set with payload: "n,0"
+    final payload = 'n,0';
+    
+    debugPrint('📤 ModeController: Publishing to topic/$deviceId/mode/set with payload: $payload');
     
     await MqttManager.instance.publishMessage(
-      'devices/$deviceId/mode/set',
+      'topic/$deviceId/mode/set',
       payload,
     );
     
@@ -130,15 +161,17 @@ class ModeControllerService extends ChangeNotifier {
   
   /// Set cultivation mode to Pinning with timer
   Future<void> setPinningMode(int durationHours) async {
+    debugPrint('🚀 ModeController: setPinningMode() called for $deviceId with duration: $durationHours hours');
+    
     final durationSeconds = durationHours * 3600;
     
-    final payload = jsonEncode({
-      'mode': 'pinning',
-      'duration': durationSeconds,
-    });
+    // New topic format: topic/{deviceId}/mode/set with payload: "p,3600"
+    final payload = 'p,$durationSeconds';
+    
+    debugPrint('📤 ModeController: Publishing to topic/$deviceId/mode/set with payload: $payload');
     
     await MqttManager.instance.publishMessage(
-      'devices/$deviceId/mode/set',
+      'topic/$deviceId/mode/set',
       payload,
     );
     
@@ -165,6 +198,16 @@ class ModeControllerService extends ChangeNotifier {
       _instances.remove(deviceId);
       debugPrint('🗑️ ModeControllerService: Removed singleton instance for $deviceId');
     }
+  }
+  
+  /// Clear all singleton instances (call when user logs out)
+  static void clearAllInstances() {
+    debugPrint('🧹 ModeControllerService: Clearing all singleton instances');
+    for (var deviceId in _instances.keys.toList()) {
+      removeInstance(deviceId);
+    }
+    _instances.clear();
+    debugPrint('✅ ModeControllerService: All instances cleared');
   }
   
   @override

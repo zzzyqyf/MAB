@@ -1,1 +1,37 @@
-{"flutter":{"platforms":{"dart":{"lib/firebase_options.dart":{"projectId":"mab-fyp","configurations":{"android":"1:243707806517:android:eae273e6b6c7ebe1f1427c","web":"1:243707806517:web:e3a5ad58592ec6d4f1427c"}}},"android":{"default":{"projectId":"mab-fyp","appId":"1:243707806517:android:eae273e6b6c7ebe1f1427c","fileOutput":"android/app/google-services.json"}}}}}
+{
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ],
+  "flutter": {
+    "platforms": {
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "mab-fyp",
+          "configurations": {
+            "android": "1:243707806517:android:eae273e6b6c7ebe1f1427c",
+            "web": "1:243707806517:web:e3a5ad58592ec6d4f1427c"
+          }
+        }
+      },
+      "android": {
+        "default": {
+          "projectId": "mab-fyp",
+          "appId": "1:243707806517:android:eae273e6b6c7ebe1f1427c",
+          "fileOutput": "android/app/google-services.json"
+        }
+      }
+    }
+  }
+}

@@ -6,12 +6,12 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_dimensions.dart';
 
 // Shared imports
-import '../../../../shared/services/TextToSpeech.dart';
+// import '../../../../shared/services/TextToSpeech.dart'; // 🚫 Disabled temporarily
 
 // Project imports
-import '../../../device_management/presentation/widgets/TempVsTimeGraph.dart';
-import '../../../device_management/presentation/widgets/HumVsTimeGraph.dart';
-import '../../../device_management/presentation/widgets/MoistureVsTimeGraph.dart';
+// import '../../../device_management/presentation/widgets/TempVsTimeGraph.dart'; // 🚫 Disabled temporarily
+// import '../../../device_management/presentation/widgets/HumVsTimeGraph.dart'; // 🚫 Disabled temporarily
+// import '../../../device_management/presentation/widgets/MoistureVsTimeGraph.dart'; // 🚫 Disabled temporarily
 
 // Widget imports
 import 'sensor_reading_card.dart';
@@ -76,15 +76,16 @@ class _SensorReadingsListState extends State<SensorReadingsList> {
           iconColor: AppColors.humidity,
           status: sensorStatusService.getSensorStatusText('humidity', widget.sensorData['humidity']),
           statusColor: sensorStatusService.getSensorStatusColor('humidity', widget.sensorData['humidity']),
-          onDoubleTap: () {
-            TextToSpeech.speak('Opening Humidity details');
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => HumVsTimeGraph(deviceId: widget.deviceId),
-              ),
-            );
-          },
+          // 🚫 Humidity detail page disabled temporarily
+          // onDoubleTap: () {
+          //   TextToSpeech.speak('Opening Humidity details');
+          //   Navigator.push(
+          //     context,
+          //     MaterialPageRoute(
+          //       builder: (context) => HumVsTimeGraph(deviceId: widget.deviceId),
+          //     ),
+          //   );
+          // },
         ),
         SizedBox(height: AppDimensions.spacing12),
         SensorReadingCard(
@@ -95,15 +96,16 @@ class _SensorReadingsListState extends State<SensorReadingsList> {
           iconColor: _getTemperatureColor(widget.sensorData['temperature']),
           status: sensorStatusService.getSensorStatusText('temperature', widget.sensorData['temperature']),
           statusColor: sensorStatusService.getSensorStatusColor('temperature', widget.sensorData['temperature']),
-          onDoubleTap: () {
-            TextToSpeech.speak('Opening Temperature details');
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => TempVsTimeGraph(deviceId: widget.deviceId),
-              ),
-            );
-          },
+          // 🚫 Temperature detail page disabled temporarily
+          // onDoubleTap: () {
+          //   TextToSpeech.speak('Opening Temperature details');
+          //   Navigator.push(
+          //     context,
+          //     MaterialPageRoute(
+          //       builder: (context) => TempVsTimeGraph(deviceId: widget.deviceId),
+          //     ),
+          //   );
+          // },
         ),
         SizedBox(height: AppDimensions.spacing12),
         SensorReadingCard(
@@ -114,15 +116,16 @@ class _SensorReadingsListState extends State<SensorReadingsList> {
           iconColor: AppColors.waterLevel,
           status: sensorStatusService.getSensorStatusText('water', widget.sensorData['moisture']),
           statusColor: sensorStatusService.getSensorStatusColor('water', widget.sensorData['moisture']),
-          onDoubleTap: () {
-            TextToSpeech.speak('Opening Water Level details');
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => MoistureVsTimeGraph(deviceId: widget.deviceId),
-              ),
-            );
-          },
+          // 🚫 Water Level detail page disabled temporarily
+          // onDoubleTap: () {
+          //   TextToSpeech.speak('Opening Water Level details');
+          //   Navigator.push(
+          //     context,
+          //     MaterialPageRoute(
+          //       builder: (context) => MoistureVsTimeGraph(deviceId: widget.deviceId),
+          //     ),
+          //   );
+          // },
         ),
       ],
     );

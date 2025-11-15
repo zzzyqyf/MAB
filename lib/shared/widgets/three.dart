@@ -24,8 +24,9 @@ class RemoveDevicePage extends StatelessWidget {
             title: Text(device['name']),
             trailing: IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: () {
-                Provider.of<DeviceManager>(context, listen: false)
+              onPressed: () async {
+                // Wait for device removal to complete
+                await Provider.of<DeviceManager>(context, listen: false)
                     .removeDevice(device['id']);
               },
             ),

@@ -4,6 +4,13 @@
 
 Your ESP32 publishes sensor data and actuator status to MQTT topics. You can monitor all of this via terminal using `mosquitto_sub` and `mosquitto_pub`.
 
+**Broker Information:**
+- Host: `api.milloserver.uk`
+- Port: `8883` (TLS/SSL)
+- Username: `zhangyifei`
+- Password: `123456`
+- Certificate: Uses system CA certificates (no custom CA required)
+
 ---
 
 ## 🛠️ Installation

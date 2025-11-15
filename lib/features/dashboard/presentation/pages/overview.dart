@@ -15,6 +15,7 @@ import '../../../device_management/presentation/viewmodels/deviceManager.dart';
 import '../../../../main.dart';
 import '../../../profile/presentation/pages/ProfilePage.dart';
 import '../../../notifications/presentation/pages/notification.dart';
+import '../../../registration/presentation/pages/registerOne.dart';
 
 // Widget imports
 import '../widgets/device_header.dart';
@@ -38,16 +39,26 @@ class _TentPageState extends State<TentPage> {
   final AlarmService _alarmService = AlarmService();
   late ModeControllerService _modeController;
 
-  final List<Widget> _pages = [
-    const ProfilePage(),
-    const NotificationPage(),
-    const MyApp(),
-  ];
-
   @override
   void initState() {
     super.initState();
-    _modeController = ModeControllerService(deviceId: widget.id);
+    // Note: We'll initialize _modeController in didChangeDependencies 
+    // after we have access to DeviceManager to get mqttId
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Initialize mode controller with correct mqttId
+    final deviceManager = Provider.of<DeviceManager>(context, listen: false);
+    final device = deviceManager.devices.firstWhere(
+      (d) => d['id'] == widget.id,
+      orElse: () => <String, dynamic>{},
+    );
+    final mqttId = device['mqttId'] ?? device['name'] ?? widget.id;
+    
+    _modeController = ModeControllerService(deviceId: mqttId);
     _modeController.addListener(_checkAlarmConditions);
   }
 
@@ -69,9 +80,26 @@ class _TentPageState extends State<TentPage> {
     setState(() {
       _selectedIndex = index;
     });
+    
+    // Create fresh widget instances on navigation
+    Widget destination;
+    switch (index) {
+      case 0:
+        destination = const ProfilePage();
+        break;
+      case 1:
+        destination = const Register2Widget(); // Add Device!
+        break;
+      case 2:
+        destination = const NotificationPage(); // Notifications!
+        break;
+      default:
+        return; // Invalid index
+    }
+    
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => _pages[index]),
+      MaterialPageRoute(builder: (context) => destination),
     );
   }
 
@@ -93,10 +121,18 @@ class _TentPageState extends State<TentPage> {
       );
     }
 
+    // ✅ Get the device object to access mqttId
+    final device = deviceManager.devices.firstWhere((d) => d['id'] == widget.id);
+    final mqttId = device['mqttId'] ?? device['name'] ?? widget.id;
+
     return Consumer<DeviceManager>(
       builder: (context, deviceManager, child) {
-        // ✅ Get sensor data for this specific device
-        final sensorData = deviceManager.getSensorDataForDeviceId(widget.id);
+        // ✅ Get sensor data for this specific device using mqttId
+        debugPrint('📊 Overview: Fetching sensor data');
+        debugPrint('   widget.id (Firestore): ${widget.id}');
+        debugPrint('   mqttId (ESP32): $mqttId');
+        final sensorData = deviceManager.getSensorDataForDeviceId(mqttId);
+        debugPrint('   Retrieved sensor data: $sensorData');
         
         // Check sensor status for alarm
         final sensorStatusService = SensorStatusService(_modeController.currentMode);
@@ -198,16 +234,16 @@ class _TentPageState extends State<TentPage> {
                   
                   SizedBox(height: AppDimensions.spacing16),
                   
-                  // Sensor readings list
+                  // Sensor readings list (use mqttId for mode controller)
                   SensorReadingsList(
-                    deviceId: widget.id,
+                    deviceId: mqttId,
                     sensorData: sensorData,
                   ),
                   
                   SizedBox(height: AppDimensions.spacing32),
                   
                   // Mode selector with timer control
-                  ModeSelectorWidget(deviceId: widget.id),
+                  ModeSelectorWidget(deviceId: mqttId),
                   
                   SizedBox(height: AppDimensions.spacing16),
                 ],

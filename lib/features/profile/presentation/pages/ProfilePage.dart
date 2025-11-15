@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 
 // Project imports
 import '../../../../shared/services/TextToSpeech.dart';
 import '../../../authentication/presentation/pages/signIn.dart';
+import '../../../device_management/presentation/viewmodels/deviceManager.dart';
 import '../../../../shared/widgets/basePage.dart';
 import '../../../../shared/widgets/Navbar.dart';
 import '../../../notifications/presentation/pages/notification.dart';
@@ -70,6 +72,11 @@ class _ProfileWidgetState extends State<ProfilePage> {
           barrierDismissible: false,
           builder: (context) => const Center(child: CircularProgressIndicator()),
         );
+
+        // 🔥 Clear all device data before signing out
+        final deviceManager = Provider.of<DeviceManager>(context, listen: false);
+        await deviceManager.clearAllDevices();
+        debugPrint('✅ ProfilePage: Device data cleared');
 
         // Sign out from Firebase
         await FirebaseAuth.instance.signOut();
@@ -173,7 +180,6 @@ class _ProfileWidgetState extends State<ProfilePage> {
           children: [
             // Profile Information
             Container(
-              height: 85, // Set the fixed height of the box
               decoration: BoxDecoration(
                 color: Theme.of(context).secondaryHeaderColor,
                 boxShadow: const [
@@ -184,30 +190,32 @@ class _ProfileWidgetState extends State<ProfilePage> {
                   ),
                 ],
               ),
-          child: IntrinsicHeight(
-  child: Padding(
-    padding: const EdgeInsets.all(18),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          userName,
-          style: TextStyle(
-            fontSize: fontSizeTitle,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          userEmail,
-          style: TextStyle(
-            fontSize: fontSizeTitle * 0.8,
-          ),
-        ),
-      ],
-    ),
-  ),
-),
+              child: IntrinsicHeight(
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        userName,
+                        style: TextStyle(
+                          fontSize: fontSizeTitle,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        userEmail,
+                        style: TextStyle(
+                          fontSize: fontSizeTitle * 0.8,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           //  const SizedBox(height: 10),
 /*

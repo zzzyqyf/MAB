@@ -93,7 +93,7 @@ class _Register2WidgetState extends State<Register2Widget> {
                 // Instruction Section
                 GestureDetector(
                   onTap: () {
-                    _speakText('Go to Wifi in your Phone. Find the ESP32 Network. Connect to ESP32. Return to this screen. Click Next Button below.');
+                    _speakText('Make sure Bluetooth is enabled on your phone. Power on your ESP32 device. The device will be automatically discovered via Bluetooth. Click Next Button below to proceed with WiFi setup.');
                   },
                   child: ShaderMask(
                     shaderCallback: (bounds) => const LinearGradient(
@@ -105,10 +105,11 @@ class _Register2WidgetState extends State<Register2Widget> {
                       end: Alignment.bottomRight,
                     ).createShader(bounds),
                     child: Text(
-                      'Go to Wifi in your Phone\n\n'
-                      'Find the ESP32 Network\n'
-                      'Connect to ESP32\n\n'
-                      'Return to this screen\n\n'
+                      'Make sure Bluetooth is enabled\n'
+                      'on your phone\n\n'
+                      'Power on your ESP32 device\n\n'
+                      'The device will be automatically\n'
+                      'discovered via Bluetooth\n\n'
                       'Click Next Button below\n',
                       style: TextStyle(
                         fontWeight: FontWeight.w500,

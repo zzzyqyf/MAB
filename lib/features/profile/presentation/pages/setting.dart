@@ -9,6 +9,7 @@ import '../../../device_management/presentation/viewmodels/deviceManager.dart';
 import '../../../../main.dart';
 import 'name.dart';
 import '../../../../shared/widgets/basePage.dart';
+import '../../../../alarm_test_page.dart'; // Import alarm test page
 //import 'text_to_speech.dart'; // Assuming TTS utility is in text_to_speech.dart
 
 class TentSettingsWidget extends StatefulWidget {
@@ -46,7 +47,13 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
     final verticalSpacing = screenSize.height * 0.02;
 
     final deviceManager = Provider.of<DeviceManager>(context);
-    final disconnectionTime = deviceManager.getDisconnectionTime(widget.deviceId);
+    
+    // Get the device to access mqttId (MAC address)
+    final device = deviceManager.devices.firstWhere(
+      (d) => d['id'] == widget.deviceId,
+      orElse: () => <String, dynamic>{},
+    );
+    final mqttId = device['mqttId'] ?? 'N/A';
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -60,42 +67,50 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
         body: SafeArea(
           top: true,
           child: ListView(
-            children: [Padding(
-  padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 15.0),
+            children: [
+// MAC Address (MQTT ID) Section - Replaces both Status and Device ID
+Padding(
+  padding: EdgeInsets.fromLTRB(horizontalPadding, 20.0, horizontalPadding, 15.0),
   child: GestureDetector(
     onTap: () {
-      // Trigger TTS to read the status and disconnection time
-      TextToSpeech.speak('Status $disconnectionTime');
+      // Trigger TTS to read the MAC address
+      TextToSpeech.speak('Device MAC Address $mqttId');
     },
     child: Container(
-      height: 85,
+      height: containerHeight,
       decoration: BoxDecoration(
         color: Theme.of(context).secondaryHeaderColor,
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
             blurRadius: 5,
-            color: Color.fromARGB(52, 2, 2, 2),
+            color: Theme.of(context).cardColor,
+            offset: const Offset(0, 2),
           ),
         ],
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Status',
-              style: TextStyle(
+              'MAC Address',
+              style: GoogleFonts.outfit(
                 fontSize: fontSizeTitle,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF101213),
               ),
             ),
-            const SizedBox(height: 10),
             Text(
-              disconnectionTime,
-              style: TextStyle(
-                fontSize: fontSizeTitle,
+              mqttId,
+              style: GoogleFonts.outfit(
+                fontSize: fontSizeSubtitle,
+                color: Colors.grey[600],
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -104,56 +119,27 @@ class _TentSettingsWidgetState extends State<TentSettingsWidget> {
   ),
 ),
 
-// Device ID Section
-Padding(
-  padding: const EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-  child: GestureDetector(
-    onTap: () {
-      // Trigger TTS to read the device ID
-      TextToSpeech.speak('Device ID ${widget.deviceId}');
-    },
-    child: Container(
-      height: 85,
-      decoration: BoxDecoration(
-        color: Theme.of(context).secondaryHeaderColor,
-        boxShadow: const [
-          BoxShadow(
-            blurRadius: 5,
-            color: Color.fromARGB(52, 2, 2, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Device ID',
-              style: TextStyle(
-                fontSize: fontSizeTitle,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Text(
-                  widget.deviceId,
-                  style: TextStyle(
-                    fontSize: fontSizeSubtitle,
-                    color: Colors.grey[600],
-                  ),
+              // 🧪 TEST ALARM BUTTON (For debugging alarm sound issues)
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: SettingsItem(
+                  title: '🧪 Test Alarm Sound',
+                  subtitle: 'Debug alarm functionality',
+                  containerHeight: containerHeight,
+                  fontSizeTitle: fontSizeTitle,
+                  fontSizeSubtitle: fontSizeSubtitle,
+                  onTap: () {
+                    TextToSpeech.speak('Test Alarm Sound. Double tap to open test page.');
+                  },
+                  onDoubleTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AlarmTestPage()),
+                    );
+                  },
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  ),
-),
+              SizedBox(height: verticalSpacing),
 
               if (userRole == 'Admin')
                 Padding(
@@ -320,17 +306,48 @@ class DeletePage extends StatelessWidget {
               buttonText: 'Delete',
               padding: 16.0,
               fontSize: 18.0,
-              onPressed: () {
-                Provider.of<DeviceManager>(context, listen: false).removeDevice(id);
+              onPressed: () async {
+                // Show loading indicator
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+                
+                // Wait for device removal to complete
+                await Provider.of<DeviceManager>(context, listen: false).removeDevice(id);
+                
+                // Close loading dialog
+                Navigator.of(context).pop();
+                
+                // Navigate back to main page
                 Navigator.of(context).pop();
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => const MyApp()),
                 );
               },
-              onDoubleTap: () {
+              onDoubleTap: () async {
                 TextToSpeech.speak('Device Deleted');
-                Provider.of<DeviceManager>(context, listen: false).removeDevice(id);
+                
+                // Show loading indicator
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+                
+                // Wait for device removal to complete
+                await Provider.of<DeviceManager>(context, listen: false).removeDevice(id);
+                
+                // Close loading dialog
+                Navigator.of(context).pop();
+                
+                // Navigate back to main page
                 Navigator.of(context).pop();
                 Navigator.pushReplacement(
                   context,
@@ -344,8 +361,6 @@ class DeletePage extends StatelessWidget {
     );
   }
 }
-
-
 
 class SettingsItem extends StatelessWidget {
   final String title;

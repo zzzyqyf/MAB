@@ -178,6 +178,7 @@ class _SignUpWidgetState extends State<SignUpWidget> {
               'role': 'member',
               'createdAt': FieldValue.serverTimestamp(),
               'emailVerified': true,
+              'devices': [], // Initialize empty devices array for user
             });
 
             print('✅ User data stored in Firestore');

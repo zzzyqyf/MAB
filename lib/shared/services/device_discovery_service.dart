@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
@@ -71,8 +72,10 @@ class DeviceInfo {
 
 /// Service for discovering and managing ESP32 devices via MQTT
 class DeviceDiscoveryService extends ChangeNotifier {
-  static const String mqttBroker = 'broker.mqtt.cool';
-  static const int mqttPort = 1883;
+  static const String mqttBroker = 'api.milloserver.uk';
+  static const int mqttPort = 8883;  // Secure MQTT port
+  static const String mqttUsername = 'zhangyifei';
+  static const String mqttPassword = '123456';
   
   late MqttServerClient _client;
   final Map<String, DeviceInfo> _discoveredDevices = {};
@@ -108,21 +111,36 @@ class DeviceDiscoveryService extends ChangeNotifier {
   Future<void> _setupMqttClient() async {
     _client = MqttServerClient(mqttBroker, 'DiscoveryService_${DateTime.now().millisecondsSinceEpoch}');
     _client.port = mqttPort;
+    _client.secure = true;  // Enable secure connection
     _client.logging(on: true);
     _client.keepAlivePeriod = 30;
     _client.autoReconnect = true;
+    
+    // Configure TLS - Skip certificate verification
+    if (!kIsWeb) {
+      try {
+        final context = SecurityContext.defaultContext;
+        context.setAlpnProtocols(['mqtt'], false);
+        _client.securityContext = context;
+      } catch (e) {
+        debugPrint('DeviceDiscoveryService: SecurityContext setup warning: $e');
+      }
+    }
+    
     _client.onConnected = _onConnected;
     _client.onDisconnected = _onDisconnected;
     _client.onAutoReconnect = _onAutoReconnect;
 
     final connMessage = MqttConnectMessage()
         .withClientIdentifier('DeviceDiscovery_${DateTime.now().millisecondsSinceEpoch}')
+        .authenticateAs(mqttUsername, mqttPassword)  // Add authentication
         .startClean()
         .withWillQos(MqttQos.atLeastOnce);
     _client.connectionMessage = connMessage;
 
     try {
-      debugPrint('DeviceDiscoveryService: Connecting to MQTT broker...');
+      debugPrint('DeviceDiscoveryService: Connecting to MQTT broker $mqttBroker:$mqttPort...');
+      debugPrint('DeviceDiscoveryService: Using secure connection with authentication');
       await _client.connect();
     } catch (e) {
       debugPrint('DeviceDiscoveryService: Connection failed: $e');

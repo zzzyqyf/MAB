@@ -118,8 +118,14 @@ class _ModeSelectorWidgetState extends State<ModeSelectorWidget> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
+                    debugPrint('========================================');
+                    debugPrint('🔴🔴🔴 ACTIVATE BUTTON PRESSED!!! 🔴🔴🔴');
+                    debugPrint('✅ Timer Dialog: Activate button pressed with $selectedHours hours');
+                    debugPrint('========================================');
                     Navigator.of(context).pop();
+                    debugPrint('🚀 Timer Dialog: Calling setPinningMode($selectedHours)');
                     await _modeController.setPinningMode(selectedHours);
+                    debugPrint('✅ Timer Dialog: setPinningMode() completed');
                     await TextToSpeech.speak(
                       'Pinning mode activated for $selectedHours ${selectedHours == 1 ? "hour" : "hours"}',
                     );
@@ -193,11 +199,14 @@ class _ModeSelectorWidgetState extends State<ModeSelectorWidget> {
                 Switch(
                   value: isPinning,
                   onChanged: (bool value) async {
+                    debugPrint('🎛️ Mode Switch: toggled to ${value ? "PINNING" : "NORMAL"}');
                     if (value) {
                       // Switching to Pinning - show timer picker
+                      debugPrint('🎛️ Mode Switch: Showing timer picker for pinning mode');
                       await _showTimerPicker();
                     } else {
                       // Switching to Normal
+                      debugPrint('🎛️ Mode Switch: Setting to Normal mode');
                       await _modeController.setNormalMode();
                       await TextToSpeech.speak('Switched to Normal mode');
                     }
@@ -220,28 +229,34 @@ class _ModeSelectorWidgetState extends State<ModeSelectorWidget> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.timer,
-                          color: Colors.orange[700],
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Time Remaining:',
-                          style: TextStyle(
+                    Flexible(
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.timer,
                             color: Colors.orange[700],
-                            fontWeight: FontWeight.w500,
+                            size: 18,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              'Time Remaining:',
+                              style: TextStyle(
+                                color: Colors.orange[700],
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       remainingTime,
                       style: TextStyle(
                         color: Colors.orange[900],
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         fontFamily: 'monospace',
                       ),
@@ -263,7 +278,8 @@ class _ModeSelectorWidgetState extends State<ModeSelectorWidget> {
             
             const SizedBox(height: 16),
             
-            // Actuator status
+            // ⏸️ Actuator status - Temporarily disabled for alarm system implementation
+            /* 
             Text(
               'Actuator Status',
               style: theme.textTheme.titleSmall?.copyWith(
@@ -297,6 +313,7 @@ class _ModeSelectorWidgetState extends State<ModeSelectorWidget> {
                 ),
               ],
             ),
+            */
           ],
         ),
       ),
@@ -313,9 +330,14 @@ class _ModeSelectorWidgetState extends State<ModeSelectorWidget> {
       children: [
         Icon(icon, size: 20, color: color),
         const SizedBox(width: 8),
-        Text(
-          '$label:',
-          style: const TextStyle(fontWeight: FontWeight.w500),
+        Flexible(
+          child: Text(
+            '$label:',
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
         ),
         const SizedBox(width: 8),
         Text(
@@ -329,6 +351,7 @@ class _ModeSelectorWidgetState extends State<ModeSelectorWidget> {
     );
   }
 
+  /* ⏸️ Temporarily disabled actuator chip builder
   Widget _buildActuatorChip(String label, bool isOn, IconData icon) {
     return Chip(
       avatar: Icon(
@@ -346,4 +369,5 @@ class _ModeSelectorWidgetState extends State<ModeSelectorWidget> {
       backgroundColor: isOn ? Colors.green : Colors.grey[200],
     );
   }
+  */
 }

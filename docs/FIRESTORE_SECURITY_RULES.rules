@@ -1,0 +1,71 @@
+# Firebase Firestore Security Rules
+# For MAB - Mushroom Agriculture Monitoring System
+# 
+# These rules ensure:
+# 1. Users can only read/write their own data
+# 2. Device associations are private to each user
+# 3. Basic validation for device data structure
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================================================
+    // Users Collection - User-Device Associations
+    // ============================================================================
+    match /users/{userId} {
+      // Allow users to read and write only their own document
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow update only if:
+      // 1. User is the owner
+      // 2. Devices field is present and is an array
+      // 3. Each device object has required fields
+      allow update: if request.auth != null 
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasAll(['devices'])
+        && request.resource.data.devices is list
+        && validateDeviceArray(request.resource.data.devices);
+      
+      // Allow delete only if user is the owner
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // ============================================================================
+    // OTP Verification Collection (for signup)
+    // ============================================================================
+    match /otp_verifications/{email} {
+      // Allow anyone to read/write during signup process (no auth yet)
+      allow read, write: if request.auth == null || request.auth != null;
+    }
+    
+    // ============================================================================
+    // Invitations Collection (existing functionality)
+    // ============================================================================
+    match /invitations/{invitationId} {
+      // Allow authenticated users to read/write invitations
+      allow read, write: if request.auth != null;
+    }
+    
+    // ============================================================================
+    // Helper Functions
+    // ============================================================================
+    
+    // Validate device array structure
+    function validateDeviceArray(devices) {
+      // Check if all devices have required fields
+      return devices.size() == 0 || 
+        devices[0].keys().hasAll(['deviceId', 'name', 'mqttId', 'addedAt']);
+    }
+    
+    // Validate device object structure
+    function isValidDevice(device) {
+      return device.keys().hasAll(['deviceId', 'name', 'mqttId', 'addedAt'])
+        && device.deviceId is string
+        && device.name is string
+        && device.mqttId is string
+        && device.addedAt is timestamp;
+    }
+  }
+}

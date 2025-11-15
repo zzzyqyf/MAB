@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 
 /// Centralized MQTT connection manager for handling multiple devices
 class MqttManager extends ChangeNotifier {
-  static const String mqttBroker = 'broker.mqtt.cool';
-  static const int mqttPort = 1883;
+  static const String mqttBroker = 'api.milloserver.uk';
+  static const int mqttPort = 8883;  // Secure MQTT port
+  static const String mqttUsername = 'zhangyifei';
+  static const String mqttPassword = '123456';
   
   static MqttManager? _instance;
   static MqttManager get instance {
@@ -72,17 +75,18 @@ class MqttManager extends ChangeNotifier {
       
       // ✅ Configure for non-web platforms only
       _client.port = mqttPort;
-      _client.secure = false; // Explicitly disable SSL
+      _client.secure = true;  // Enable secure connection for port 8883
       _client.logging(on: debugMode);
       _client.keepAlivePeriod = 30;
       _client.autoReconnect = true;
       _client.connectTimeoutPeriod = 5000;
       
-      // ✅ Prevent SecurityContext issues on web
+      // ✅ Configure TLS - Skip certificate verification (no custom CA)
       try {
-        // Only set security context on non-web platforms
         if (!kIsWeb) {
-          // Don't explicitly set securityContext, let it use defaults for insecure connections
+          final context = SecurityContext.defaultContext;
+          context.setAlpnProtocols(['mqtt'], false);
+          _client.securityContext = context;
         }
       } catch (e) {
         debugPrint('⚠️ MqttManager: SecurityContext warning (this is normal on web): $e');
@@ -95,6 +99,7 @@ class MqttManager extends ChangeNotifier {
 
       final connMessage = MqttConnectMessage()
           .withClientIdentifier(clientId)
+          .authenticateAs(mqttUsername, mqttPassword)  // Add authentication
           .startClean()
           .withWillQos(MqttQos.atLeastOnce);
       _client.connectionMessage = connMessage;
@@ -103,6 +108,7 @@ class MqttManager extends ChangeNotifier {
       debugPrint('📋 MqttManager: Client secure = ${_client.secure}');
       debugPrint('📋 MqttManager: Client ID = $clientId');
       debugPrint('📋 MqttManager: Platform = ${kIsWeb ? 'Web' : 'Native'}');
+      debugPrint('📋 MqttManager: MQTT User = $mqttUsername');
       
       // ✅ Connect with error handling
       await _client.connect();
@@ -326,16 +332,17 @@ class MqttManager extends ChangeNotifier {
     if (!_isConnected) return;
     
     final topics = [
+      // New unified topics
+      'topic/$deviceId',                    // Main sensor data
+      'topic/$deviceId/alarm',              // Alarm events
+      'topic/$deviceId/countdown',          // Pinning countdown
+      'topic/$deviceId/mode/status',        // Mode status
+      'topic/$deviceId/status',             // Device online/offline
+      // Legacy topics for backward compatibility (temporary)
       'devices/$deviceId/sensors/temperature',
       'devices/$deviceId/sensors/humidity',
-      'devices/$deviceId/sensors/lights',
-      'devices/$deviceId/sensors/bluelight',
-      'devices/$deviceId/sensors/co2',
-      'devices/$deviceId/sensors/moisture',
       'devices/$deviceId/sensors/water_level',
       'devices/$deviceId/status',
-      'devices/$deviceId/info',
-      'devices/$deviceId/config/response',
     ];
     
     for (final topic in topics) {

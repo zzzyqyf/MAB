@@ -6,6 +6,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../../../../shared/services/mqttservice.dart';
 import '../../../../shared/services/mqtt_manager.dart';
 import '../../../../shared/services/device_discovery_service.dart';
+import '../../../../shared/services/user_device_service.dart';
 import '../../../dashboard/presentation/services/mode_controller_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -137,13 +138,89 @@ class DeviceManager extends ChangeNotifier {
         // Use MQTT ID if available, otherwise fall back to device name or ID
         final mqttId = device['mqttId'] ?? device['name'] ?? deviceId;
         _initMqtt(mqttId);
-        _startPeriodicStatusCheck(mqttId);
+        // ❌ Removed redundant periodic check - MqttService handles this
+        // _startPeriodicStatusCheck(mqttId);
       }
     }
     await Hive.deleteBoxFromDisk('sensorData');
     await Hive.initFlutter();
     _sensorBox = await Hive.openBox<Map<String, dynamic>>('sensorData');
     notifyListeners();
+  }
+
+  /// 🔥 Load user-specific devices from Firestore
+  /// This should be called when user logs in or app starts with authenticated user
+  Future<void> loadUserDevicesFromFirestore() async {
+    try {
+      print('📥📥📥 DeviceManager: Loading user devices from Firestore...');
+      
+      // 🔥 CRITICAL: Clear all existing device data first to prevent duplicates
+      print('🧹 DeviceManager: Clearing existing devices before reload...');
+      
+      // Dispose all MQTT services
+      for (var mqttService in _mqttServices.values) {
+        mqttService.dispose();
+      }
+      _mqttServices.clear();
+      
+      // Cancel all timers
+      for (var timer in _inactivityTimers.values) {
+        timer.cancel();
+      }
+      _inactivityTimers.clear();
+      
+      // Clear sensor data
+      _sensorData.clear();
+      
+      // Clear Hive device box
+      await _deviceBox?.clear();
+      print('   ✅ Existing devices cleared');
+      
+      // Get devices from Firestore for current user
+      final firestoreDevices = await UserDeviceService.getUserDevices();
+      
+      if (firestoreDevices.isEmpty) {
+        print('ℹ️ℹ️ℹ️ DeviceManager: No devices found in Firestore for this user');
+        notifyListeners(); // Notify even if empty to update UI
+        return;
+      }
+      
+      print('✅✅✅ DeviceManager: Found ${firestoreDevices.length} devices in Firestore');
+      
+      // Add each Firestore device to local Hive storage and initialize MQTT
+      for (var firestoreDevice in firestoreDevices) {
+        // Fix: Firestore uses 'deviceId' but we use 'id' in Hive
+        final deviceId = firestoreDevice['deviceId'] as String? ?? firestoreDevice['id'] as String;
+        final deviceName = firestoreDevice['name'] as String;
+        final mqttId = firestoreDevice['mqttId'] as String?;
+        
+        print('   Loading device: $deviceId ($deviceName) with MQTT ID: $mqttId');
+        
+        final device = {
+          'id': deviceId,
+          'name': deviceName,
+          'mqttId': mqttId ?? deviceName,
+          'status': 'offline',  // Start as offline, will change to online when data is received
+          'sensorStatus': 'offline',
+          'disconnectionTimeResult': 'not connected yet!',
+        };
+        
+        // Store in Hive
+        await _deviceBox?.put(deviceId, device);
+        
+        // Initialize MQTT for this device
+        _initMqtt(mqttId ?? deviceName);
+        
+        // No need for a timer - MqttService will handle status updates
+        // The device will automatically become 'online' when it receives data
+      }
+      
+      print('✅✅✅ DeviceManager: All user devices loaded and initialized');
+      notifyListeners();
+      
+    } catch (e) {
+      print('❌❌❌ DeviceManager: Error loading user devices from Firestore: $e');
+    }
   }
 
   List<Map<String, dynamic>> getSensorDataForDevice(String deviceId) {
@@ -282,37 +359,34 @@ class DeviceManager extends ChangeNotifier {
     }
   }
 
-  void _startPeriodicStatusCheck(String deviceId) {
-    _inactivityTimers[deviceId] = Timer.periodic(const Duration(seconds: 30), (timer) {
-      final mqttService = _mqttServices[deviceId];
-      if (mqttService == null) {
-        timer.cancel();
-        return;
-      }
-      
-      final isDataReceived = mqttService.isDataReceived(deviceId);
-      // Only log when status changes to reduce spam
-      if (!isDataReceived) {
-        final device = _deviceBox?.get(deviceId);
-        if (device != null && device['status'] != 'offline') {
-          debugPrint("Device $deviceId went offline - no data received");
-          updateDeviceStatus(deviceId, 'offline');
-          displayCriticalStatus("no data", deviceId);
-          _updateDisconnectionTime(deviceId, DateTime.now(), 'offline');
-        }
-      }
-    });
-  }
+  // ❌ REMOVED: Redundant periodic status check - MqttService already handles this with _dataCheckTimer
+  // void _startPeriodicStatusCheck(String deviceId) { ... }
 
   void updateDeviceStatus(String deviceId, String newStatus) {
-    final device = _deviceBox?.get(deviceId);
-    if (device != null) {
-      device['status'] = newStatus;
-      if (newStatus == 'offline') {
-        device['sensorStatus'] = 'no data';
+    // deviceId here is actually mqttId from MQTT messages
+    // This is now simplified - we only update sensorStatus since that's what drives the UI
+    if (_deviceBox != null && _deviceBox!.isOpen) {
+      for (var key in _deviceBox!.keys) {
+        final device = Map<String, dynamic>.from(_deviceBox!.get(key) as Map);
+        
+        // Check if this device matches the mqttId
+        if (device['mqttId'] == deviceId || device['id'] == deviceId || device['name'] == deviceId) {
+          final oldSensorStatus = device['sensorStatus'];
+          
+          // Determine new sensor status based on newStatus
+          final newSensorStatus = newStatus == 'offline' ? 'offline' : 'online';
+          
+          // Only update if status actually changed
+          if (oldSensorStatus != newSensorStatus) {
+            device['sensorStatus'] = newSensorStatus;
+            _deviceBox?.put(key, device);
+            debugPrint('✅ DeviceManager: Updated sensorStatus for ${device['name']} (mqttId: $deviceId): $oldSensorStatus → $newSensorStatus');
+            notifyListeners();
+          }
+          return;
+        }
       }
-      _deviceBox?.put(deviceId, device);
-      deviceIsActive(deviceId);
+      debugPrint('⚠️ DeviceManager: Could not find device with mqttId: $deviceId');
     }
   }
 
@@ -323,9 +397,8 @@ class DeviceManager extends ChangeNotifier {
   bool deviceIsActive(String deviceId) {
     final device = _deviceBox?.get(deviceId);
     if (device != null) {
-      final status = device['status'];
       final sensorStatus = device['sensorStatus'];
-      final isActive = status == 'online' && sensorStatus != 'no data';
+      final isActive = sensorStatus == 'online';
       _isDeviceActive = isActive;
       notifyListeners();
       return isActive;
@@ -403,10 +476,11 @@ class DeviceManager extends ChangeNotifier {
   void displayCriticalStatus(String sensorType, String deviceId) {
     final device = _deviceBox?.get(deviceId);
     if (device != null) {
-      if (device['sensorStatus'] != sensorType) {
-        device['sensorStatus'] = sensorType;
+      // Use a separate field for sensor health status, not connection status
+      if (device['sensorHealthStatus'] != sensorType) {
+        device['sensorHealthStatus'] = sensorType;
         _deviceBox?.put(deviceId, device);
-        print("Sensor status updated to $sensorType for device $deviceId.");
+        print("Sensor health status updated to $sensorType for device $deviceId.");
         frequency(sensorType, deviceId);
         notifyListeners();
       }
@@ -558,53 +632,132 @@ class DeviceManager extends ChangeNotifier {
     addDeviceWithId(deviceId, name, deviceMqttId);
   }
 
-  void addDeviceWithId(String deviceId, String name, [String? mqttId]) {
+  Future<bool> addDeviceWithId(String deviceId, String name, [String? mqttId]) async {
     final deviceMqttId = mqttId ?? name; // Use provided MQTT ID or fallback to name
+    
+    // 🔥 Check if device already exists in Hive (prevent duplicates)
+    if (_deviceBox?.containsKey(deviceId) == true) {
+      debugPrint('⚠️ DeviceManager: Device $deviceId already exists in Hive, skipping');
+      return false;
+    }
+    
+    // Check if MQTT ID already exists (same physical device)
+    final existingDevices = _deviceBox?.values.toList() ?? [];
+    for (var device in existingDevices) {
+      if (device['mqttId'] == deviceMqttId) {
+        debugPrint('⚠️ DeviceManager: Device with MQTT ID $deviceMqttId already exists, skipping');
+        return false;
+      }
+    }
+    
     final device = {
       'id': deviceId,
       'name': name.isEmpty ? 'Unnamed' : name,
       'mqttId': deviceMqttId, // Store the MQTT identifier
-      'status': 'connecting',
-      'sensorStatus': '',
+      'status': 'offline',  // Start as offline, will change to online when data is received
+      'sensorStatus': 'offline',
       'disconnectionTimeResult': 'not connected yet!',
     };
-    _deviceBox?.put(deviceId, device);
-    notifyListeners();
+    
+    // 🔥 Add device to Firestore FIRST
+    debugPrint('� DeviceManager: Adding device to Firestore first...');
+    final success = await UserDeviceService.addDeviceToUser(
+      deviceId: deviceId,
+      deviceName: name.isEmpty ? 'Unnamed' : name,
+      mqttId: deviceMqttId,
+    );
+    
+    if (success) {
+      debugPrint('✅ DeviceManager: Device $deviceId added to Firestore');
+      // Only add to Hive if Firestore succeeded
+      _deviceBox?.put(deviceId, device);
+      debugPrint('✅ DeviceManager: Device $deviceId added to Hive');
+      
+      notifyListeners();
 
-    // Use MQTT ID for MQTT communication, but keep deviceId for internal management
-    _initMqtt(deviceMqttId);
+      // Use MQTT ID for MQTT communication, but keep deviceId for internal management
+      _initMqtt(deviceMqttId);
 
-    Timer(Duration(seconds: 5), () {
-      if (_deviceBox?.get(deviceId)?['status'] == 'connecting') {
-        updateDeviceStatus(deviceId, 'offline');
-      }
-      if (_deviceBox?.get(deviceId)?['status'] == 'offline') {
-        displayCriticalStatus("no data", deviceId);
-      }
-      _startPeriodicStatusCheck(deviceMqttId);
-    });
+      // No need for a timer - MqttService will handle status updates
+      // The device will automatically become 'online' when it receives data
+      
+      return true;
+    } else {
+      debugPrint('❌ DeviceManager: Failed to add device to Firestore - NOT adding to Hive');
+      notifyListeners();
+      return false;
+    }
   }
 
-  void removeDevice(String deviceId) {
-    _mqttServices[deviceId]?.dispose();
-    _mqttServices.remove(deviceId);
-    _inactivityTimers[deviceId]?.cancel();
-    _inactivityTimers.remove(deviceId);
+  Future<void> removeDevice(String deviceId) async {
+    debugPrint('🗑️ DeviceManager: Starting removal of device $deviceId');
+    
+    // 1. Get the device to find its MQTT ID
+    final device = _deviceBox?.get(deviceId);
+    final mqttId = device?['mqttId'] ?? deviceId;
+    
+    // 2. Dispose and remove MQTT service
+    _mqttServices[mqttId]?.dispose();
+    _mqttServices.remove(mqttId);
+    debugPrint('   ✅ MQTT service disposed for $mqttId');
+    
+    // 3. Cancel and remove timers
+    _inactivityTimers[mqttId]?.cancel();
+    _inactivityTimers.remove(mqttId);
+    debugPrint('   ✅ Timers cancelled for $mqttId');
+    
+    // 4. Clear sensor data for this device
+    _sensorData.remove(mqttId);
+    debugPrint('   ✅ Sensor data cleared for $mqttId');
+    
+    // 5. Remove notification tracking
     lastNotificationTime.remove(deviceId);
-    _deviceBox?.delete(deviceId);
-    deleteNotificationsByDeviceId(deviceId);
+    debugPrint('   ✅ Notification tracking removed');
     
-    // Cleanup ModeControllerService singleton for this device
-    ModeControllerService.removeInstance(deviceId);
+    // 6. Delete from Hive
+    await _deviceBox?.delete(deviceId);
+    debugPrint('   ✅ Device deleted from Hive');
     
+    // 7. Delete associated notifications
+    await deleteNotificationsByDeviceId(deviceId);
+    debugPrint('   ✅ Notifications deleted');
+    
+    // 8. Remove device from Firestore
+    final success = await UserDeviceService.removeDeviceFromUser(deviceId);
+    if (success) {
+      debugPrint('   ✅ Device removed from Firestore');
+    } else {
+      debugPrint('   ⚠️ Failed to remove device from Firestore');
+    }
+    
+    // 9. Cleanup ModeControllerService singleton for this device
+    ModeControllerService.removeInstance(mqttId);
+    debugPrint('   ✅ ModeControllerService singleton removed');
+    
+    // 10. Clear graph/cycle data for this device
+    deviceStartTimes.remove(deviceId);
+    deviceStartTimeSet.remove(deviceId);
+    deviceCycle.remove(deviceId);
+    debugPrint('   ✅ Graph data cleared');
+    
+    debugPrint('✅ DeviceManager: Device $deviceId removal complete');
     notifyListeners();
   }
 
-  void updateDeviceName(String deviceId, String newName) {
+  void updateDeviceName(String deviceId, String newName) async {
     final device = _deviceBox?.get(deviceId);
     if (device != null) {
       device['name'] = newName;
       _deviceBox?.put(deviceId, device);
+      
+      // 🔥 Update device name in Firestore
+      final success = await UserDeviceService.updateDeviceName(deviceId, newName);
+      if (success) {
+        debugPrint('✅ DeviceManager: Device name updated in Firestore');
+      } else {
+        debugPrint('⚠️ DeviceManager: Failed to update device name in Firestore');
+      }
+      
       notifyListeners();
     }
   }
@@ -650,6 +803,56 @@ class DeviceManager extends ChangeNotifier {
         final timestamp = deviceData['disconnectionTimestamp'] ?? 'N/A';
         print("Device $deviceId is $status. Last disconnected at: $timestamp");
       });
+    }
+  }
+
+  /// 🔥 Clear all device data when user logs out
+  /// This ensures that when a new user logs in, they only see their own devices
+  Future<void> clearAllDevices() async {
+    try {
+      print('🧹🧹🧹 DeviceManager: Clearing all device data...');
+      
+      // 1. Dispose all MQTT services to stop listening
+      for (var mqttService in _mqttServices.values) {
+        mqttService.dispose();
+      }
+      _mqttServices.clear();
+      print('   ✅ MQTT services disposed');
+      
+      // 2. Cancel all timers
+      for (var timer in _inactivityTimers.values) {
+        timer.cancel();
+      }
+      _inactivityTimers.clear();
+      print('   ✅ Timers cancelled');
+      
+      // 3. Clear sensor data
+      _sensorData.clear();
+      print('   ✅ Sensor data cleared');
+      
+      // 4. Clear Hive device box
+      await _deviceBox?.clear();
+      print('   ✅ Hive device box cleared');
+      
+      // 5. Clear notifications
+      lastNotificationTime.clear();
+      print('   ✅ Notification timers cleared');
+      
+      // 6. Clear other state
+      deviceStartTimes.clear();
+      deviceStartTimeSet.clear();
+      deviceCycle.clear();
+      spots.clear();
+      print('   ✅ Other state cleared');
+      
+      // 7. Clear mode controller services
+      ModeControllerService.clearAllInstances();
+      print('   ✅ Mode controller services cleared');
+      
+      print('✅✅✅ DeviceManager: All device data cleared successfully');
+      notifyListeners();
+    } catch (e) {
+      print('❌❌❌ DeviceManager: Error clearing device data: $e');
     }
   }
 }
