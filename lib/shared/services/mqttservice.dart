@@ -230,8 +230,9 @@ class MqttService extends ChangeNotifier {
     }
   }
 
-  /// Parse unified sensor data format: [humidity,light,temp,water,mode]
-  /// Example: "[72.2,47.0,28.8,60.5,n]" or "[72,47,28,60]" (defaults mode to 'n')
+  /// Parse unified sensor data format: [humidity,temperature,water] or [humidity,light,temp,water] or [humidity,light,temp,water,mode]
+  /// Example: "[72.2,28.8,1]" or "[72,47,28,60]" or "[72.2,47.0,28.8,60.5,n]"
+  /// Water level: 0 = no water (urgent), 1 = good status
   Map<String, dynamic>? _parseUnifiedSensorData(String payload) {
     try {
       // Remove brackets and split by comma
@@ -240,21 +241,46 @@ class MqttService extends ChangeNotifier {
       if (cleaned.endsWith(']')) cleaned = cleaned.substring(0, cleaned.length - 1);
       
       List<String> parts = cleaned.split(',');
-      if (parts.length < 4) {
-        debugPrint('⚠️ Invalid unified sensor data format: expected at least 4 values, got ${parts.length}');
+      if (parts.length < 3) {
+        debugPrint('⚠️ Invalid unified sensor data format: expected at least 3 values, got ${parts.length}');
         return null;
       }
       
-      // If only 4 values provided, default mode to 'n' (normal mode)
-      String mode = parts.length >= 5 ? parts[4].trim() : 'n';
-      
-      return {
-        'humidity': double.tryParse(parts[0].trim()),
-        'light': double.tryParse(parts[1].trim()),
-        'temperature': double.tryParse(parts[2].trim()),
-        'water': double.tryParse(parts[3].trim()),
-        'mode': mode, // 'n' or 'p' as String, defaults to 'n' if not provided
-      };
+      // Parse based on number of values
+      if (parts.length == 3) {
+        // New format: [humidity, temperature, water]
+        final waterValue = double.tryParse(parts[2].trim());
+        return {
+          'humidity': double.tryParse(parts[0].trim()),
+          'light': null, // No light sensor data
+          'temperature': double.tryParse(parts[1].trim()),
+          'water': waterValue,
+          'waterStatus': waterValue == 1 ? 'High' : (waterValue == 0 ? 'Low' : 'Unknown'),
+          'mode': 'n', // Default to normal mode
+        };
+      } else if (parts.length == 4) {
+        // Format: [humidity, light, temperature, water]
+        final waterValue = double.tryParse(parts[3].trim());
+        return {
+          'humidity': double.tryParse(parts[0].trim()),
+          'light': double.tryParse(parts[1].trim()),
+          'temperature': double.tryParse(parts[2].trim()),
+          'water': waterValue,
+          'waterStatus': waterValue == 1 ? 'High' : (waterValue == 0 ? 'Low' : 'Unknown'),
+          'mode': 'n', // Default to normal mode
+        };
+      } else {
+        // Format: [humidity, light, temperature, water, mode]
+        final waterValue = double.tryParse(parts[3].trim());
+        return {
+          'humidity': double.tryParse(parts[0].trim()),
+          'light': double.tryParse(parts[1].trim()),
+          'temperature': double.tryParse(parts[2].trim()),
+          'water': waterValue,
+          'waterStatus': waterValue == 1 ? 'High' : (waterValue == 0 ? 'Low' : 'Unknown'),
+          'mode': parts[4].trim(), // 'n' or 'p' as String
+        };
+      }
     } catch (e) {
       debugPrint('❌ Error parsing unified sensor data: $e');
       return null;

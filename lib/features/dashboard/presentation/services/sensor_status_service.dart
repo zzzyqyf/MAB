@@ -55,7 +55,13 @@ class SensorStatusService {
         return Colors.red; // Urgent - too dark
         
       case 'water':
-        // For water/moisture
+        // For water/moisture - binary: 0 = Low (no water), 1 = High (has water)
+        if (numValue == 1) {
+          return Colors.green; // High - has water
+        } else if (numValue == 0) {
+          return Colors.red; // Low - no water (urgent)
+        }
+        // Fallback for non-binary values (old system)
         if (numValue >= 30) {
           return Colors.green; // Good
         }
@@ -110,6 +116,13 @@ class SensorStatusService {
         return 'Urgent';
         
       case 'water':
+        // Binary water level: 0 = Low (no water), 1 = High (has water)
+        if (numValue == 1) {
+          return 'High'; // Has water
+        } else if (numValue == 0) {
+          return 'Low'; // No water (urgent)
+        }
+        // Fallback for non-binary values (old system)
         if (numValue >= 30) {
           return 'Good';
         }
