@@ -47,5 +47,30 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Firebase Cloud Messaging (FCM) Configuration -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<true/>
+	<!-- App Transport Security - Allow network connections -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<!-- Permission Descriptions -->
+	<key>NSCameraUsageDescription</key>
+	<string>Camera access is needed to scan QR codes for device registration</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Microphone access is needed for accessibility features and voice commands</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Local network access is needed to discover and connect to IoT devices</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_mqtt._tcp</string>
+	</array>
 </dict>
 </plist>

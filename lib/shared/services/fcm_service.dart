@@ -125,7 +125,7 @@ class FcmService {
       onDidReceiveNotificationResponse: _onNotificationTapped,
     );
     
-    // Create notification channel for alarms (Android)
+    // Create notification channel for alarms (Android only)
     const androidChannel = AndroidNotificationChannel(
       'channel_id_5', // id - using high priority channel
       'Alarm Notifications High Priority', // name
@@ -137,9 +137,22 @@ class FcmService {
       sound: RawResourceAndroidNotificationSound('beep'), // assets/sounds/beep.mp3
     );
     
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(androidChannel);
+    final androidPlugin = _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    
+    if (androidPlugin != null) {
+      await androidPlugin.createNotificationChannel(androidChannel);
+      debugPrint('✅ [FCM] Android notification channel created');
+    } else {
+      debugPrint('ℹ️ [FCM] Running on iOS - skipping Android channel creation');
+    }
+    
+    // For iOS: Set foreground notification presentation options
+    await _firebaseMessaging.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
     
     debugPrint('✅ [FCM] Local notifications initialized');
   }

@@ -37,6 +37,7 @@ import 'features/dashboard/presentation/services/mode_controller_service.dart';
 import 'features/dashboard/presentation/models/mushroom_phase.dart';
 import 'features/registration/presentation/pages/registerOne.dart';
 import 'features/authentication/presentation/widgets/auth_wrapper.dart';
+import 'features/graph_api/presentation/viewmodels/graph_api_viewmodel.dart';
 import 'debug_page.dart'; // Debug Firebase page
 
 void main() async {
@@ -109,6 +110,7 @@ void main() async {
         providers: [
           ChangeNotifierProvider(create: (_) => DeviceManager()),
           ChangeNotifierProvider(create: (_) => di.sl<DeviceViewModel>()),
+          ChangeNotifierProvider(create: (_) => di.sl<GraphApiViewModel>()),
         ],
         child: const MyApp(),
       ),

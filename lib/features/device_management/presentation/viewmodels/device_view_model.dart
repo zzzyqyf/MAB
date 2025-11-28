@@ -154,7 +154,7 @@ class DeviceViewModel extends ChangeNotifier {
       case NetworkFailure:
         return 'Network Failure';
       case ValidationFailure:
-        return (failure as ValidationFailure).message;
+        return (failure as ValidationFailure).message ?? 'Validation error';
       default:
         return 'Unexpected Error';
     }

@@ -60,6 +60,7 @@ class AlarmService {
           iOS: AudioContextIOS(
             category: AVAudioSessionCategory.playback,
             options: {
+              AVAudioSessionOptions.defaultToSpeaker,
               AVAudioSessionOptions.mixWithOthers,
             },
           ),
@@ -67,7 +68,7 @@ class AlarmService {
             isSpeakerphoneOn: true,
             stayAwake: true,
             contentType: AndroidContentType.sonification,
-            usageType: AndroidUsageType.alarm, // 使用 ALARM 音频类型
+            usageType: AndroidUsageType.alarm, // Use ALARM audio type
             audioFocus: AndroidAudioFocus.gain,
           ),
         ),
