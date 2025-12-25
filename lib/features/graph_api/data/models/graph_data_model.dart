@@ -51,7 +51,9 @@ class GraphDataModel {
         
         // Log first data point for verification
         if (humidityPoints.isEmpty) {
-          debugPrint('📊 First data point: H=$humidity%, T=$temperature°C, W=$waterLevel at ${timestamp.hour}:${timestamp.minute}');
+          final localTime = DateTime.fromMillisecondsSinceEpoch(timestampMs).toLocal();
+          debugPrint('📊 First data point: H=$humidity%, T=$temperature°C, W=$waterLevel');
+          debugPrint('📊 Time: UTC=${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}, Local=${localTime.hour}:${localTime.minute.toString().padLeft(2, '0')}');
         }
         
         // Index 0: Humidity
@@ -102,6 +104,7 @@ class SensorDataPointModel {
 
   DateTime get dateTime {
     try {
+      // API returns timestamps already in local timezone
       return DateTime.parse(time);
     } catch (e) {
       return DateTime.now();

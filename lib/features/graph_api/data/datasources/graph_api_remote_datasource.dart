@@ -102,9 +102,16 @@ class GraphApiRemoteDataSource {
     try {
       final token = await _getValidToken();
       
-      // Format dates to ISO 8601 string
-      final startTimeStr = startTime.toIso8601String();
-      final endTimeStr = endTime.toIso8601String();
+      // Format dates to ISO 8601 string with timezone offset
+      // Get the timezone offset in hours
+      final tzOffset = startTime.timeZoneOffset;
+      final hours = tzOffset.inHours;
+      final minutes = tzOffset.inMinutes.remainder(60).abs();
+      final sign = hours >= 0 ? '+' : '-';
+      final tzString = '$sign${hours.abs().toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
+      
+      final startTimeStr = '${startTime.toIso8601String()}$tzString';
+      final endTimeStr = '${endTime.toIso8601String()}$tzString';
 
       final uri = Uri.parse('$_baseUrl$_graphEndpoint').replace(
         queryParameters: {

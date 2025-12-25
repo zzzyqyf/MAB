@@ -2,75 +2,116 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
-	<key>CFBundleDisplayName</key>
-	<string>Flutter Application Final</string>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>flutter_application_final</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(FLUTTER_BUILD_NAME)</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
-	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-	<key>UIMainStoryboardFile</key>
-	<string>Main</string>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<false/>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-	<!-- Firebase Cloud Messaging (FCM) Configuration -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-		<string>remote-notification</string>
-	</array>
-	<key>FirebaseAppDelegateProxyEnabled</key>
-	<true/>
-	<!-- App Transport Security - Allow network connections -->
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
-	<!-- Permission Descriptions -->
-	<key>NSCameraUsageDescription</key>
-	<string>Camera access is needed to scan QR codes for device registration</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Microphone access is needed for accessibility features and voice commands</string>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Local network access is needed to discover and connect to IoT devices</string>
-	<key>NSBonjourServices</key>
-	<array>
-		<string>_mqtt._tcp</string>
-	</array>
+    <key>CADisableMinimumFrameDurationOnPhone</key>
+    <true/>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleDisplayName</key>
+    <string>MAB FYP</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>flutter_application_final</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(FLUTTER_BUILD_NAME)</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleVersion</key>
+    <string>$(FLUTTER_BUILD_NUMBER)</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>UIApplicationSupportsIndirectInputEvents</key>
+    <true/>
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
+    <key>UIMainStoryboardFile</key>
+    <string>Main</string>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    
+    <!-- Privacy - Microphone Usage: Required by Apple (TTS via flutter_tts) -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>MAB uses microphone access for voice commands to control IoT devices and accessibility features for visually impaired users.</string>
+    
+    <!-- Privacy - Bluetooth Usage: ESP32 device discovery via BLE -->
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>MAB uses Bluetooth to discover and connect to nearby ESP32 mushroom cultivation monitoring devices.</string>
+    
+    <key>NSBluetoothPeripheralUsageDescription</key>
+    <string>MAB uses Bluetooth to communicate with ESP32 sensors for real-time environmental data (temperature, humidity, CO2).</string>
+    
+    <!-- Privacy - Camera Usage: QR code scanning for device registration -->
+    <key>NSCameraUsageDescription</key>
+    <string>MAB uses camera access for QR code scanning to quickly register new ESP32 IoT devices.</string>
+    
+    <!-- Privacy - Local Network: MQTT broker connection (api.milloserver.uk:8883) -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>MAB uses local network access to discover and communicate with ESP32 devices via MQTT protocol for real-time sensor data.</string>
+    
+    <!-- Privacy - Location (optional feature) -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>MAB uses location to help identify nearby mushroom cultivation sites and optimize environmental settings based on your region.</string>
+    
+    <!-- Firebase Configuration: CRITICAL for initialization -->
+    <key>FirebaseAppDelegateProxyEnabled</key>
+    <true/>
+    
+    <!-- Background Modes: MQTT keepalive + Firebase Cloud Messaging -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+        <string>remote-notification</string>
+    </array>
+    
+    <!-- Export Compliance: Skip encryption documentation popup -->
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+    
+    <!-- App Transport Security: MQTT broker (api.milloserver.uk:8883 with TLS) -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsArbitraryLoads</key>
+        <false/>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>api.milloserver.uk</key>
+            <dict>
+                <key>NSExceptionAllowsInsecureHTTPLoads</key>
+                <false/>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+                <key>NSExceptionRequiresForwardSecrecy</key>
+                <true/>
+                <key>NSExceptionMinimumTLSVersion</key>
+                <string>TLSv1.2</string>
+            </dict>
+        </dict>
+    </dict>
+    
+    <!-- Bonjour Services: MQTT service discovery on local network -->
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_mqtt._tcp</string>
+        <string>_http._tcp</string>
+    </array>
 </dict>
 </plist>
