@@ -34,45 +34,55 @@ class UserDeviceService {
       debugPrint('   Device Name: $deviceName');
       debugPrint('   MQTT ID: $mqttId');
 
-      // Check if user document exists, create if it doesn't
-      final userDoc = await _firestore.collection('users').doc(userId).get();
-      
-      if (!userDoc.exists) {
-        debugPrint('⚠️ UserDeviceService: User document does not exist, creating it...');
-        await _firestore.collection('users').doc(userId).set({
-          'email': _auth.currentUser?.email,
-          'createdAt': FieldValue.serverTimestamp(),
-          'devices': [],
-        });
-        debugPrint('✅ UserDeviceService: User document created');
-      }
+      // Use runTransaction to prevent race condition duplicates
+      final result = await _firestore.runTransaction<bool>((transaction) async {
+        final userDocRef = _firestore.collection('users').doc(userId);
+        final userDoc = await transaction.get(userDocRef);
+        
+        // Create user document if it doesn't exist
+        if (!userDoc.exists) {
+          debugPrint('⚠️ UserDeviceService: User document does not exist, creating it...');
+          transaction.set(userDocRef, {
+            'email': _auth.currentUser?.email,
+            'createdAt': FieldValue.serverTimestamp(),
+            'devices': [],
+          });
+          debugPrint('✅ UserDeviceService: User document created');
+        }
 
-      // 🔥 Check if device with same MQTT ID already exists
-      final data = userDoc.data();
-      if (data != null && data.containsKey('devices')) {
-        final List<dynamic> existingDevices = data['devices'] ?? [];
-        for (var device in existingDevices) {
-          if (device['mqttId'] == mqttId) {
-            debugPrint('⚠️ UserDeviceService: Device with MQTT ID $mqttId already exists in Firestore');
-            debugPrint('   Existing device: ${device['name']} (ID: ${device['deviceId']})');
-            return false; // Don't add duplicate
+        // 🔥 Check if device with same MQTT ID or device ID already exists
+        final data = userDoc.data();
+        if (data != null && data.containsKey('devices')) {
+          final List<dynamic> existingDevices = data['devices'] ?? [];
+          for (var device in existingDevices) {
+            if (device['mqttId'] == mqttId || device['deviceId'] == deviceId) {
+              debugPrint('⚠️ UserDeviceService: Device with MQTT ID $mqttId or device ID $deviceId already exists');
+              debugPrint('   Existing device: ${device['name']} (ID: ${device['deviceId']})');
+              return false; // Don't add duplicate
+            }
           }
         }
-      }
 
-      // Add device to user's devices array
-      // Note: Cannot use FieldValue.serverTimestamp() inside arrayUnion()
-      // Use DateTime.now() instead
-      await _firestore.collection('users').doc(userId).update({
-        'devices': FieldValue.arrayUnion([
+        // Add device to user's devices array using transaction
+        final currentDevices = (data?['devices'] as List<dynamic>?) ?? [];
+        final updatedDevices = [
+          ...currentDevices,
           {
             'deviceId': deviceId,
             'name': deviceName,
             'mqttId': mqttId ?? deviceName,
-            'addedAt': DateTime.now().toIso8601String(), // Use ISO string instead of serverTimestamp
+            'addedAt': DateTime.now().toIso8601String(),
           }
-        ])
+        ];
+        
+        transaction.update(userDocRef, {'devices': updatedDevices});
+        return true;
       });
+      
+      if (!result) {
+        debugPrint('⚠️ UserDeviceService: Device already exists, skipping');
+        return false;
+      }
 
       debugPrint('✅ UserDeviceService: Device added to Firestore successfully');
       return true;

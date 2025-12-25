@@ -38,7 +38,6 @@ import 'features/dashboard/presentation/models/mushroom_phase.dart';
 import 'features/registration/presentation/pages/registerOne.dart';
 import 'features/authentication/presentation/widgets/auth_wrapper.dart';
 import 'features/graph_api/presentation/viewmodels/graph_api_viewmodel.dart';
-import 'debug_page.dart'; // Debug Firebase page
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -358,17 +357,6 @@ class _MyHomePageState extends State<MyHomePage> {
     final mediaQuery = MediaQuery.of(context); // Get screen dimensions
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const DebugFirebasePage()),
-          );
-        },
-        backgroundColor: Colors.orange,
-        child: const Icon(Icons.bug_report, color: Colors.white),
-        tooltip: 'Firebase Debug',
-      ),
       body: Stack(
         children: [
           // Show loading indicator while devices are being loaded from Firestore

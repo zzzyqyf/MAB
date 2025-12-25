@@ -187,19 +187,30 @@ class DeviceManager extends ChangeNotifier {
       
       print('✅✅✅ DeviceManager: Found ${firestoreDevices.length} devices in Firestore');
       
+      // Use a Set to track processed device IDs and prevent duplicates
+      final processedDeviceIds = <String>{};
+      final processedMqttIds = <String>{};
+      
       // Add each Firestore device to local Hive storage and initialize MQTT
       for (var firestoreDevice in firestoreDevices) {
         // Fix: Firestore uses 'deviceId' but we use 'id' in Hive
         final deviceId = firestoreDevice['deviceId'] as String? ?? firestoreDevice['id'] as String;
         final deviceName = firestoreDevice['name'] as String;
         final mqttId = firestoreDevice['mqttId'] as String?;
+        final mqttIdFinal = mqttId ?? deviceName;
         
-        print('   Loading device: $deviceId ($deviceName) with MQTT ID: $mqttId');
+        // 🔥 Skip if device ID or MQTT ID already processed (duplicate prevention)
+        if (processedDeviceIds.contains(deviceId) || processedMqttIds.contains(mqttIdFinal)) {
+          print('⚠️ DeviceManager: Skipping duplicate device $deviceId (MQTT: $mqttIdFinal)');
+          continue;
+        }
+        
+        print('   Loading device: $deviceId ($deviceName) with MQTT ID: $mqttIdFinal');
         
         final device = {
           'id': deviceId,
           'name': deviceName,
-          'mqttId': mqttId ?? deviceName,
+          'mqttId': mqttIdFinal,
           'status': 'offline',  // Start as offline, will change to online when data is received
           'sensorStatus': 'offline',
           'disconnectionTimeResult': 'not connected yet!',
@@ -208,8 +219,12 @@ class DeviceManager extends ChangeNotifier {
         // Store in Hive
         await _deviceBox?.put(deviceId, device);
         
+        // Track processed IDs
+        processedDeviceIds.add(deviceId);
+        processedMqttIds.add(mqttIdFinal);
+        
         // Initialize MQTT for this device
-        _initMqtt(mqttId ?? deviceName);
+        _initMqtt(mqttIdFinal);
         
         // No need for a timer - MqttService will handle status updates
         // The device will automatically become 'online' when it receives data
@@ -635,56 +650,33 @@ class DeviceManager extends ChangeNotifier {
   Future<bool> addDeviceWithId(String deviceId, String name, [String? mqttId]) async {
     final deviceMqttId = mqttId ?? name; // Use provided MQTT ID or fallback to name
     
-    // 🔥 Check if device already exists in Hive (prevent duplicates)
-    if (_deviceBox?.containsKey(deviceId) == true) {
-      debugPrint('⚠️ DeviceManager: Device $deviceId already exists in Hive, skipping');
-      return false;
-    }
-    
-    // Check if MQTT ID already exists (same physical device)
-    final existingDevices = _deviceBox?.values.toList() ?? [];
-    for (var device in existingDevices) {
-      if (device['mqttId'] == deviceMqttId) {
-        debugPrint('⚠️ DeviceManager: Device with MQTT ID $deviceMqttId already exists, skipping');
+    try {
+      // 🔥 Add device to Firestore with built-in duplicate checking
+      debugPrint('📤 DeviceManager: Adding device to Firestore...');
+      debugPrint('   Device ID: $deviceId');
+      debugPrint('   Device Name: $name');
+      debugPrint('   MQTT ID: $deviceMqttId');
+      
+      final success = await UserDeviceService.addDeviceToUser(
+        deviceId: deviceId,
+        deviceName: name.isEmpty ? 'Unnamed' : name,
+        mqttId: deviceMqttId,
+      );
+      
+      if (!success) {
+        debugPrint('❌ DeviceManager: Failed to add device to Firestore (likely duplicate)');
         return false;
       }
-    }
-    
-    final device = {
-      'id': deviceId,
-      'name': name.isEmpty ? 'Unnamed' : name,
-      'mqttId': deviceMqttId, // Store the MQTT identifier
-      'status': 'offline',  // Start as offline, will change to online when data is received
-      'sensorStatus': 'offline',
-      'disconnectionTimeResult': 'not connected yet!',
-    };
-    
-    // 🔥 Add device to Firestore FIRST
-    debugPrint('� DeviceManager: Adding device to Firestore first...');
-    final success = await UserDeviceService.addDeviceToUser(
-      deviceId: deviceId,
-      deviceName: name.isEmpty ? 'Unnamed' : name,
-      mqttId: deviceMqttId,
-    );
-    
-    if (success) {
-      debugPrint('✅ DeviceManager: Device $deviceId added to Firestore');
-      // Only add to Hive if Firestore succeeded
-      _deviceBox?.put(deviceId, device);
-      debugPrint('✅ DeviceManager: Device $deviceId added to Hive');
       
-      notifyListeners();
-
-      // Use MQTT ID for MQTT communication, but keep deviceId for internal management
-      _initMqtt(deviceMqttId);
-
-      // No need for a timer - MqttService will handle status updates
-      // The device will automatically become 'online' when it receives data
+      debugPrint('✅ DeviceManager: Device $deviceId added to Firestore successfully');
       
+      // ✅ Return success immediately - device is in Firestore
+      // Note: Don't reload here to avoid conflicts when navigating to dashboard
+      // The dashboard will reload devices automatically when it loads
       return true;
-    } else {
-      debugPrint('❌ DeviceManager: Failed to add device to Firestore - NOT adding to Hive');
-      notifyListeners();
+      
+    } catch (e) {
+      debugPrint('❌ DeviceManager: Error in addDeviceWithId: $e');
       return false;
     }
   }

@@ -134,7 +134,7 @@ class _RegisterFiveWidgetState extends State<RegisterFiveWidget> {
       }
     } else {
       setState(() {
-        _errorMessage = 'Failed to add device. Please try again.';
+        _errorMessage = '';
         _isWaiting = false;
       });
       TextToSpeech.speak(_errorMessage!);

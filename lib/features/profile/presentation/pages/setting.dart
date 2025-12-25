@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:hive/hive.dart';
 
 // Project imports
 import '../../../../shared/services/TextToSpeech.dart';
@@ -9,7 +10,6 @@ import '../../../device_management/presentation/viewmodels/deviceManager.dart';
 import '../../../../main.dart';
 import 'name.dart';
 import '../../../../shared/widgets/basePage.dart';
-import '../../../../alarm_test_page.dart'; // Import alarm test page
 //import 'text_to_speech.dart'; // Assuming TTS utility is in text_to_speech.dart
 
 class TentSettingsWidget extends StatefulWidget {
@@ -119,28 +119,6 @@ Padding(
   ),
 ),
 
-              // 🧪 TEST ALARM BUTTON (For debugging alarm sound issues)
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                child: SettingsItem(
-                  title: '🧪 Test Alarm Sound',
-                  subtitle: 'Debug alarm functionality',
-                  containerHeight: containerHeight,
-                  fontSizeTitle: fontSizeTitle,
-                  fontSizeSubtitle: fontSizeSubtitle,
-                  onTap: () {
-                    TextToSpeech.speak('Test Alarm Sound. Double tap to open test page.');
-                  },
-                  onDoubleTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AlarmTestPage()),
-                    );
-                  },
-                ),
-              ),
-              SizedBox(height: verticalSpacing),
-
               if (userRole == 'Admin')
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
@@ -244,16 +222,11 @@ Padding(
                   switchValue: deviceManager.isMuted,
                   onSwitchChanged: (value) {
                     deviceManager.toggleMute(value);
-                    if(value=true){
-                    TextToSpeech.speak('Device Muted');  
-
+                    if (value) {
+                      TextToSpeech.speak('Device Muted');
+                    } else {
+                      TextToSpeech.speak('Device unmuted');
                     }
-else{
-                      TextToSpeech.speak('Device unmuted');  
-
-}
-                          //TextToSpeech.speak('Status $disconnectionTime');
- 
                   },
                    onTap: () {
                       TextToSpeech.speak(
@@ -307,6 +280,8 @@ class DeletePage extends StatelessWidget {
               padding: 16.0,
               fontSize: 18.0,
               onPressed: () async {
+                if (!context.mounted) return;
+                
                 // Show loading indicator
                 showDialog(
                   context: context,
@@ -316,22 +291,41 @@ class DeletePage extends StatelessWidget {
                   ),
                 );
                 
-                // Wait for device removal to complete
-                await Provider.of<DeviceManager>(context, listen: false).removeDevice(id);
-                
-                // Close loading dialog
-                Navigator.of(context).pop();
-                
-                // Navigate back to main page
-                Navigator.of(context).pop();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MyApp()),
-                );
+                try {
+                  // Get DeviceManager
+                  final deviceManager = Provider.of<DeviceManager>(context, listen: false);
+                  
+                  // Remove device and wait for completion
+                  await deviceManager.removeDevice(id);
+                  
+                  // Force Hive to flush changes to disk
+                  await Hive.box('devices').compact();
+                  
+                  // Wait a moment for all cleanup to complete
+                  await Future.delayed(const Duration(milliseconds: 300));
+                  
+                  if (!context.mounted) return;
+                  
+                  // Close loading dialog
+                  Navigator.of(context).pop();
+                  
+                  // Navigate back to dashboard by popping all routes until home
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                } catch (e) {
+                  debugPrint('❌ Error removing device: $e');
+                  if (context.mounted) {
+                    Navigator.of(context).pop(); // Close loading dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error removing device: $e')),
+                    );
+                  }
+                }
               },
               onDoubleTap: () async {
                 TextToSpeech.speak('Device Deleted');
                 
+                if (!context.mounted) return;
+                
                 // Show loading indicator
                 showDialog(
                   context: context,
@@ -341,18 +335,35 @@ class DeletePage extends StatelessWidget {
                   ),
                 );
                 
-                // Wait for device removal to complete
-                await Provider.of<DeviceManager>(context, listen: false).removeDevice(id);
-                
-                // Close loading dialog
-                Navigator.of(context).pop();
-                
-                // Navigate back to main page
-                Navigator.of(context).pop();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MyApp()),
-                );
+                try {
+                  // Get DeviceManager
+                  final deviceManager = Provider.of<DeviceManager>(context, listen: false);
+                  
+                  // Remove device and wait for completion
+                  await deviceManager.removeDevice(id);
+                  
+                  // Force Hive to flush changes to disk
+                  await Hive.box('devices').compact();
+                  
+                  // Wait a moment for all cleanup to complete
+                  await Future.delayed(const Duration(milliseconds: 300));
+                  
+                  if (!context.mounted) return;
+                  
+                  // Close loading dialog
+                  Navigator.of(context).pop();
+                  
+                  // Navigate back to dashboard by popping all routes until home
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                } catch (e) {
+                  debugPrint('❌ Error removing device: $e');
+                  if (context.mounted) {
+                    Navigator.of(context).pop(); // Close loading dialog
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error removing device: $e')),
+                    );
+                  }
+                }
               },
             ),
           ],
