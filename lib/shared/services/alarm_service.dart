@@ -7,6 +7,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 /// Service to manage alarm sounds for urgent sensor conditions
 /// 
@@ -318,36 +319,22 @@ class AlarmService {
 
   /// Save alarm notification to Firestore (first trigger only)
   Future<void> _saveAlarmToFirestore(String reason, {String? deviceId, String? deviceName}) async {
+    // Notification is now saved to local Hive only, not Firestore
+    // Save to local Hive for notification page
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) {
-        debugPrint('⚠️ No user logged in, skipping Firestore save');
-        return;
-      }
-
-      debugPrint('💾 Saving alarm notification to Firestore...');
-      
-      final notificationData = {
-        'deviceId': deviceId ?? 'unknown',
-        'deviceName': deviceName ?? 'Unknown Device',
-        'reason': reason,
-        'timestamp': FieldValue.serverTimestamp(),
-        'status': 'active',
-        'dismissedAt': null,
-        'snoozedUntil': null,
+      final notificationsBox = Hive.box('notificationsBox');
+      await notificationsBox.add({
+        'title': '🚨 Critical Alert',
+        'message': reason,
+        'timestamp': DateTime.now().toIso8601String(),
+        'deviceId': deviceId,
+        'deviceName': deviceName,
         'type': 'urgent_alert',
-      };
-
-      final docRef = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('notifications')
-          .add(notificationData);
-
-      _firestoreNotificationId = docRef.id;
-      debugPrint('✅ Alarm notification saved to Firestore with ID: ${docRef.id}');
+      });
+      debugPrint('📬 Alarm notification saved to local Hive');
+      debugPrint('📦 Total notifications in box: ${notificationsBox.length}');
     } catch (e) {
-      debugPrint('❌ Failed to save alarm to Firestore: $e');
+      debugPrint('⚠️ Failed to save alarm to Hive: $e');
     }
   }
 

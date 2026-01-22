@@ -34,6 +34,9 @@ class _NotificationPageState extends State<NotificationPage> {
     try {
       if (Hive.isBoxOpen('notificationsBox')) {
         notificationsBox = Hive.box('notificationsBox');
+        debugPrint('📦 NotificationPage: Hive box opened, ${notificationsBox!.length} notifications found');
+      } else {
+        debugPrint('⚠️ NotificationPage: Hive box not open yet');
       }
     } catch (e) {
       debugPrint('⚠️ Error accessing Hive box: $e');
@@ -50,6 +53,9 @@ class _NotificationPageState extends State<NotificationPage> {
             .orderBy('timestamp', descending: true)
             .limit(50)
             .snapshots();
+        debugPrint('🔥 NotificationPage: Firestore stream initialized for user ${user.uid}');
+      } else {
+        debugPrint('⚠️ NotificationPage: No Firebase user logged in');
       }
     } catch (e) {
       debugPrint('⚠️ Error initializing Firestore stream: $e');
@@ -189,20 +195,57 @@ class _NotificationPageState extends State<NotificationPage> {
         final notification = box.getAt(i);
         if (notification == null) continue;
         
+        // Robust timestamp parsing with fallback
+        DateTime timestamp;
+        try {
+          final timestampValue = notification['timestamp'];
+          if (timestampValue is String) {
+            timestamp = DateTime.parse(timestampValue);
+          } else if (timestampValue is DateTime) {
+            timestamp = timestampValue;
+          } else {
+            // Fallback to current time if format is unknown
+            timestamp = DateTime.now();
+            debugPrint('⚠️ Unknown timestamp format at index $i, using current time');
+          }
+        } catch (e) {
+          // If parsing fails, use current time as fallback
+          timestamp = DateTime.now();
+          debugPrint('⚠️ Failed to parse timestamp at index $i: $e, using current time');
+        }
+        
         notifications.add({
           'title': notification['title'] ?? 'Notification',
           'message': notification['message'] ?? '',
-          'timestamp': DateTime.parse(notification['timestamp']),
+          'timestamp': timestamp,
           'isAlarm': false,
           'status': 'active',
           'index': i, // Include index for dismiss
         });
+        
+        debugPrint('✅ Parsed local notification $i: ${notification['title']}');
       } catch (e) {
         debugPrint('⚠️ Error parsing local notification at index $i: $e');
-        // Skip malformed notifications
-        continue;
+        // Try to salvage the notification with minimal data
+        try {
+          final notification = box.getAt(i);
+          if (notification != null) {
+            notifications.add({
+              'title': notification['title']?.toString() ?? 'Notification',
+              'message': notification['message']?.toString() ?? 'No message',
+              'timestamp': DateTime.now(),
+              'isAlarm': false,
+              'status': 'active',
+              'index': i,
+            });
+            debugPrint('⚠️ Salvaged notification at index $i with fallback values');
+          }
+        } catch (salvageError) {
+          debugPrint('❌ Could not salvage notification at index $i: $salvageError');
+        }
       }
     }
+    debugPrint('📋 Total local notifications loaded: ${notifications.length}');
     return notifications;
   }
 

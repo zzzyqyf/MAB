@@ -543,12 +543,15 @@ class DeviceManager extends ChangeNotifier {
     }
     
     final notificationsBox = Hive.box('notificationsBox');
-    notificationsBox.add({
-      'title': ' $deviceName Device',
+    final notificationData = {
+      'title': '$deviceName Device',
       'message': message,
-      'timestamp': DateTime.now().toString(),
+      'timestamp': DateTime.now().toIso8601String(),
       'id': deviceId,
-    });
+    };
+    await notificationsBox.add(notificationData);
+    debugPrint('📬 DeviceManager: Saved notification to Hive - ${notificationData['title']}: ${notificationData['message']}');
+    debugPrint('📦 Total notifications in box: ${notificationsBox.length}');
   }
 
   Map<String, DateTime> deviceStartTimes = {};

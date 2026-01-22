@@ -1,10 +1,10 @@
-# Firebase Firestore Security Rules
-# For MAB - Mushroom Agriculture Monitoring System
-# 
-# These rules ensure:
-# 1. Users can only read/write their own data
-# 2. Device associations are private to each user
-# 3. Basic validation for device data structure
+// Firebase Firestore Security Rules
+// For MAB - Mushroom Agriculture Monitoring System
+// 
+// These rules ensure:
+// 1. Users can only read/write their own data
+// 2. Device associations are private to each user
+// 3. Basic validation for device data structure
 
 rules_version = '2';
 service cloud.firestore {
@@ -30,6 +30,11 @@ service cloud.firestore {
       
       // Allow delete only if user is the owner
       allow delete: if request.auth != null && request.auth.uid == userId;
+      
+      // Notifications subcollection - user can read/write their own notifications
+      match /notifications/{notificationId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
     
     // ============================================================================

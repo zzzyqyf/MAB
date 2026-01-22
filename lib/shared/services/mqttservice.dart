@@ -37,6 +37,11 @@ class MqttService extends ChangeNotifier {
   Timer? _dataCheckTimer;
   bool _isDisposed = false;
   String? _lastReportedStatus; // Track last reported status to avoid spam
+  
+  // Status debouncing - prevent rapid flipping
+  int _consecutiveOfflineChecks = 0;
+  int _consecutiveOnlineChecks = 0;
+  static const int _requiredConsecutiveChecks = 3; // Must be stable for 3 checks (30s)
 
   MqttService({
     required this.deviceId,
@@ -300,11 +305,39 @@ class MqttService extends ChangeNotifier {
 
   void _checkDataReception() {
     final isDataReceivedFlag = isDataReceived(deviceId);
-    final newStatus = isDataReceivedFlag ? 'online' : 'offline';
+    final currentStatus = isDataReceivedFlag ? 'online' : 'offline';
     
-    // Only update and notify if status actually changed
-    if (_lastReportedStatus != newStatus) {
-      debugPrint('🔍 MqttService: Device $deviceId status changed: $_lastReportedStatus → $newStatus (last data: ${_getTimeSinceLastData()}s ago)');
+    // Debouncing logic: require multiple consecutive checks before changing status
+    if (currentStatus == 'online') {
+      _consecutiveOnlineChecks++;
+      _consecutiveOfflineChecks = 0;
+    } else {
+      _consecutiveOfflineChecks++;
+      _consecutiveOnlineChecks = 0;
+    }
+    
+    // Determine if we should update status
+    bool shouldUpdate = false;
+    String? newStatus;
+    
+    if (_lastReportedStatus == null) {
+      // First check - set status immediately
+      shouldUpdate = true;
+      newStatus = currentStatus;
+    } else if (_lastReportedStatus == 'online' && _consecutiveOfflineChecks >= _requiredConsecutiveChecks) {
+      // Was online, now consistently offline
+      shouldUpdate = true;
+      newStatus = 'offline';
+      debugPrint('⚠️ MqttService: Device $deviceId going offline after ${_consecutiveOfflineChecks} consecutive checks (${_getTimeSinceLastData()}s since last data)');
+    } else if (_lastReportedStatus == 'offline' && _consecutiveOnlineChecks >= 1) {
+      // Was offline, got data - immediately mark online (faster recovery)
+      shouldUpdate = true;
+      newStatus = 'online';
+      debugPrint('✅ MqttService: Device $deviceId back online (received data)');
+    }
+    
+    // Update status if needed
+    if (shouldUpdate && newStatus != null) {
       _lastReportedStatus = newStatus;
       onDeviceConnectionStatusChange(deviceId, newStatus);
       
@@ -318,7 +351,7 @@ class MqttService extends ChangeNotifier {
   bool isDataReceived(String deviceId) {
     final lastDataTime = _lastReceivedTimestamps[deviceId];
     if (lastDataTime == null) return false;
-    return DateTime.now().difference(lastDataTime).inSeconds <= 60; // 1 minute timeout
+    return DateTime.now().difference(lastDataTime).inSeconds <= 90; // 90 second timeout (increased for stability)
   }
   
   /// Helper to get time since last data for debugging

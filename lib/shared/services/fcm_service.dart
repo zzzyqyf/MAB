@@ -293,22 +293,7 @@ class FcmService {
       debugPrint('🔊 [FCM] Starting alarm: $reason');
       debugPrint('🆔 [FCM] Device ID: $deviceId');
       
-      // Save notification to Hive for notifications page
-      try {
-        final notificationsBox = Hive.box('notificationsBox');
-        await notificationsBox.add({
-          'title': '🚨 Sensor Alert',
-          'message': reason,
-          'timestamp': DateTime.now().toIso8601String(),
-          'deviceId': deviceId,
-          'deviceName': deviceName,
-          'alarmType': alarmType,
-          'read': false,
-        });
-        debugPrint('✅ [FCM] Notification saved to history');
-      } catch (e) {
-        debugPrint('⚠️ [FCM] Failed to save notification to Hive: $e');
-      }
+      // Note: Notification is saved by AlarmService.startAlarm(), no need to save here
       
       // Trigger alarm sound with device information
       await _alarmService.startAlarm(
