@@ -1,0 +1,4 @@
+green_mold
+stage1_healthy
+stage2_healthy
+stage3_healthy

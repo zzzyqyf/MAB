@@ -38,6 +38,7 @@ import 'features/dashboard/presentation/models/mushroom_phase.dart';
 import 'features/registration/presentation/pages/registerOne.dart';
 import 'features/authentication/presentation/widgets/auth_wrapper.dart';
 import 'features/graph_api/presentation/viewmodels/graph_api_viewmodel.dart';
+import 'features/mushroom_detection/presentation/pages/mushroom_camera_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -560,6 +561,44 @@ class _MyHomePageState extends State<MyHomePage> {
   ),
 ), // Close Padding widget
 ], // Close the if (_devicesLoaded) list
+          // Camera button - positioned at top-right corner
+          if (_devicesLoaded)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Material(
+                    elevation: 8,
+                    borderRadius: BorderRadius.circular(16),
+                    color: Theme.of(context).colorScheme.primary,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        // Don't await TTS - navigate immediately
+                        TextToSpeech.speak('Opening mushroom scanner');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MushroomCameraPage(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 28,
+                          semanticLabel: 'Open mushroom scanner camera',
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: CustomNavbar(

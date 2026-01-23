@@ -58,6 +58,9 @@ dependencies:
   flutter_blue_plus: ^1.32.0
   audioplayers: ^6.0.0  # For alarm sound playback
   audio_session: ^0.1.21  # For audio focus and session management
+  camera: ^0.10.5+9  # For camera preview
+  permission_handler: ^11.0.1  # For runtime permissions
+  tflite_flutter: ^0.11.0  # For TFLite model inference
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -90,6 +93,8 @@ flutter:
   assets:
     - assets/icons/
     - assets/sounds/  # Alarm sound files
+    - assets/best_int8.tflite  # YOLO mushroom detection model
+    - assets/labels.txt  # Detection class labels
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
