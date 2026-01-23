@@ -85,7 +85,7 @@ class EmailService {
       final expiresAt = DateTime.now().add(const Duration(minutes: 5));
       
       await FirebaseFirestore.instance
-          .collection('otp_verification')
+          .collection('otp_verifications')
           .doc(email.toLowerCase())
           .set({
         'otp': otp,
@@ -112,7 +112,7 @@ class EmailService {
   }) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('otp_verification')
+          .collection('otp_verifications')
           .doc(email.toLowerCase())
           .get();
 
@@ -172,7 +172,7 @@ class EmailService {
   static Future<void> deleteOTP(String email) async {
     try {
       await FirebaseFirestore.instance
-          .collection('otp_verification')
+          .collection('otp_verifications')
           .doc(email.toLowerCase())
           .delete();
       print('✅ OTP document deleted for $email');
@@ -186,7 +186,7 @@ class EmailService {
     try {
       final now = Timestamp.now();
       final snapshot = await FirebaseFirestore.instance
-          .collection('otp_verification')
+          .collection('otp_verifications')
           .where('expiresAt', isLessThan: now)
           .get();
 
