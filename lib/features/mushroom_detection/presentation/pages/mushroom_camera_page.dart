@@ -976,8 +976,7 @@ class BoundingBoxPainter extends CustomPainter {
       canvas.drawRect(rect, paint);
 
       // Draw label background
-      final confidence = box.length > 4 ? (box[4] * 100).toStringAsFixed(0) : '?';
-      final labelText = '$label ($confidence%)';
+      final labelText = label;
       
       final textPainter = TextPainter(
         text: TextSpan(
